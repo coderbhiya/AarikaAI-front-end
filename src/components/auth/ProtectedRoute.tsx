@@ -1,18 +1,23 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import Sidebar from "../Sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "@/components/ui/sonner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requireAuth = true 
-}) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAuth = true }) => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
+
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(true);
+  
+  const isMobile = useIsMobile();
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -36,5 +41,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/index" replace />;
   }
 
-  return <>{children}</>;
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+  };
+
+  const handleNewChat = () => {
+    setShowWelcome(true);
+    toast("New chat started", {
+      description: "You can now select a category for your new chat.",
+    });
+  };
+
+  return (
+    <>
+      <div className="flex h-screen overflow-hidden bg-background text-foreground">
+        <Sidebar onNewChat={handleNewChat} isOpen={isMobile ? showSidebar : true} onClose={toggleSidebar} />
+        {children}
+      </div>
+    </>
+  );
 };

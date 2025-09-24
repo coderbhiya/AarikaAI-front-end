@@ -10,7 +10,7 @@ interface ChatInputProps {
 
 const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
-  onFocus,
+  onFocus = () => {},
   isLoading = false,
 }) => {
   const [message, setMessage] = useState("");
