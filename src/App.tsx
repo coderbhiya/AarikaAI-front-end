@@ -10,6 +10,9 @@ import Auth from "./pages/Auth";
 import UpdatesFaq from "./pages/UpdatesFaq";
 import { OTPVerification } from "@/components/auth/OTPVerification";
 import ApiDocs from "./pages/ApiDocs";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -18,20 +21,68 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/index" element={<Index />} />
-          <Route path="/" element={<Auth />} />
-          <Route path="/phone-verification" element={<PhoneNumber />} />
-          <Route path="/otp-verification" element={<OTPVerification />} />
-          <Route path="/updates-faq" element={<UpdatesFaq />} />
-          <Route path="/api-docs" element={<ApiDocs />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-          
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Protected Routes - Require Authentication */}
+            <Route
+              path="/index"
+              element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/phone-verification"
+              element={
+                <ProtectedRoute>
+                  <PhoneNumber />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/otp-verification"
+              element={
+                <ProtectedRoute>
+                  <OTPVerification />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/updates-faq"
+              element={
+                <ProtectedRoute>
+                  <UpdatesFaq />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/api-docs"
+              element={
+                <ProtectedRoute>
+                  <ApiDocs />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Public Routes - No Authentication Required */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <Auth />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catch-all route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
 
 export default App;
+

@@ -3,31 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Apple, Github } from "lucide-react";
 import { Logo } from "@/components/logo/Logo";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, OAuthProvider, signInAnonymously } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axios";
-
-// Firebase configuration - Replace with your actual Firebase config
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDFXjMY4A-2JzBVOwUOHlDUG3v_--4UpFY",
-  authDomain: "career-ai-6ecc2.firebaseapp.com",
-  projectId: "career-ai-6ecc2",
-  storageBucket: "career-ai-6ecc2.firebasestorage.app",
-  messagingSenderId: "300489155434",
-  appId: "1:300489155434:web:2f0dc7c9c180f235aabb13",
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+import { useAuth } from "@/contexts/AuthContext";
+import { auth } from "@/lib/auth";
 
 export const LoginPage: React.FC = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState({
     google: false,
     apple: false,
@@ -43,16 +30,8 @@ export const LoginPage: React.FC = () => {
       // Get the user token to send to your backend
       const token = await result.user.getIdToken();
 
-      // Save the user info to localStorage
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName,
-          photoURL: result.user.photoURL,
-        })
-      );
+      // Update auth context
+      login(result.user);
 
       // Example of using axios to verify token with your backend
       try {
@@ -66,13 +45,14 @@ export const LoginPage: React.FC = () => {
         // Process successful verification
         if (response.data.success) {
           // Store any returned user data or tokens
-           localStorage.setItem("authToken", response.data.token);
-          // Navigate to phone verification page instead of home
-          navigate("/");
+          localStorage.setItem("authToken", response.data.token);
+          // Navigate to main app
+          navigate("/index");
         }
       } catch (apiError) {
         console.error("API verification failed:", apiError);
         // Still proceed with local auth since Firebase auth succeeded
+        navigate("/index");
       }
 
       // Successfully signed in
@@ -102,16 +82,8 @@ export const LoginPage: React.FC = () => {
       // Get the user token
       const token = await result.user.getIdToken();
 
-      // Save the user info to localStorage
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName,
-          photoURL: result.user.photoURL,
-        })
-      );
+      // Update auth context
+      login(result.user);
 
       // Verify token with your backend
       try {
@@ -132,7 +104,7 @@ export const LoginPage: React.FC = () => {
         description: `Signed in as ${result.user.email || "Apple user"}`,
       });
 
-      // Navigate to phone verification page instead of home
+      // Navigate to phone verification page
       navigate("/phone-verification");
     } catch (error: any) {
       toast({
