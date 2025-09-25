@@ -39,7 +39,7 @@ interface Message {
   id: string;
   message: string;
   role: "user" | "assistant";
-  fileAttachments?: FileAttachment[] | null;
+  FileAttachments?: FileAttachment[] | null;
   createdAt: Date;
 }
 
@@ -126,12 +126,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
     getChats();
   }, []);
 
-  const fetchAIResponse = async (userMessage: string) => {
+  const fetchAIResponse = async (userMessage: string, fileAttachments?: FileAttachment[]) => {
     setIsLoading(true);
     try {
       const response = await axiosInstance.post("/chat", {
         message: userMessage,
-        // fileAttachments: fileAttachments,
+        fileAttachments: fileAttachments || [],
       });
 
       return response.data.reply.replace(/\n/g, "<br />");
@@ -146,12 +146,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
     }
   };
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, attachedFiles?: File[]) => {
+    let uploadedFiles: FileAttachment[] = [];
+
+    // Upload files if any are attached
+    if (attachedFiles && attachedFiles.length > 0) {
+      uploadedFiles = await uploadFiles(attachedFiles);
+    }
+
     // Add user message to the chat
     const newUserMessage = {
       id: Date.now().toString(),
       message: text,
       role: "user" as const,
+      fileAttachments: uploadedFiles.length > 0 ? uploadedFiles : null,
       createdAt: new Date(),
     };
 
@@ -159,7 +167,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
     onSendMessage(text);
 
     // Get AI response from API
-    const aiResponseText = await fetchAIResponse(text);
+    const aiResponseText = await fetchAIResponse(text, uploadedFiles);
 
     // Add AI response to the chat
     const newAiMessage = {
@@ -170,6 +178,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
     };
 
     setMessages((prevMessages) => [...prevMessages, newAiMessage]);
+  };
+
+  const uploadFiles = async (files: File[]) => {
+    const uploadedFiles: FileAttachment[] = [];
+
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await axiosInstance.post("/files/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        uploadedFiles.push(response.data.file);
+        toast.success(`File "${file.name}" uploaded successfully`);
+      } catch (error) {
+        console.error("File upload failed:", error);
+        toast.error(`Failed to upload "${file.name}"`);
+      }
+    }
+
+    return uploadedFiles;
   };
 
   // Handle more options button click in mobile view

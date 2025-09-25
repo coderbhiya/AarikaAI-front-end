@@ -1,6 +1,7 @@
 import React from "react";
 import { MessageSquare, Trash2, User, FileQuestion, LogOut, Plus, Search, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -17,9 +18,17 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, hasMoreOptions }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, hasMoreOptions, to, onClick }) => {
+  const navigate = useNavigate();
+  const handleClick = () => {
+    if (to) {
+      navigate(to);
+    } else if (onClick) {
+      onClick();
+    }
+  };
   return (
-    <div className="flex items-center justify-between w-full py-3 px-4 hover:bg-white/5 transition-colors rounded-md cursor-pointer group">
+    <div className="flex items-center justify-between w-full py-3 px-4 hover:bg-white/5 transition-colors rounded-md cursor-pointer group " onClick={handleClick}>
       <div className={`flex items-center gap-3 ${active ? "text-white" : "text-gray-400"}`}>
         {icon}
         <span className="text-sm">{label}</span>
@@ -30,15 +39,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, hasMoreO
         </button>
       )}
     </div>
-  );
-};
-
-const NewChatButton = ({ onClick }: { onClick?: () => void }) => {
-  return (
-    <button className="flex items-center justify-between w-full gap-2 rounded-md bg-white/5 border border-white/10 py-3 px-4 hover:bg-white/10 transition-colors" onClick={onClick}>
-      <span className="font-medium">Begin a New Chat</span>
-      <Plus size={18} />
-    </button>
   );
 };
 
@@ -74,15 +74,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, isOpen = true, onClose }) 
             <SearchBar />
           </div>
 
-          <SidebarItem icon={<MessageSquare size={18} />} label="Chat " />
-
-          {/*  */}
+          <SidebarItem to="/index" icon={<MessageSquare size={18} />} label="Chat " />
+          <SidebarItem to="/jobs" icon={<FileQuestion size={18} />} label="Job Recommendation" />
         </div>
 
         <div className="mt-auto p-4 space-y-2 border-t border-white/10">
-          <SidebarItem icon={<User size={18} />} label="My account" />
+          <SidebarItem to="/profile" icon={<User size={18} />} label="My account" />
 
-          <SidebarItem icon={<LogOut size={18} />} label="Log out" />
+          <SidebarItem to="/logout" icon={<LogOut size={18} />} label="Log out" />
         </div>
       </div>
     </div>

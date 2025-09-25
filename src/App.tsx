@@ -1,3 +1,4 @@
+import "./App.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +13,8 @@ import { OTPVerification } from "@/components/auth/OTPVerification";
 import ApiDocs from "./pages/ApiDocs";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import Jobs from "./pages/Jobs";
+import JobDetail from "./pages/JobDetail";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +51,24 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/jobs"
+              element={
+                <ProtectedRoute>
+                  <Jobs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/job/:id"
+              element={
+                <ProtectedRoute>
+                  <JobDetail />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/updates-faq"
               element={
