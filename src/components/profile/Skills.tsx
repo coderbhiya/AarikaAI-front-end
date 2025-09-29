@@ -185,15 +185,15 @@ const Skills = () => {
                 {categorySkills.map((skill, index) => (
                   <div key={index}>
                     {editingSkill === skill.id ? (
-                      <SkillForm skill={skill} onSave={(updatedSkill) => handleEditSkill(skill.id, updatedSkill)} onCancel={() => setEditingSkill(null)} />
+                      <SkillForm skill={skill} onSave={(updatedSkill) => handleEditSkill(skill.skillId, updatedSkill)} onCancel={() => setEditingSkill(null)} />
                     ) : (
                       <div className={`group flex items-center justify-between p-3 rounded-lg border transition-colors bg-gray-700 border-gray-600 hover:border-gray-500`}>
                         <span className={`font-medium truncate text-gray-200`}>{skill.name}</span>
                         <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => setEditingSkill(skill.id)} className={`p-1 transition-colors text-gray-400 hover:text-blue-400`} title="Edit skill">
+                          <button onClick={() => setEditingSkill(skill.skillId)} className={`p-1 transition-colors text-gray-400 hover:text-blue-400`} title="Edit skill">
                             ✏️
                           </button>
-                          <button onClick={() => handleDeleteSkill(skill.id)} className={`p-1 transition-colors text-gray-400 hover:text-red-400`} title="Delete skill">
+                          <button onClick={() => handleDeleteSkill(skill.skillId)} className={`p-1 transition-colors text-gray-400 hover:text-red-400`} title="Delete skill">
                             🗑️
                           </button>
                         </div>
