@@ -96,14 +96,7 @@ const App = () => (
             />
 
             {/* Public Routes - No Authentication Required */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute requireAuth={false}>
-                  <Auth />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/" element={<Auth />} />
 
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
