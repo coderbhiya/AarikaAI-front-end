@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getSkills, addSkill, updateSkill, deleteSkill } from "@/services/profileService";
+import { Link } from "react-router-dom";
 
 const Skills = () => {
   const [skills, setSkills] = useState([]);
@@ -188,8 +189,15 @@ const Skills = () => {
                       <SkillForm skill={skill} onSave={(updatedSkill) => handleEditSkill(skill.skillId, updatedSkill)} onCancel={() => setEditingSkill(null)} />
                     ) : (
                       <div className={`group flex items-center justify-between p-3 rounded-lg border transition-colors bg-gray-700 border-gray-600 hover:border-gray-500`}>
-                        <span className={`font-medium truncate text-gray-200`}>{skill.name}</span>
+                        <span className={`font-medium truncate text-gray-200`}>
+                          {skill.name} (<span className={`text-sm ${skill.skillScore === 0 ? 'text-red-400' : 'text-green-400'}`}>Score: {skill.skillScore}</span>)
+                        </span>
                         <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {skill.skillScore == 0 && (
+                            <Link to={`/skill-score/${skill.skillId}`} className={`p-1 transition-colors text-gray-400 hover:text-blue-400`} title="Add skill score">
+                              Add Score
+                            </Link>
+                          )}
                           <button onClick={() => setEditingSkill(skill.skillId)} className={`p-1 transition-colors text-gray-400 hover:text-blue-400`} title="Edit skill">
                             ✏️
                           </button>

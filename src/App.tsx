@@ -18,6 +18,7 @@ import JobDetail from "./pages/JobDetail";
 import ProfilePage from "./pages/ProfilePage";
 import Privacy from "./pages/Privacy";
 import Termandconditions from "./pages/Termandconditions";
+import SkillScore from "./pages/SkillScore";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,15 @@ const App = () => (
             />
 
             <Route
+              path="/skill-score/:skillId"
+              element={
+                <ProtectedRoute>
+                  <SkillScore />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/updates-faq"
               element={
                 <ProtectedRoute>
@@ -101,8 +111,6 @@ const App = () => (
             <Route path="/" element={<Auth />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Termandconditions />} />
-
-
 
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
