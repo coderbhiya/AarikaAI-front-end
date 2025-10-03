@@ -16,6 +16,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Jobs from "./pages/Jobs";
 import JobDetail from "./pages/JobDetail";
 import ProfilePage from "./pages/ProfilePage";
+import Privacy from "./pages/Privacy";
+import Termandconditions from "./pages/Termandconditions";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +99,10 @@ const App = () => (
 
             {/* Public Routes - No Authentication Required */}
             <Route path="/" element={<Auth />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Termandconditions />} />
+
+
 
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

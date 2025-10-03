@@ -183,11 +183,11 @@ export const LoginPage: React.FC = () => {
         {/* Footer for both views */}
         <div className="mt-16 text-center">
           <div className="flex justify-center space-x-4 text-xs text-white/50">
-            <a href="#" className="hover:text-white/80">
+            <a href="/terms" className="hover:text-white/80">
               Terms of use
             </a>
             <span>|</span>
-            <a href="#" className="hover:text-white/80">
+            <a href="/privacy" className="hover:text-white/80">
               Privacy policy
             </a>
           </div>
