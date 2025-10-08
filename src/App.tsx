@@ -19,6 +19,7 @@ import ProfilePage from "./pages/ProfilePage";
 import Privacy from "./pages/Privacy";
 import Termandconditions from "./pages/Termandconditions";
 import SkillScore from "./pages/SkillScore";
+import Notification from "./pages/Notification";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <UpdatesFaq />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notification />
                 </ProtectedRoute>
               }
             />

@@ -76,6 +76,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, isOpen = true, onClose }) 
 
           <SidebarItem to="/index" icon={<MessageSquare size={18} />} label="Chat " />
           <SidebarItem to="/jobs" icon={<FileQuestion size={18} />} label="Job Recommendation" />
+
+          <SidebarItem to="/notifications" icon={<Plus size={18} />} label="Notifications" />
+
         </div>
 
         <div className="mt-auto p-4 space-y-2 border-t border-white/10">
