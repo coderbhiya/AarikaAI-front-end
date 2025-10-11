@@ -2,6 +2,7 @@ import React from "react";
 import { MessageSquare, Trash2, User, FileQuestion, LogOut, Plus, Search, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -53,6 +54,17 @@ const SearchBar = () => {
 
 const Sidebar: React.FC<SidebarProps> = ({ onNewChat, isOpen = true, onClose }) => {
   const isMobile = useIsMobile();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/", { replace: true });
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
 
   const sidebarClasses = isMobile ? `fixed inset-0 z-50 ${isOpen ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out` : "h-screen w-64 bg-sidebar border-r border-white/10 flex flex-col justify-between";
 
@@ -84,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, isOpen = true, onClose }) 
         <div className="mt-auto p-4 space-y-2 border-t border-white/10">
           <SidebarItem to="/profile" icon={<User size={18} />} label="My account" />
 
-          <SidebarItem to="/logout" icon={<LogOut size={18} />} label="Log out" />
+          <SidebarItem onClick={handleLogout} icon={<LogOut size={18} />} label="Log out" />
         </div>
       </div>
     </div>

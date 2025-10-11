@@ -14,11 +14,18 @@ export const LoginPage: React.FC = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const [isLoading, setIsLoading] = useState({
     google: false,
     apple: false,
   });
+
+  // If already authenticated, redirect to chat
+  React.useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate("/chat", { replace: true });
+    }
+  }, [loading, isAuthenticated, navigate]);
 
   // Google Sign-in handler
   const handleGoogleSignIn = async () => {
@@ -47,12 +54,10 @@ export const LoginPage: React.FC = () => {
           // Store any returned user data or tokens
           localStorage.setItem("authToken", response.data.token);
           // Navigate to main app
-          navigate("/index");
+          navigate("/chat");
         }
       } catch (apiError) {
         console.error("API verification failed:", apiError);
-        // Still proceed with local auth since Firebase auth succeeded
-        navigate("/index");
       }
 
       // Successfully signed in
@@ -171,10 +176,10 @@ export const LoginPage: React.FC = () => {
                   {isLoading.google ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJg75LWB1zIJt1VTZO7O68yKciaDSkk3KMdw&s" className="w-6 h-6 mr-2" alt="Google Icon" />}
                   <span className="text-white">Google</span>
                 </Button>
-                <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
+                {/* <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
                   {isLoading.apple ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <Apple className="w-5 h-5 text-white mr-2" />}
                   <span className="text-white">Apple</span>
-                </Button>
+                </Button> */}
               </div>
             </div>
           </>

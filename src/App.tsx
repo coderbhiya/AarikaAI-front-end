@@ -33,7 +33,7 @@ const App = () => (
           <Routes>
             {/* Protected Routes - Require Authentication */}
             <Route
-              path="/index"
+              path="/chat"
               element={
                 <ProtectedRoute>
                   <Index />
