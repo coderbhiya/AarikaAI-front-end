@@ -152,10 +152,10 @@ export const LoginPage: React.FC = () => {
                   {isLoading.google ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJg75LWB1zIJt1VTZO7O68yKciaDSkk3KMdw&s" className="w-6 h-6 mr-2" alt="Google Icon" />}
                   <span className="text-white">Google</span>
                 </Button>
-                <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
+                {/* <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
                   {isLoading.apple ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <Apple className="w-5 h-5 text-white mr-2" />}
                   <span className="text-white">Apple</span>
-                </Button>
+                </Button> */}
               </div>
             </div>
           </>
