@@ -57,7 +57,7 @@ const Jobs = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching jobs:', err);
-      setError('Failed to load jobs. Please try again later.');
+      setError(err.response?.data?.message || err.message || 'Failed to load jobs. Please try again later.');
     } finally {
       setLoading(false);
     }
