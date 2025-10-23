@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAuth = true }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading ,user } = useAuth();
   const location = useLocation();
 
   const [showSidebar, setShowSidebar] = useState(true);

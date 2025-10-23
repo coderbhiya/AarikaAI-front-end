@@ -11,7 +11,7 @@ const Markdown = ({ text }) => {
             components={{
                 // Headings
                 h1: ({ node, ...props }) => (
-                    <h1 className={`text-3xl font-bold my-4 text-white}`} {...props} />
+                    <h1 className={`text-3xl font-bold text-white}`} {...props} />
                 ),
                 h2: ({ node, ...props }) => (
                     <h2 className={`text-2xl font-semibold my-3 text-white}`} {...props} />
@@ -21,7 +21,7 @@ const Markdown = ({ text }) => {
                 ),
 
                 // Paragraphs and links
-                p: ({ node, ...props }) => <p className={`my-2 text-gray-300}`} {...props} />,
+                p: ({ node, ...props }) => <p className={` text-gray-300}`} {...props} />,
                 a: ({ node, ...props }) => (
                     <a
                         {...props}
@@ -34,7 +34,7 @@ const Markdown = ({ text }) => {
                 // Blockquotes
                 blockquote: ({ node, ...props }) => (
                     <blockquote
-                        className={`border-l-4 pl-4 italic my-4 border-emerald-500 text-gray-300`}
+                        className={`border-l-4 pl-4 italic border-emerald-500 text-gray-300`}
                         {...props}
                     />
                 ),
@@ -47,7 +47,7 @@ const Markdown = ({ text }) => {
                             style={oneDark}
                             language={match[1]}
                             PreTag="div"
-                            className="rounded-md my-4"
+                            className="rounded-md"
                             {...props}
                         >
                             {String(children).replace(/\n$/, "")}
@@ -64,10 +64,10 @@ const Markdown = ({ text }) => {
 
                 // Lists
                 ul: ({ node, ...props }) => (
-                    <ul className={`list-disc pl-6 my-4 text-gray-300`} {...props} />
+                    <ul className={`list-disc pl-6 text-gray-300`} {...props} />
                 ),
                 ol: ({ node, ...props }) => (
-                    <ol className={`list-decimal pl-6 my-4 text-gray-300`} {...props} />
+                    <ol className={`list-decimal pl-6 text-gray-300`} {...props} />
                 ),
                 li: ({ node, ...props }) => <li className={`my-1 text-gray-300`} {...props} />,
 

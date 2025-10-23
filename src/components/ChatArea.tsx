@@ -72,35 +72,31 @@ const MessageList: React.FC<{ messages: Message[] }> = ({ messages }) => {
   return (
     <div className="space-y-8 w-full max-w-4xl mx-auto">
       {messages.map((message) => (
-        <div key={message.id} className={`rounded-2xl p-6 bg-white/5 backdrop-blur-sm border border-white/10 w-[80%] ${message.role === "user" ? "ml-auto" : "mr-auto"}`}>
-          <div className="text-white">
-            {message.message.split("\n\n").map((paragraph, idx) => {
-              return (
-                <p key={idx} className="mb-4">
-                  <Markdown text={paragraph} />
-                </p>
-              );
-            })}
-            {/* File Attachments Display */}
-            {message.FileAttachments && message.FileAttachments.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {message.FileAttachments.map((file, index) => (
-                  <div key={index} className={`flex items-center space-x-3 p-3 rounded-xl bg-gray-700/50 border border-gray-600}`}>
-                    <span className="text-2xl">{getFileIcon(file.mimeType)}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate text-gray-200`}>{file.originalName}</p>
-                      <p className={`text-xs text-gray-400`}>{formatFileSize(file.fileSize)}</p>
-                    </div>
-                    <button onClick={() => window.open(`${file.filePath}`, "_blank")} className={`p-2 rounded-lg hover:bg-gray-600 text-gray-300 transition-colors`}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </button>
+        <div key={message.id} className={`rounded-2xl p-2 bg-white/5 backdrop-blur-sm border border-white/10 w-fit max-w-[60%] text-white ${message.role === "user" ? "ml-auto" : "mr-auto"}`}>
+          {message.message.split("\n\n").map((paragraph, idx) => {
+            return (
+                <Markdown text={paragraph} />
+            );
+          })}
+          {/* File Attachments Display */}
+          {message.FileAttachments && message.FileAttachments.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {message.FileAttachments.map((file, index) => (
+                <div key={index} className={`flex items-center space-x-3 p-3 rounded-xl bg-gray-700/50 border border-gray-600}`}>
+                  <span className="text-2xl">{getFileIcon(file.mimeType)}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate text-gray-200`}>{file.originalName}</p>
+                    <p className={`text-xs text-gray-400`}>{formatFileSize(file.fileSize)}</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  <button onClick={() => window.open(`${file.filePath}`, "_blank")} className={`p-2 rounded-lg hover:bg-gray-600 text-gray-300 transition-colors`}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ))}
       <div ref={messagesEndRef} />

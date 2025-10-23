@@ -8,9 +8,9 @@ const Index = () => {
 
   const handleSendMessage = (message: string) => {
     setMessages([...messages, message]);
-    toast("Message sent", {
-      description: "Your message has been sent successfully.",
-    });
+    // toast("Message sent", {
+    //   description: "Your message has been sent successfully.",
+    // });
   };
 
   const handleSelectCategory = (category: string) => {

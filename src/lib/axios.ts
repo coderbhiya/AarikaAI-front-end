@@ -4,7 +4,7 @@ import axios from "axios";
 const axiosInstance = axios.create({
   baseURL: "https://api.brainai.in",
   // baseURL: "http://localhost:3000",
-  timeout: 10000,
+  timeout: 1200000,
   headers: {
     "Content-Type": "application/json",
   },
