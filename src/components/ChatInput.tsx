@@ -65,7 +65,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onFocus = () => {}
 
         <form onSubmit={handleSubmit} className="w-full">
           <div className="flex items-center glass-button rounded-full px-3 py-2">
-            <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} onFocus={handleFocus} placeholder={isLoading ? "AI is thinking..." : "Ask me anything..."} className="flex-1 bg-transparent border-none focus:outline-none text-white px-2 py-1 text-sm" disabled={isLoading} />
+            <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} onFocus={handleFocus} placeholder={isLoading ? "AI is thinking...🤔" : "Ask me anything..."} className="flex-1 bg-transparent border-none focus:outline-none text-white px-2 py-1 text-sm" disabled={isLoading} />
 
             <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFileSelect} className="hidden" />
             <button type="button" className="p-2 text-gray-400 hover:text-white transition-colors" onClick={handleImageClick} aria-label="Attach file" disabled={isLoading}>
@@ -101,7 +101,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onFocus = () => {}
           <button type="button" className="p-2 text-gray-400 hover:text-white transition-colors" aria-label="Voice input" disabled={isLoading}>
             <Mic size={20} />
           </button>
-          <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} onFocus={handleFocus} placeholder={isLoading ? "AI is thinking..." : "Type message..."} className="flex-1 bg-transparent border-none focus:outline-none text-white px-4 py-2" disabled={isLoading} />
+          <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} onFocus={handleFocus} placeholder={isLoading ? "AI is thinking...🤔" : "Type message..."} className="flex-1 bg-transparent border-none focus:outline-none text-white px-4 py-2" disabled={isLoading} />
           <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFileSelect} className="hidden" />
           {fileInputShow && (
             <button type="button" className="p-2 text-gray-400 hover:text-white transition-colors" onClick={handleImageClick} aria-label="Attach file" disabled={isLoading}>
@@ -112,7 +112,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onFocus = () => {}
             <Send size={20} className={(message.trim() || selectedFiles.length > 0) && !isLoading ? "text-white" : ""} />
           </button>
         </div>
-        {isLoading && <div className="absolute -bottom-6 left-0 right-0 text-center text-sm text-gray-400">AI is responding...</div>}
       </form>
     </div>
   );

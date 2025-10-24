@@ -130,7 +130,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
         fileAttachments: fileAttachments || [],
       });
 
-      return response.data.reply.replace(/\n/g, "<br />");
+      // Return raw markdown/text; let Markdown component render formatting
+      return response.data.reply;
     } catch (error) {
       console.error("Error fetching AI response:", error);
       toast.error("Failed to connect to the AI service", {
@@ -155,7 +156,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
       id: Date.now().toString(),
       message: text,
       role: "user" as const,
-      fileAttachments: uploadedFiles.length > 0 ? uploadedFiles : null,
+      FileAttachments: uploadedFiles.length > 0 ? uploadedFiles : null,
       createdAt: new Date(),
     };
 
@@ -222,8 +223,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
           <>
             <MessageList messages={messages} />
             {isLoading && (
-              <div className="flex justify-center my-4">
-                <div className="text-white animate-pulse">Thinking...</div>
+              <div className="flex justify-start my-4">
+                <div className="text-white animate-pulse">Thinking...🤔</div>
               </div>
             )}
           </>
@@ -243,7 +244,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
         <MessageList messages={messages} />
         {isLoading && (
           <div className="flex justify-center my-4">
-            <div className="text-white animate-pulse">Thinking...</div>
+            <div className="text-white animate-pulse">Thinking...🤔</div>
           </div>
         )}
       </div>
