@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Mic, Send, Image, X } from "lucide-react";
+import { Mic, Send, FilesIcon, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatInputProps {
@@ -69,7 +69,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onFocus = () => {}
 
             <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFileSelect} className="hidden" />
             <button type="button" className="p-2 text-gray-400 hover:text-white transition-colors" onClick={handleImageClick} aria-label="Attach file" disabled={isLoading}>
-              <Image size={18} />
+              <FilesIcon size={18} />
             </button>
             <button type="submit" className={`p-2 rounded-full ${isLoading ? "bg-white/5 cursor-not-allowed" : "bg-white/10"} text-white`} disabled={!(message.trim() || selectedFiles.length > 0) || isLoading} aria-label="Send message">
               <Send size={18} className={(message.trim() || selectedFiles.length > 0) && !isLoading ? "text-white" : "text-gray-400"} />
@@ -98,14 +98,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, onFocus = () => {}
 
       <form onSubmit={handleSubmit} className="relative w-full max-w-4xl mx-auto">
         <div className="flex items-center glass-button rounded-full px-4 py-2">
-          <button type="button" className="p-2 text-gray-400 hover:text-white transition-colors" aria-label="Voice input" disabled={isLoading}>
+          {/* <button type="button" className="p-2 text-gray-400 hover:text-white transition-colors" aria-label="Voice input" disabled={isLoading}>
             <Mic size={20} />
-          </button>
+          </button> */}
           <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} onFocus={handleFocus} placeholder={isLoading ? "AI is thinking...🤔" : "Type message..."} className="flex-1 bg-transparent border-none focus:outline-none text-white px-4 py-2" disabled={isLoading} />
           <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFileSelect} className="hidden" />
           {fileInputShow && (
             <button type="button" className="p-2 text-gray-400 hover:text-white transition-colors" onClick={handleImageClick} aria-label="Attach file" disabled={isLoading}>
-              <Image size={20} />
+              <FilesIcon size={20} />
             </button>
           )}
           <button type="submit" className="p-2 text-gray-400 hover:text-white transition-colors" disabled={!(message.trim() || selectedFiles.length > 0) || isLoading} aria-label="Send message">
