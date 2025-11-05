@@ -61,8 +61,8 @@ export const LoginPage: React.FC = () => {
         });
         // Navigate to main app
         setTimeout(() => {
-          navigate("/chat", { replace: true });
-        }, 2000);
+          window.location.reload();
+        }, 3000);
       } catch (apiError) {
         console.error("API verification failed:", apiError);
       }
@@ -98,7 +98,7 @@ export const LoginPage: React.FC = () => {
         });
 
         if (response.data.success) {
-        await  localStorage.setItem("authToken", response.data.accessToken);
+        localStorage.setItem("authToken", response.data.accessToken);
         }
       } catch (apiError) {
         console.error("API verification failed:", apiError);
@@ -112,8 +112,8 @@ export const LoginPage: React.FC = () => {
 
       // Navigate to phone verification page
       setTimeout(() => {
-        navigate("/chat", { replace: true });
-      }, 2000);
+        window.location.reload();
+      }, 3000);
       // navigate("/phone-verification");
     } catch (error: any) {
       toast({
