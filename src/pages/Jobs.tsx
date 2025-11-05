@@ -108,7 +108,7 @@ const Jobs = () => {
   };
 
   return (
-    <div className={`min-h-screen overflow-y-auto`}>
+    <div className={`min-h-screen w-full overflow-y-auto`}>
       {/* Mobile Header */}
       <div className="mobile-header">
         <button className="mobile-back-button" onClick={() => navigate("/profile")}>
@@ -123,21 +123,21 @@ const Jobs = () => {
         <h1 className={`text-3xl font-bold mb-8 text-white`}>Find Your Dream Job</h1>
 
         {/* Filters Section */}
-        <div className={`bg-gray-800 rounded-lg shadow-md p-6 mb-8`}>
+        <div className={`bg-white/5 rounded-lg shadow-md p-6 mb-8`}>
           <form onSubmit={applyFilters} className="space-y-4 md:space-y-0 md:grid md:grid-cols-4 md:gap-4">
             <div>
               <label htmlFor="search" className={`block text-sm font-medium text-gray-300 mb-1`}>
                 Search
               </label>
-              <input type="text" id="search" name="search" value={filters.search} onChange={handleFilterChange} placeholder="Job title, company, skills..." className={`w-full px-4 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-blue-500`} />
+              <input type="text" id="search" name="search" value={filters.search} onChange={handleFilterChange} placeholder="Job title, company, skills..." className={`w-full px-4 py-2 border border-gray-600 bg-white/5 text-white rounded-md focus:ring-2 focus:ring-blue-500`} />
             </div>
 
             <div>
               <label htmlFor="location" className={`block text-sm font-medium text-gray-300 mb-1`}>
                 Location
               </label>
-              <select id="location" name="location" value={filters.location} onChange={handleFilterChange} className={`w-full px-4 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-blue-500`}>
-                <option value="" className={`bg-gray-700 text-white`}>
+              <select id="location" name="location" value={filters.location} onChange={handleFilterChange} className={`w-full px-4 py-2 border border-gray-600 bg-white/5 text-white rounded-md focus:ring-2 focus:ring-blue-500`}>
+                <option value="" className={`bg-white/5 text-white`}>
                   All Locations
                 </option>
                 {availableFilters.locations.map((location, index) => (
@@ -152,8 +152,8 @@ const Jobs = () => {
               <label htmlFor="employmentType" className={`block text-sm font-medium text-gray-300 mb-1`}>
                 Job Type
               </label>
-              <select id="employmentType" name="employmentType" value={filters.employmentType} onChange={handleFilterChange} className={`w-full px-4 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-blue-500`}>
-                <option value="" className={`bg-gray-700 text-white`}>
+              <select id="employmentType" name="employmentType" value={filters.employmentType} onChange={handleFilterChange} className={`w-full px-4 py-2 border border-gray-600 bg-white/5 text-white rounded-md focus:ring-2 focus:ring-blue-500`}>
+                <option value="" className={`bg-white/5 text-white`}>
                   All Types
                 </option>
                 {availableFilters.employmentTypes.map((type, index) => (
@@ -183,7 +183,7 @@ const Jobs = () => {
         ) : error ? (
           <div className={`bg-red-900 border-red-700 text-red-200 border px-4 py-3 rounded-md mb-4`}>{error}</div>
         ) : jobs.length === 0 ? (
-          <div className={`bg-gray-800 rounded-lg shadow-md p-8 text-center`}>
+          <div className={`bg-white/5 rounded-lg shadow-md p-8 text-center`}>
             <h3 className={`text-xl font-medium text-gray-300`}>No jobs found</h3>
             <p className={`text-gray-400 mt-2`}>Try adjusting your search filters</p>
           </div>
@@ -191,7 +191,7 @@ const Jobs = () => {
           <div className="max-h-[70vh] overflow-y-auto pr-2">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {jobs.map((job) => (
-                <div key={job.id} className={`bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300`}>
+                <div key={job.id} className={`bg-white/5 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300`}>
                   <div className="p-6">
                     <div className="flex items-start justify-between">
                       <div>

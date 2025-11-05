@@ -278,7 +278,7 @@ const Experience = () => {
       <div className="space-y-6">
         {experiences.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
               <span className="text-2xl text-gray-400">💼</span>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No work experience added yet</h3>
@@ -301,7 +301,7 @@ const Experience = () => {
                   onCancel={() => setEditingExperience(null)}
                 />
               ) : (
-                <div className="group bg-gray-800 border border-gray-700 rounded-lg p-4 sm:p-6 hover:border-gray-600 transition-colors">
+                <div className="group bg-white/5 border border-gray-700 rounded-lg p-4 sm:p-6 hover:border-gray-600 transition-colors">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">

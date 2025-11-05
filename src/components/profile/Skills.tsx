@@ -176,7 +176,7 @@ const Skills = () => {
           </div>
         ) : (
           Object.entries(groupedSkills).map(([category, categorySkills]) => (
-            <div key={category} className={`rounded-lg p-4 sm:p-6 bg-gray-800 border border-gray-700`}>
+            <div key={category} className={`rounded-lg p-4 sm:p-6 bg-white/5 border border-gray-700`}>
               <h3 className={`text-lg font-semibold mb-4 flex items-center text-white`}>
                 <span className="mr-2">📂</span>
                 {category}
@@ -217,7 +217,7 @@ const Skills = () => {
 
       {/* Skills Summary */}
       {skills.length > 0 && (
-        <div className="mt-8 p-4 bg-gray-800 border border-gray-700 rounded-lg">
+        <div className="mt-8 p-4 bg-white/5 border border-gray-700 rounded-lg">
           <div className="flex items-center space-x-2 mb-2">
             <span className="text-blue-600 text-lg">📊</span>
             <h4 className="font-semibold text-blue-900">Skills Summary</h4>
