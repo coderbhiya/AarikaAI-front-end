@@ -92,6 +92,9 @@ const Notification = () => {
 
       {/* Content */}
       <div className="mobile-content p-4">
+        <h1 className={`text-3xl font-bold mb-8 text-white`}>
+          Notifications
+        </h1>
         {/* List */}
         <div className="space-y-2 p-4">
           {loading && (
