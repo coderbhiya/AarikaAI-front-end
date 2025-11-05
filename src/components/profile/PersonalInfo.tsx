@@ -154,7 +154,7 @@ const PersonalInfo = () => {
       <div className="space-y-6 sm:space-y-8">
         {/* Basic Information */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+          <h3 className="text-lg font-semibold text-gray-200 mb-4">Basic Information</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className={`block text-sm font-medium text-gray-200 mb-2`}>
@@ -217,10 +217,10 @@ const PersonalInfo = () => {
 
         {/* Professional Information */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Information</h3>
+          <h3 className="text-lg font-semibold text-gray-200 mb-4">Professional Information</h3>
           <div className="space-y-4 sm:space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-200 mb-2">
                 Professional Headline
               </label>
               <input
@@ -234,7 +234,7 @@ const PersonalInfo = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-200 mb-2">
                 Bio
               </label>
               <textarea
@@ -249,7 +249,7 @@ const PersonalInfo = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-200 mb-2">
                   Years of Experience
                 </label>
                 <select
@@ -268,7 +268,7 @@ const PersonalInfo = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-200 mb-2">
                   Current Role
                 </label>
                 <input
@@ -282,7 +282,7 @@ const PersonalInfo = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-200 mb-2">
                   Target Role
                 </label>
                 <input
@@ -297,7 +297,7 @@ const PersonalInfo = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-200 mb-2">
                 Target Industry
               </label>
               <input
@@ -311,7 +311,7 @@ const PersonalInfo = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-200 mb-2">
                 Resume URL
               </label>
               <input

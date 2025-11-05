@@ -35,8 +35,10 @@ axiosInstance.interceptors.response.use(
     // For example, handle 401 unauthorized errors
     if (error.response && error.response.status === 401) {
       // Handle unauthorized access
-      localStorage.removeItem("authToken");
+        localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
       // Redirect to login page or dispatch logout action
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }

@@ -63,12 +63,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const token = localStorage.getItem('authToken');
+
   const value: AuthContextType = {
     user,
     loading,
     login,
     logout,
-    isAuthenticated: !!user,
+    isAuthenticated: (token !== null) && (user !== null),
   };
 
   return (

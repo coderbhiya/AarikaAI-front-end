@@ -89,7 +89,7 @@ const ProfilePage = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-shrink-0 flex items-center space-x-2 px-4 py-3 sm:px-6 sm:py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
                   activeTab === tab.id
-                    ? "border-blue-500 text-blue-400 bg-blue-900 bg-opacity-50"
+                    ? "border-blue-500 text-blue-400 bg-white/5 bg-opacity-50"
                     : "border-transparent text-gray-300 hover:text-gray-100 hover:border-gray-600"
                 }`}
               >
