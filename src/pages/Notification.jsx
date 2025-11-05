@@ -75,7 +75,7 @@ const Notification = () => {
   return (
     <div className="flex flex-col h-screen bg-background text-foreground px-4 w-full md:w-[100%]">
       {/* Mobile/Header */}
-      <div className="mobile-header border-b border-white/10">
+      <div className="mobile-header border-b border-white/10 block md:hidden">
         <Button
           variant="ghost"
           size="icon"
