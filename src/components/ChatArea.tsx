@@ -1,7 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
 import ChatInput from "./ChatInput";
 import BrainLogo from "./BrainLogo";
-import { Copy, Edit, ArrowLeft, MoreHorizontal, Share, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+import {
+  Copy,
+  Edit,
+  ArrowLeft,
+  MoreHorizontal,
+  Share,
+  ArrowRight,
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/components/ui/sonner";
 import axiosInstance from "@/lib/axios";
@@ -72,25 +81,48 @@ const MessageList: React.FC<{ messages: Message[] }> = ({ messages }) => {
   return (
     <div className="space-y-8 w-full max-w-4xl mx-auto">
       {messages.map((message) => (
-        <div key={message.id} className={`rounded-2xl p-2 bg-white/5 backdrop-blur-sm border border-white/10 w-fit max-w-[60%] text-white ${message.role === "user" ? "ml-auto" : "mr-auto"}`}>
+        <div
+          key={message.id}
+          className={`rounded-xl p-2 bg-white/5 backdrop-blur-sm border border-white/10 w-fit max-w-[80%] text-white ${
+            message.role === "user" ? "ml-auto" : "mr-auto"
+          }`}
+        >
           {message.message.split("\n\n").map((paragraph, idx) => {
-            return (
-                <Markdown text={paragraph} />
-            );
+            return <Markdown text={paragraph} />;
           })}
           {/* File Attachments Display */}
           {message.FileAttachments && message.FileAttachments.length > 0 && (
             <div className="mt-3 space-y-2">
               {message.FileAttachments.map((file, index) => (
-                <div key={index} className={`flex items-center space-x-3 p-3 rounded-xl bg-gray-700/50 border border-gray-600}`}>
+                <div
+                  key={index}
+                  className={`flex items-center space-x-3 p-3 rounded-xl bg-gray-700/50 border border-gray-600}`}
+                >
                   <span className="text-2xl">{getFileIcon(file.mimeType)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate text-gray-200`}>{file.originalName}</p>
-                    <p className={`text-xs text-gray-400`}>{formatFileSize(file.fileSize)}</p>
+                    <p className={`text-sm font-medium truncate text-gray-200`}>
+                      {file.originalName}
+                    </p>
+                    <p className={`text-xs text-gray-400`}>
+                      {formatFileSize(file.fileSize)}
+                    </p>
                   </div>
-                  <button onClick={() => window.open(`${file.filePath}`, "_blank")} className={`p-2 rounded-lg hover:bg-gray-600 text-gray-300 transition-colors`}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <button
+                    onClick={() => window.open(`${file.filePath}`, "_blank")}
+                    className={`p-2 rounded-lg hover:bg-gray-600 text-gray-300 transition-colors`}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -104,10 +136,14 @@ const MessageList: React.FC<{ messages: Message[] }> = ({ messages }) => {
   );
 };
 
-const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externalShowWelcome }) => {
+const ChatArea: React.FC<ChatAreaProps> = ({
+  onSendMessage,
+  showWelcome: externalShowWelcome,
+}) => {
   const isMobile = useIsMobile();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const getChats = async () => {
     try {
@@ -122,7 +158,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
     getChats();
   }, []);
 
-  const fetchAIResponse = async (userMessage: string, fileAttachments?: FileAttachment[]) => {
+  const fetchAIResponse = async (
+    userMessage: string,
+    fileAttachments?: FileAttachment[]
+  ) => {
     setIsLoading(true);
     try {
       const response = await axiosInstance.post("/chat", {
@@ -209,11 +248,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
       <div className="flex-1 flex flex-col h-screen bg-background">
         {/* Mobile Header */}
         <div className="mobile-header">
-          <button className="mobile-back-button">
+          <button
+            className="mobile-back-button"
+            onClick={() => navigate("/profile")}
+          >
             <ArrowLeft size={24} />
           </button>
 
-          <button className="mobile-more-button" onClick={handleMoreButtonClick}>
+          <button
+            className="mobile-more-button"
+            onClick={handleMoreButtonClick}
+          >
             <MoreHorizontal size={24} />
           </button>
         </div>
@@ -257,4 +302,3 @@ const ChatArea: React.FC<ChatAreaProps> = ({ onSendMessage, showWelcome: externa
 };
 
 export default ChatArea;
-

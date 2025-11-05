@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Apple, Github } from "lucide-react";
 import { Logo } from "@/components/logo/Logo";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { signInWithPopup, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  OAuthProvider,
+} from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axios";
@@ -128,7 +132,7 @@ export const LoginPage: React.FC = () => {
       {/* Left side with background pattern (only visible on desktop) */}
       {!isMobile && (
         <div className="hidden md:block md:w-[60%] bg-[#1D1E1F] relative">
-          <div className="absolute inset-0 bg-[url('/lovable-uploads/34fd49b5-6b96-4890-b3d6-1510e34587da.png')] bg-no-repeat bg-left opacity-10" />
+          <div className="absolute inset-0 bg-[url('https://cdn.prod.website-files.com/611e00fae5d1f200eb41e4e9/66b3be5a4f47d87bdc945227_image1-min.png')] bg-no-repeat bg-left opacity-10" />
         </div>
       )}
 
@@ -137,19 +141,33 @@ export const LoginPage: React.FC = () => {
         {/* Mobile view has centered logo and welcome text */}
         {isMobile ? (
           <>
-            <div className="flex-grow flex flex-col justify-center items-center">
+            <div className="flex-grow flex flex-col justify-center items-center mt-10">
               <Logo className="mb-8" />
               <h1 className="text-[35px] font-medium text-white mt-6 mb-8 font-poppins text-center">
-                Welcome to
-                <br />
-                BrainAI
+                Welcome to CareerAI
               </h1>
             </div>
             <div className="w-full max-w-md">
-              <p className="text-white/70 text-center mb-6">Login or Sign Up With Account</p>
+              <p className="text-white/70 text-center mb-6">
+                Your story is unique — your career path should be too. CareerAI
+                helps you find what truly fits you.
+              </p>
               <div className="flex flex-col space-y-4 w-full">
-                <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleGoogleSignIn} disabled={isLoading.google}>
-                  {isLoading.google ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJg75LWB1zIJt1VTZO7O68yKciaDSkk3KMdw&s" className="w-6 h-6 mr-2" alt="Google Icon" />}
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading.google}
+                >
+                  {isLoading.google ? (
+                    <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                  ) : (
+                    <img
+                      src="https://cdn-icons-png.flaticon.com/512/2875/2875331.png"
+                      className="w-6 h-6 mr-2"
+                      alt="Google Icon"
+                    />
+                  )}
                   <span className="text-white">Google</span>
                 </Button>
                 {/* <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
@@ -164,16 +182,41 @@ export const LoginPage: React.FC = () => {
           <>
             <div className="w-full flex justify-center">
               <div className="flex items-center">
-                <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true" className="w-[50px] h-[50px] mr-3" alt="Brain Icon" />
-                <span className="text-[30px] font-medium text-white font-poppins">BrainAI</span>
+                <img
+                  src="/favicon.ico"
+                  className="w-[50px] h-[50px] mr-3"
+                  alt="Brain Icon"
+                />
+                <span className="text-[30px] font-medium text-white font-poppins">
+                  CareerAI
+                </span>
               </div>
             </div>
 
             <div className="w-full max-w-md">
-              <p className="text-white/70 text-center mb-6">Login or Sign Up With Account</p>
+              <h2 className="text-[35px] font-medium text-white mt-6 mb-5 font-poppins text-center">
+                Welcome to CareerAI
+              </h2>
+              <p className="text-white/70 text-center mb-6">
+                Your story is unique — your career path should be too. CareerAI
+                helps you find what truly fits you.
+              </p>
               <div className="flex flex-col space-y-4 w-full">
-                <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleGoogleSignIn} disabled={isLoading.google}>
-                  {isLoading.google ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSJg75LWB1zIJt1VTZO7O68yKciaDSkk3KMdw&s" className="w-6 h-6 mr-2" alt="Google Icon" />}
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading.google}
+                >
+                  {isLoading.google ? (
+                    <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                  ) : (
+                    <img
+                      src="https://cdn-icons-png.flaticon.com/512/2875/2875331.png"
+                      className="w-6 h-6 mr-2"
+                      alt="Google Icon"
+                    />
+                  )}
                   <span className="text-white">Google</span>
                 </Button>
                 {/* <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
@@ -198,7 +241,11 @@ export const LoginPage: React.FC = () => {
           </div>
           {!isMobile && (
             <div className="mt-4 flex justify-center">
-              <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true" className="w-[30px] h-[30px] opacity-30" alt="Brain Icon Small" />
+              <img
+                src="/favicon.ico"
+                className="w-[30px] h-[30px] opacity-30"
+                alt="Brain Icon Small"
+              />
             </div>
           )}
         </div>
@@ -206,4 +253,3 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
-
