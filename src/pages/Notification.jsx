@@ -5,11 +5,15 @@ import {
   Link as LinkIcon,
   CheckCircle,
   Circle,
+  Menu,
 } from "lucide-react";
 import axiosInstance from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+
+
 
 const typeLabel = (type) => {
   const map = {
@@ -27,6 +31,7 @@ const Notification = () => {
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [selected, setSelected] = useState(null);
+  const { toggleSidebar } = useAuth();
 
   const fetchNotifications = async () => {
     try {
@@ -87,7 +92,11 @@ const Notification = () => {
         <h1 className="text-lg font-semibold flex items-center gap-2">
           <Bell size={18} /> Notifications
         </h1>
-        <div className="w-10"></div>
+        <div className="w-10">
+          <button className="mobile-more-button" onClick={toggleSidebar}>
+            <Menu size={24} />
+          </button>
+        </div>
       </div>
 
       {/* Content */}

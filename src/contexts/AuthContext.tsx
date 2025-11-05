@@ -8,6 +8,8 @@ interface AuthContextType {
   login: (user: User) => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  showSidebar: boolean;
+  toggleSidebar: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,12 +67,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const token = localStorage.getItem('authToken');
 
+  // Sidebar
+  const [showSidebar, setShowSidebar] = useState(false);
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+  };
+
   const value: AuthContextType = {
     user,
     loading,
     login,
     logout,
     isAuthenticated: (token !== null) && (user !== null),
+    showSidebar,
+    toggleSidebar,  
   };
 
   return (

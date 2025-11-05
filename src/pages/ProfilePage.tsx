@@ -3,11 +3,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import PersonalInfo from "@/components/profile/PersonalInfo";
 import Skills from "@/components/profile/Skills";
 import Experience from "@/components/profile/Experience";
-import { ArrowLeft, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user , toggleSidebar } = useAuth();
   const [activeTab, setActiveTab] = useState("personal");
 
   const tabs = [
@@ -45,8 +45,8 @@ const ProfilePage = () => {
           <ArrowLeft size={24} />
         </button>
 
-        <button className="mobile-more-button">
-          <MoreHorizontal size={24} />
+        <button className="mobile-more-button" onClick={toggleSidebar}>
+          <Menu size={24} />
         </button>
       </div>
       <div className={`bg-white/5 border-gray-700 shadow-sm border-b`}>

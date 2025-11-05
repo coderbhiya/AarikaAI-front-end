@@ -2,12 +2,13 @@ import React, { useEffect, useState, useRef } from "react";
 import ChatInput from "./ChatInput";
 import BrainLogo from "./BrainLogo";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 import {
   Copy,
   Edit,
   ArrowLeft,
-  MoreHorizontal,
+  Menu,
   Share,
   ArrowRight,
 } from "lucide-react";
@@ -240,8 +241,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return uploadedFiles;
   };
 
-  // Handle more options button click in mobile view
-  const handleMoreButtonClick = () => {};
+  const { toggleSidebar } = useAuth();
 
   if (isMobile) {
     return (
@@ -257,9 +257,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
           <button
             className="mobile-more-button"
-            onClick={handleMoreButtonClick}
+            onClick={toggleSidebar}
           >
-            <MoreHorizontal size={24} />
+            <Menu size={24} />
           </button>
         </div>
 

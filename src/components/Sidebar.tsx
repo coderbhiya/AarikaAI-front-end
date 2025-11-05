@@ -13,17 +13,13 @@ interface SidebarItemProps {
   onClick?: () => void;
 }
 
-interface SidebarProps {
-  onNewChat?: () => void;
-  isOpen?: boolean;
-  onClose?: () => void;
-}
-
 const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, hasMoreOptions, to, onClick }) => {
   const navigate = useNavigate();
+  const { toggleSidebar } = useAuth();
   const handleClick = () => {
     if (to) {
       navigate(to);
+      toggleSidebar();
     } else if (onClick) {
       onClick();
     }
@@ -45,16 +41,17 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, hasMoreO
 
 const SearchBar = () => {
   return (
-    <div className="relative">
-      <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-      <input type="text" placeholder="Search" className="w-full bg-white/5 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-white/20" />
+    <div className="relative border-b border-white/10 pb-4">
+      <h1 className="text-white text-lg font-bold">CareerAI</h1>
+      {/* <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+      <input type="text" placeholder="Search" className="w-full bg-white/5 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-white/20" /> */}
     </div>
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ onNewChat, isOpen = true, onClose }) => {
+const Sidebar = () => {
   const isMobile = useIsMobile();
-  const { logout } = useAuth();
+  const { logout, showSidebar, toggleSidebar } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -66,16 +63,16 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat, isOpen = true, onClose }) 
     }
   };
 
-  const sidebarClasses = isMobile ? `fixed inset-0 z-50 ${isOpen ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out` : "h-screen w-64 bg-sidebar border-r border-white/10 flex flex-col justify-between";
+  const sidebarClasses = isMobile ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out` : "h-screen w-64 bg-sidebar border-r border-white/10 flex flex-col justify-between";
 
   return (
     <div className={sidebarClasses}>
-      {isMobile && isOpen && <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40" onClick={onClose} />}
+      {isMobile && showSidebar && <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40" onClick={toggleSidebar} />}
 
       <div className={`${isMobile ? "fixed left-0 top-0 h-full w-64 bg-sidebar border-r border-white/10 z-50" : ""} flex flex-col justify-between h-full`}>
         {isMobile && (
           <div className="flex justify-end p-4">
-            <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+            <button onClick={toggleSidebar} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
               <X size={20} />
             </button>
           </div>
