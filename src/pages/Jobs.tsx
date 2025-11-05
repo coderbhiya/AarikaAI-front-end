@@ -110,7 +110,7 @@ const Jobs = () => {
   return (
     <div className={`min-h-screen w-full overflow-y-auto`}>
       {/* Mobile Header */}
-      <div className="mobile-header">
+      <div className="mobile-header md:hidden">
         <button className="mobile-back-button" onClick={() => navigate("/profile")}>
           <ArrowLeft size={24} />
         </button>

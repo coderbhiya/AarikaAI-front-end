@@ -1,5 +1,5 @@
 import React from "react";
-import { MessageSquare, User, FileQuestion, LogOut, Search, X ,Bell } from "lucide-react";
+import { MessageSquare, User, FileQuestion, LogOut, Search, X, Bell } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,7 +42,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, hasMoreO
 const SearchBar = () => {
   return (
     <div className="relative border-b border-white/10 pb-4">
-      <h1 className="text-white text-lg font-bold">CareerAI</h1>
+      <div className="flex items-center">
+        <img src="/favicon.ico" className="w-[50px] h-[50px] mr-3" alt="Brain Icon" />
+        <h1 className="text-white text-lg font-bold">CareerAI</h1>
+      </div>
       {/* <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
       <input type="text" placeholder="Search" className="w-full bg-white/5 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-white/20" /> */}
     </div>
@@ -87,7 +90,6 @@ const Sidebar = () => {
           <SidebarItem to="/jobs" icon={<FileQuestion size={18} />} label="Job Recommendation" />
 
           <SidebarItem to="/notifications" icon={<Bell size={18} />} label="Notifications" />
-
         </div>
 
         <div className="mt-auto p-4 space-y-2 border-t border-white/10">
