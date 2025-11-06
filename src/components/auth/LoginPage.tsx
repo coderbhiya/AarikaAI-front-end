@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Apple, Github } from "lucide-react";
 import { Logo } from "@/components/logo/Logo";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { signInWithPopup, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  OAuthProvider,
+} from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axios";
@@ -98,7 +102,7 @@ export const LoginPage: React.FC = () => {
         });
 
         if (response.data.success) {
-        localStorage.setItem("authToken", response.data.accessToken);
+          localStorage.setItem("authToken", response.data.accessToken);
         }
       } catch (apiError) {
         console.error("API verification failed:", apiError);
@@ -143,13 +147,31 @@ export const LoginPage: React.FC = () => {
           <>
             <div className="flex-grow flex flex-col justify-center items-center mt-10">
               <Logo className="mb-8" />
-              <h1 className="text-[35px] font-medium text-white mt-6 mb-8 font-poppins text-center">Welcome to CareerAI</h1>
+              <h1 className="text-[35px] font-medium text-white mt-6 mb-8 font-poppins text-center">
+                Welcome to CareerAI
+              </h1>
             </div>
             <div className="w-full max-w-md">
-              <p className="text-white/70 text-center mb-6">Your story is unique — your career path should be too. CareerAI helps you find what truly fits you.</p>
+              <p className="text-white/70 text-center mb-6">
+                Your story is unique — your career path should be too. CareerAI
+                helps you find what truly fits you.
+              </p>
               <div className="flex flex-col space-y-4 w-full">
-                <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleGoogleSignIn} disabled={isLoading.google}>
-                  {isLoading.google ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <img src="https://cdn-icons-png.flaticon.com/512/2875/2875331.png" className="w-6 h-6 mr-2" alt="Google Icon" />}
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading.google}
+                >
+                  {isLoading.google ? (
+                    <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                  ) : (
+                    <img
+                      src="https://cdn-icons-png.flaticon.com/512/2875/2875331.png"
+                      className="w-6 h-6 mr-2"
+                      alt="Google Icon"
+                    />
+                  )}
                   <span className="text-white">Google</span>
                 </Button>
                 {/* <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
@@ -164,17 +186,44 @@ export const LoginPage: React.FC = () => {
           <>
             <div className="w-full flex justify-center">
               <div className="flex items-center">
-                <img src="/favicon.ico" className="w-[50px] h-[50px] mr-3" alt="Brain Icon" />
-                <span className="text-[30px] font-medium text-white font-poppins">CareerAI</span>
+                <img
+                  src="/favicon.ico"
+                  className="w-[50px] h-[50px] mr-3"
+                  alt="Brain Icon"
+                />
+                <span className="text-[30px] font-medium text-white font-poppins">
+                  CareerAI
+                </span>
+                <span className="ml-2 bg-gray-500 rounded-full px-1 text-white font-bold text-xs">
+                  Beta
+                </span>
               </div>
             </div>
 
             <div className="w-full max-w-md">
-              <h2 className="text-[35px] font-medium text-white mt-6 mb-5 font-poppins text-center">Welcome to CareerAI</h2>
-              <p className="text-white/70 text-center mb-6">Your story is unique — your career path should be too. CareerAI helps you find what truly fits you.</p>
+              <h2 className="text-[35px] font-medium text-white mt-6 mb-5 font-poppins text-center">
+                Welcome to CareerAI
+              </h2>
+              <p className="text-white/70 text-center mb-6">
+                Your story is unique — your career path should be too. CareerAI
+                helps you find what truly fits you.
+              </p>
               <div className="flex flex-col space-y-4 w-full">
-                <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleGoogleSignIn} disabled={isLoading.google}>
-                  {isLoading.google ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <img src="https://cdn-icons-png.flaticon.com/512/2875/2875331.png" className="w-6 h-6 mr-2" alt="Google Icon" />}
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading.google}
+                >
+                  {isLoading.google ? (
+                    <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                  ) : (
+                    <img
+                      src="https://cdn-icons-png.flaticon.com/512/2875/2875331.png"
+                      className="w-6 h-6 mr-2"
+                      alt="Google Icon"
+                    />
+                  )}
                   <span className="text-white">Google</span>
                 </Button>
                 {/* <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
@@ -199,7 +248,11 @@ export const LoginPage: React.FC = () => {
           </div>
           {!isMobile && (
             <div className="mt-4 flex justify-center">
-              <img src="/favicon.ico" className="w-[30px] h-[30px] opacity-30" alt="Brain Icon Small" />
+              <img
+                src="/favicon.ico"
+                className="w-[30px] h-[30px] opacity-30"
+                alt="Brain Icon Small"
+              />
             </div>
           )}
         </div>

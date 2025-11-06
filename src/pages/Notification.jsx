@@ -13,8 +13,6 @@ import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-
-
 const typeLabel = (type) => {
   const map = {
     job_alert: "Job Alert",
@@ -78,7 +76,7 @@ const Notification = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground px-4 w-full md:w-[100%]">
+    <div className="flex flex-col h-screen bg-background text-foreground px-4 w-full md:w-[90vw] md:max-w-[90vw]">
       {/* Mobile/Header */}
       <div className="mobile-header border-b border-white/10 block md:hidden">
         <Button
@@ -89,7 +87,7 @@ const Notification = () => {
         >
           <ArrowLeft size={20} />
         </Button>
-        <h1 className="text-lg font-semibold flex items-center gap-2">
+        <h1 className="text-lg font-semibold flex items-center gap-2 md:hidden">
           <Bell size={18} /> Notifications
         </h1>
         <div className="w-10">
@@ -101,9 +99,7 @@ const Notification = () => {
 
       {/* Content */}
       <div className="mobile-content p-4">
-        <h1 className={`text-3xl font-bold mb-8 text-white`}>
-          Notifications
-        </h1>
+        <h1 className={`text-3xl font-bold mb-8 text-white`}>Notifications</h1>
         {/* List */}
         <div className="space-y-2 p-4">
           {loading && (

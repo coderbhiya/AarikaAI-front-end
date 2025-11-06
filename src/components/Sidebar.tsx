@@ -1,5 +1,13 @@
 import React from "react";
-import { MessageSquare, User, FileQuestion, LogOut, Search, X, Bell, Star } from "lucide-react";
+import {
+  MessageSquare,
+  User,
+  FileQuestion,
+  LogOut,
+  Search,
+  X,
+  Bell, Star,
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +21,14 @@ interface SidebarItemProps {
   onClick?: () => void;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, hasMoreOptions, to, onClick }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({
+  icon,
+  label,
+  active,
+  hasMoreOptions,
+  to,
+  onClick,
+}) => {
   const navigate = useNavigate();
   const { toggleSidebar } = useAuth();
   const handleClick = () => {
@@ -25,8 +40,15 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, hasMoreO
     }
   };
   return (
-    <div className="flex items-center justify-between w-full py-3 px-4 hover:bg-white/5 transition-colors rounded-md cursor-pointer group " onClick={handleClick}>
-      <div className={`flex items-center gap-3 ${active ? "text-white" : "text-gray-400"}`}>
+    <div
+      className="flex items-center justify-between w-full py-3 px-4 hover:bg-white/5 transition-colors rounded-md cursor-pointer group "
+      onClick={handleClick}
+    >
+      <div
+        className={`flex items-center gap-3 ${
+          active ? "text-white" : "text-gray-400"
+        }`}
+      >
         {icon}
         <span className="text-sm">{label}</span>
       </div>
@@ -43,8 +65,17 @@ const SearchBar = () => {
   return (
     <div className="relative border-b border-white/10 pb-4">
       <div className="flex items-center">
-        <img src="/favicon.ico" className="w-[50px] h-[50px] mr-3" alt="Brain Icon" />
-        <h1 className="text-white text-lg font-bold">CareerAI</h1>
+        <img
+          src="/favicon.ico"
+          className="w-[50px] h-[50px] mr-3"
+          alt="Brain Icon"
+        />
+        <span className="inline-flex items-center bg-white/10 rounded-md px-2 text-xs font-semibold text-white">
+          <span className="text-lg font-bold">CareerAI</span>
+          <span className="ml-2 bg-gray-500 rounded-full px-1 text-white">
+            <span className="text-white font-bold">Beta</span>
+          </span>
+        </span>
       </div>
       {/* <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
       <input type="text" placeholder="Search" className="w-full bg-white/5 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-white/20" /> */}
@@ -66,16 +97,34 @@ const Sidebar = () => {
     }
   };
 
-  const sidebarClasses = isMobile ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out` : "h-screen w-64 bg-sidebar border-r border-white/10 flex flex-col justify-between";
+  const sidebarClasses = isMobile
+    ? `fixed inset-0 z-50 ${
+        showSidebar ? "translate-x-0" : "-translate-x-full"
+      } transition-transform duration-300 ease-in-out`
+    : "h-screen w-64 bg-sidebar border-r border-white/10 flex flex-col justify-between";
 
   return (
     <div className={sidebarClasses}>
-      {isMobile && showSidebar && <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40" onClick={toggleSidebar} />}
+      {isMobile && showSidebar && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
+          onClick={toggleSidebar}
+        />
+      )}
 
-      <div className={`${isMobile ? "fixed left-0 top-0 h-full w-64 bg-sidebar border-r border-white/10 z-50" : ""} flex flex-col justify-between h-full`}>
+      <div
+        className={`${
+          isMobile
+            ? "fixed left-0 top-0 h-full w-64 bg-sidebar border-r border-white/10 z-50"
+            : ""
+        } flex flex-col justify-between h-full`}
+      >
         {isMobile && (
           <div className="flex justify-end p-4">
-            <button onClick={toggleSidebar} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+            >
               <X size={20} />
             </button>
           </div>
@@ -86,17 +135,37 @@ const Sidebar = () => {
             <SearchBar />
           </div>
 
-          <SidebarItem to="/chat" icon={<MessageSquare size={18} />} label="Chat " />
-          <SidebarItem to="/jobs" icon={<FileQuestion size={18} />} label="Job Recommendation" />
+          <SidebarItem
+            to="/chat"
+            icon={<MessageSquare size={18} />}
+            label="Chat "
+          />
+          <SidebarItem
+            to="/jobs"
+            icon={<FileQuestion size={18} />}
+            label="Job Recommendation"
+          />
           <SidebarItem to="/reviews" icon={<Star size={18} />} label="Reviews" />
 
-          <SidebarItem to="/notifications" icon={<Bell size={18} />} label="Notifications" />
+          <SidebarItem
+            to="/notifications"
+            icon={<Bell size={18} />}
+            label="Notifications"
+          />
         </div>
 
         <div className="mt-auto p-4 space-y-2 border-t border-white/10">
-          <SidebarItem to="/profile" icon={<User size={18} />} label="My account" />
+          <SidebarItem
+            to="/profile"
+            icon={<User size={18} />}
+            label="My account"
+          />
 
-          <SidebarItem onClick={handleLogout} icon={<LogOut size={18} />} label="Log out" />
+          <SidebarItem
+            onClick={handleLogout}
+            icon={<LogOut size={18} />}
+            label="Log out"
+          />
         </div>
       </div>
     </div>
@@ -104,4 +173,3 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
-
