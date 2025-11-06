@@ -1,5 +1,5 @@
 import React from "react";
-import { MessageSquare, User, FileQuestion, LogOut, Search, X, Bell } from "lucide-react";
+import { MessageSquare, User, FileQuestion, LogOut, Search, X, Bell, Star } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,6 +88,7 @@ const Sidebar = () => {
 
           <SidebarItem to="/chat" icon={<MessageSquare size={18} />} label="Chat " />
           <SidebarItem to="/jobs" icon={<FileQuestion size={18} />} label="Job Recommendation" />
+          <SidebarItem to="/reviews" icon={<Star size={18} />} label="Reviews" />
 
           <SidebarItem to="/notifications" icon={<Bell size={18} />} label="Notifications" />
         </div>

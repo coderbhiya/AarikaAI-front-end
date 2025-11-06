@@ -20,6 +20,7 @@ import Privacy from "./pages/Privacy";
 import Termandconditions from "./pages/Termandconditions";
 import SkillScore from "./pages/SkillScore";
 import Notification from "./pages/Notification";
+import Reviews from "./pages/Reviews";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,15 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/reviews"
+              element={
+                <ProtectedRoute>
+                  <Reviews />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/api-docs"
               element={
