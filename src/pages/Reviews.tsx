@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import axiosInstance from "@/lib/axios";
 
-type QuestionType = "likert" | "single_choice" | "multi_choice" | "text" | "rating";
+type QuestionType =
+  | "likert"
+  | "single_choice"
+  | "multi_choice"
+  | "text"
+  | "rating";
 
 const LIKERT_OPTIONS = [
   { value: "very_satisfied", label: "Very Satisfied" },
@@ -13,7 +18,9 @@ const LIKERT_OPTIONS = [
 
 export default function Reviews() {
   const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState<Record<number, string | string[] | number>>({});
+  const [answers, setAnswers] = useState<
+    Record<number, string | string[] | number>
+  >({});
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +48,12 @@ export default function Reviews() {
     return questions
       .map((q) => {
         const val = answers[q.id];
-        if (val === undefined || val === null || (Array.isArray(val) && val.length === 0)) return null;
+        if (
+          val === undefined ||
+          val === null ||
+          (Array.isArray(val) && val.length === 0)
+        )
+          return null;
         if (q.type === "likert" || q.type === "single_choice") {
           return { questionId: q.id, value: val as string };
         }
@@ -66,7 +78,10 @@ export default function Reviews() {
     setError(null);
     setSuccess(null);
     try {
-      const payload = { answers: normalizedAnswers(), comment: comment?.trim() ? comment.trim() : undefined };
+      const payload = {
+        answers: normalizedAnswers(),
+        comment: comment?.trim() ? comment.trim() : undefined,
+      };
       if (!payload.answers || payload.answers.length === 0) {
         setError("Please answer at least one question");
         setSubmitting(false);
@@ -109,7 +124,11 @@ export default function Reviews() {
                 key={v}
                 type="button"
                 aria-label={`Rate ${v}`}
-                className={`mx-0.5 text-2xl transition-colors ${filled ? "text-yellow-400" : "text-gray-300 hover:text-gray-400"}`}
+                className={`mx-0.5 text-2xl transition-colors ${
+                  filled
+                    ? "text-yellow-400"
+                    : "text-gray-300 hover:text-gray-400"
+                }`}
                 onClick={() => onChange(v)}
               >
                 {filled ? "★" : "☆"}
@@ -123,7 +142,7 @@ export default function Reviews() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-3xl mx-auto overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Share Your Feedback</h1>
         <span className="text-sm text-gray-500">We value your opinion</span>
@@ -139,7 +158,9 @@ export default function Reviews() {
             <div key={q.id} className="p-4 border rounded shadow-sm bg-white/5">
               <div className="flex items-start justify-between mb-2">
                 <div className="font-semibold">{q.text}</div>
-                <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 capitalize">{q.type.replace("_", " ")}</span>
+                <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 capitalize">
+                  {q.type.replace("_", " ")}
+                </span>
               </div>
 
               {q.type === "likert" && (
@@ -147,8 +168,14 @@ export default function Reviews() {
                   {LIKERT_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
-                      className={`px-3 py-2 rounded border transition-colors ${answers[q.id] === opt.value ? "bg-emerald-600 text-white border-emerald-600" : "bg-white hover:bg-gray-50"}`}
-                      onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: opt.value }))}
+                      className={`px-3 py-2 rounded border transition-colors ${
+                        answers[q.id] === opt.value
+                          ? "bg-emerald-600 text-white border-emerald-600"
+                          : "bg-white hover:bg-gray-50"
+                      }`}
+                      onClick={() =>
+                        setAnswers((prev) => ({ ...prev, [q.id]: opt.value }))
+                      }
                     >
                       {opt.label}
                     </button>
@@ -156,44 +183,52 @@ export default function Reviews() {
                 </div>
               )}
 
-              {(q.type === "single_choice" || q.type === "multi_choice") && Array.isArray(JSON.parse((q.options || "[]"))) && (
-                <div className="flex gap-2 flex-wrap">
-                  {(JSON.parse(q.options || "[]")).map((opt) => (
-                    <button
-                      key={opt}
-                      className={`px-3 py-2 rounded border transition-colors ${
-                        (q.allowMultiple || q.type === "multi_choice")
-                          ? Array.isArray(answers[q.id]) && (answers[q.id] as string[]).includes(opt)
+              {(q.type === "single_choice" || q.type === "multi_choice") &&
+                Array.isArray(JSON.parse(q.options || "[]")) && (
+                  <div className="flex gap-2 flex-wrap">
+                    {JSON.parse(q.options || "[]").map((opt) => (
+                      <button
+                        key={opt}
+                        className={`px-3 py-2 rounded border transition-colors ${
+                          q.allowMultiple || q.type === "multi_choice"
+                            ? Array.isArray(answers[q.id]) &&
+                              (answers[q.id] as string[]).includes(opt)
+                              ? "bg-emerald-600 text-white border-emerald-600"
+                              : "bg-white/5 hover:bg-gray-50"
+                            : answers[q.id] === opt
                             ? "bg-emerald-600 text-white border-emerald-600"
                             : "bg-white/5 hover:bg-gray-50"
-                          : answers[q.id] === opt
-                            ? "bg-emerald-600 text-white border-emerald-600"
-                            : "bg-white/5 hover:bg-gray-50"
-                      }`}
-                      onClick={() => {
-                        setAnswers((prev) => {
-                          const multi = q.allowMultiple || q.type === "multi_choice";
-                          if (multi) {
-                            const current = prev[q.id];
-                            const arr: string[] = Array.isArray(current) ? [...current] : [];
-                            const idx = arr.indexOf(opt);
-                            if (idx >= 0) arr.splice(idx, 1); else arr.push(opt);
-                            return { ...prev, [q.id]: arr };
-                          }
-                          return { ...prev, [q.id]: opt };
-                        });
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              )}
+                        }`}
+                        onClick={() => {
+                          setAnswers((prev) => {
+                            const multi =
+                              q.allowMultiple || q.type === "multi_choice";
+                            if (multi) {
+                              const current = prev[q.id];
+                              const arr: string[] = Array.isArray(current)
+                                ? [...current]
+                                : [];
+                              const idx = arr.indexOf(opt);
+                              if (idx >= 0) arr.splice(idx, 1);
+                              else arr.push(opt);
+                              return { ...prev, [q.id]: arr };
+                            }
+                            return { ...prev, [q.id]: opt };
+                          });
+                        }}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
               {q.type === "text" && (
                 <textarea
                   value={(answers[q.id] as string) || ""}
-                  onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                  onChange={(e) =>
+                    setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                  }
                   placeholder="Type your response"
                   className="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                   rows={3}
@@ -204,15 +239,23 @@ export default function Reviews() {
                 <StarRating
                   min={q.minValue ?? 1}
                   max={q.maxValue ?? 5}
-                  value={typeof answers[q.id] === "number" ? (answers[q.id] as number) : undefined}
-                  onChange={(val) => setAnswers((prev) => ({ ...prev, [q.id]: val }))}
+                  value={
+                    typeof answers[q.id] === "number"
+                      ? (answers[q.id] as number)
+                      : undefined
+                  }
+                  onChange={(val) =>
+                    setAnswers((prev) => ({ ...prev, [q.id]: val }))
+                  }
                 />
               )}
             </div>
           ))}
 
           <div className="p-4 border rounded shadow-sm bg-white/5">
-            <div className="font-semibold mb-2">Additional Comments (optional)</div>
+            <div className="font-semibold mb-2">
+              Additional Comments (optional)
+            </div>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
