@@ -7,7 +7,7 @@ import { ArrowLeft, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
-  const { user , toggleSidebar } = useAuth();
+  const { user, toggleSidebar } = useAuth();
   const [activeTab, setActiveTab] = useState("personal");
 
   const tabs = [
@@ -34,7 +34,9 @@ const ProfilePage = () => {
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component;
 
   return (
-    <div className={`min-h-screen w-[90%] text-white overflow-y-auto mt-14`}>
+    <div
+      className={`min-h-screen w-full sm:w-[90%] text-white overflow-y-auto mt-14 mx-auto`}
+    >
       {/* Header */}
       {/* Mobile Header */}
       <div className="mobile-header md:hidden">
