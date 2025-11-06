@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from "react";
 import axiosInstance from "@/lib/axios";
+import {
+  ArrowLeft,
+  Bell,
+  Link as LinkIcon,
+  CheckCircle,
+  Circle,
+  Menu,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 type QuestionType =
   | "likert"
@@ -26,6 +37,8 @@ export default function Reviews() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { toggleSidebar } = useAuth();
 
   useEffect(() => {
     const load = async () => {
@@ -143,6 +156,18 @@ export default function Reviews() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto overflow-y-auto">
+      <div className="mobile-header">
+        <button
+          className="mobile-back-button"
+          onClick={() => navigate("/profile")}
+        >
+          <ArrowLeft size={24} />
+        </button>
+
+        <button className="mobile-more-button" onClick={toggleSidebar}>
+          <Menu size={24} />
+        </button>
+      </div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Share Your Feedback</h1>
         <span className="text-sm text-gray-500">We value your opinion</span>
