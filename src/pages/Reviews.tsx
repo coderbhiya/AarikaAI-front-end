@@ -155,8 +155,8 @@ export default function Reviews() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto overflow-y-auto">
-      <div className="mobile-header">
+    <div className="min-h-screen w-full overflow-y-auto md:w-[90vw] px-4 py-8">
+      <div className="mobile-header md:hidden">
         <button
           className="mobile-back-button"
           onClick={() => navigate("/profile")}
@@ -255,7 +255,7 @@ export default function Reviews() {
                     setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
                   }
                   placeholder="Type your response"
-                  className="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  className="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 bg-white/5"
                   rows={3}
                 />
               )}
@@ -276,19 +276,6 @@ export default function Reviews() {
               )}
             </div>
           ))}
-
-          <div className="p-4 border rounded shadow-sm bg-white/5">
-            <div className="font-semibold mb-2">
-              Additional Comments (optional)
-            </div>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Share anything else you'd like us to know"
-              className="w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-emerald-200 bg-white/5"
-              rows={3}
-            />
-          </div>
 
           {error && <div className="text-red-600">{error}</div>}
           {success && <div className="text-emerald-600">{success}</div>}
