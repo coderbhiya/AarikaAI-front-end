@@ -41,14 +41,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/phone-verification"
-              element={
-                <ProtectedRoute>
-                  <PhoneNumber />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/phone-verification" element={<PhoneNumber />} />
             <Route
               path="/otp-verification"
               element={

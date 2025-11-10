@@ -5,20 +5,19 @@ import { ArrowLeft, Phone } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import {
-  getAuth,
-  RecaptchaVerifier,
-  PhoneAuthProvider,
-  signInWithPhoneNumber,
-} from "firebase/auth";
+import { getAuth, RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber } from "firebase/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
-export const PhoneVerification: React.FC = () => {
+import axiosInstance from "@/lib/axios";
+
+export const PhoneVerification = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { toast } = useToast();
   const auth = getAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Clear any existing recaptcha when component mounts
@@ -61,25 +60,21 @@ export const PhoneVerification: React.FC = () => {
     }
 
     // Create a new recaptcha verifier
-    window.recaptchaVerifier = new RecaptchaVerifier(
-      auth,
-      "recaptcha-container",
-      {
-        size: "invisible",
-        callback: () => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-          console.log("Recaptcha verified");
-        },
-        "expired-callback": () => {
-          // Response expired. Ask user to solve reCAPTCHA again.
-          toast({
-            title: "Recaptcha expired",
-            description: "Please try again",
-            variant: "destructive",
-          });
-        },
-      }
-    );
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      size: "invisible",
+      callback: () => {
+        // reCAPTCHA solved, allow signInWithPhoneNumber.
+        console.log("Recaptcha verified");
+      },
+      "expired-callback": () => {
+        // Response expired. Ask user to solve reCAPTCHA again.
+        toast({
+          title: "Recaptcha expired",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const handleVerifyPhone = async () => {
@@ -104,21 +99,14 @@ export const PhoneVerification: React.FC = () => {
         formattedPhoneNumber = `+${formattedPhoneNumber}`;
       }
 
-      console.log(
-        "Attempting to send verification code to:",
-        formattedPhoneNumber
-      );
+      console.log("Attempting to send verification code to:", formattedPhoneNumber);
 
       // Save the phone number to localStorage for the OTP verification
       localStorage.setItem("phoneNumber", formattedPhoneNumber);
 
       // Send the verification code
       const appVerifier = window.recaptchaVerifier;
-      const confirmationResult = await signInWithPhoneNumber(
-        auth,
-        formattedPhoneNumber,
-        appVerifier
-      );
+      const confirmationResult = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
 
       // Store the confirmation result for later verification
       window.confirmationResult = confirmationResult;
@@ -135,8 +123,7 @@ export const PhoneVerification: React.FC = () => {
 
       let errorMessage = "Could not send verification code";
       if (error.code === "auth/invalid-phone-number") {
-        errorMessage =
-          "Please enter a valid phone number with country code (e.g., +1 for US)";
+        errorMessage = "Please enter a valid phone number with country code (e.g., +1 for US)";
       } else if (error.code === "auth/too-many-requests") {
         errorMessage = "Too many attempts. Please try again later";
       } else if (error.code === "auth/invalid-credential") {
@@ -172,6 +159,45 @@ export const PhoneVerification: React.FC = () => {
     });
   };
 
+  const handleUpdatePhone = async () => {
+    if (!phoneNumber || phoneNumber.length < 10 || !/^[0-9+]+$/.test(phoneNumber)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await axiosInstance.post("/profile/phone", {
+        phone: phoneNumber,
+      });
+      toast({
+        title: "Phone Number Updated",
+        description: "Your phone number has been updated successfully",
+      });
+
+      if (user) {
+        user.phoneNumber = phoneNumber;
+      }
+
+      localStorage.setItem("user", JSON.stringify(user));
+
+      navigate("/");
+    } catch (error) {
+      console.error("Error updating phone number:", error);
+      toast({
+        title: "Update Failed",
+        description: "Could not update phone number. Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full min-h-screen w-full">
       {/* Left side with background pattern (only visible on desktop) */}
@@ -179,14 +205,8 @@ export const PhoneVerification: React.FC = () => {
         <div className="hidden md:flex md:w-[60%] bg-[#1D1E1F] relative flex-col justify-center items-center">
           <div className="absolute inset-0 bg-[url('/lovable-uploads/258f009b-d1a2-4aaa-a138-e0dcb162ac06.png')] bg-no-repeat bg-left opacity-30" />
           <div className="z-10 flex items-center">
-            <img
-              src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true"
-              className="w-[50px] h-[50px] mr-3"
-              alt="Brain Icon"
-            />
-            <span className="text-[30px] font-medium text-white font-poppins">
-              BrainAI
-            </span>
+            <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true" className="w-[50px] h-[50px] mr-3" alt="Brain Icon" />
+            <span className="text-[30px] font-medium text-white font-poppins">BrainAI</span>
           </div>
         </div>
       )}
@@ -196,10 +216,7 @@ export const PhoneVerification: React.FC = () => {
         {/* Mobile back button - only on mobile */}
         {isMobile && (
           <div className="mb-12">
-            <button
-              className="p-4 bg-[#1A1B1C] rounded-md"
-              onClick={() => navigate("/login")}
-            >
+            <button className="p-4 bg-[#1A1B1C] rounded-md" onClick={() => navigate("/")}>
               <ArrowLeft className="text-white h-5 w-5" />
             </button>
           </div>
@@ -217,19 +234,13 @@ export const PhoneVerification: React.FC = () => {
           <div className="space-y-4">
             <div className="relative">
               <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/50" />
-              <Input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="h-14 pl-12 bg-[#1A1B1C] border-none text-white rounded-md"
-                placeholder={isMobile ? "+00 0000000 000" : "Phone Number"}
-              />
+              <Input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="h-14 pl-12 bg-[#1A1B1C] border-none text-white rounded-md" placeholder={isMobile ? "+00 0000000 000" : "Phone Number"} />
             </div>
 
             {/* Hidden recaptcha container */}
             <div id="recaptcha-container"></div>
 
-            <Button
+            {/* <Button
               className="w-full h-14 bg-[#1A1B1C] hover:bg-[#222324] text-white font-medium rounded-md"
               onClick={handleVerifyPhone}
               disabled={isLoading}
@@ -239,16 +250,20 @@ export const PhoneVerification: React.FC = () => {
               ) : (
                 "Verification"
               )}
+            </Button> */}
+
+            <Button variant="outline" className="w-full h-14 bg-transparent border-none bg-[#1A1B1C] hover:bg-[#222324] text-white font-medium rounded-md" onClick={handleUpdatePhone} disabled={isLoading}>
+              Save
             </Button>
 
-            <Button
+            {/* <Button
               variant="outline"
               className="w-full h-14 bg-transparent border-none hover:bg-[#1A1B1C] text-white font-medium rounded-md"
               onClick={handleLater}
               disabled={isLoading}
             >
               Later
-            </Button>
+            </Button> */}
           </div>
         </div>
 
@@ -265,11 +280,7 @@ export const PhoneVerification: React.FC = () => {
               </a>
             </div>
             <div className="mt-4 flex justify-center">
-              <img
-                src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true"
-                className="w-[30px] h-[30px] opacity-30"
-                alt="Brain Icon Small"
-              />
+              <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true" className="w-[30px] h-[30px] opacity-30" alt="Brain Icon Small" />
             </div>
           </div>
         )}
@@ -285,3 +296,4 @@ declare global {
     confirmationResult: any;
   }
 }
+

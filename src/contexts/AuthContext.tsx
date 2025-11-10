@@ -1,25 +1,15 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User } from 'firebase/auth';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { User } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (user: User) => void;
-  logout: () => Promise<void>;
-  isAuthenticated: boolean;
-  showSidebar: boolean;
-  toggleSidebar: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const auth = getAuth();
 
@@ -27,11 +17,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
-      
+
       // Store user info in localStorage when authenticated
       if (user) {
         localStorage.setItem(
-          'user',
+          "user",
           JSON.stringify({
             uid: user.uid,
             email: user.email,
@@ -41,8 +31,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         );
       } else {
         // Clear localStorage when not authenticated
-        localStorage.removeItem('user');
-        localStorage.removeItem('authToken');
+        localStorage.removeItem("user");
+        localStorage.removeItem("authToken");
       }
     });
 
@@ -57,15 +47,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await signOut(auth);
       setUser(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('authToken');
+      localStorage.removeItem("user");
+      localStorage.removeItem("authToken");
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
       throw error;
     }
   };
 
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem("authToken");
 
   // Sidebar
   const [showSidebar, setShowSidebar] = useState(false);
@@ -73,27 +63,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setShowSidebar(!showSidebar);
   };
 
-  const value: AuthContextType = {
+  const value = {
     user,
     loading,
     login,
     logout,
-    isAuthenticated: (token !== null) && (user !== null),
+    isAuthenticated: token !== null && user !== null,
     showSidebar,
-    toggleSidebar,  
+    toggleSidebar,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

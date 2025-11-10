@@ -11,12 +11,12 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAuth = true }) => {
-  const { isAuthenticated, loading ,user } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [showWelcome, setShowWelcome] = useState(true);
-  
+
   const isMobile = useIsMobile();
 
   // Show loading spinner while checking authentication
@@ -26,6 +26,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
         <div className="w-8 h-8 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
       </div>
     );
+  }
+
+  // if user is authenticated and user mobile number is not complete then redirect to profile page
+  if (isAuthenticated && !user?.phoneNumber) {
+    return <Navigate to="/phone-verification" state={{ from: location }} replace />;
   }
 
   // If route requires authentication and user is not authenticated
@@ -61,3 +66,4 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     </>
   );
 };
+
