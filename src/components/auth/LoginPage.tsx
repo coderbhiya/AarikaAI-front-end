@@ -42,7 +42,7 @@ export const LoginPage: React.FC = () => {
       const token = await result.user.getIdToken();
 
       // Update auth context
-      login(result.user);
+      // login(result.user);
 
       // Example of using axios to verify token with your backend
       try {
@@ -55,7 +55,9 @@ export const LoginPage: React.FC = () => {
 
         // Process successful verification
         if (response.data.success) {
+          login(response.data.user);
           // Store any returned user data or tokens
+          localStorage.setItem("user", JSON.stringify(response.data.user));
           localStorage.setItem("authToken", response.data.token);
         }
         // Successfully signed in
@@ -93,7 +95,7 @@ export const LoginPage: React.FC = () => {
       const token = await result.user.getIdToken();
 
       // Update auth context
-      login(result.user);
+      // login(result.user);
 
       // Verify token with your backend
       try {

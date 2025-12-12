@@ -28,8 +28,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     );
   }
 
+  if (!isAuthenticated) {
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
+
   // if user is authenticated and user mobile number is not complete then redirect to profile page
-  if (isAuthenticated && !user?.phoneNumber) {
+  if (isAuthenticated && !user?.phone) {
+    console.log(user, "asdsdsda")
     return <Navigate to="/phone-verification" state={{ from: location }} replace />;
   }
 

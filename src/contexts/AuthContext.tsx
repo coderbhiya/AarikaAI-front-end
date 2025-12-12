@@ -9,44 +9,45 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState(null);
+  let user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user") || "") : null;
   const [loading, setLoading] = useState(true);
   const auth = getAuth();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+      // setUser(user);
       setLoading(false);
 
       // Store user info in localStorage when authenticated
-      if (user) {
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-          })
-        );
-      } else {
-        // Clear localStorage when not authenticated
-        localStorage.removeItem("user");
-        localStorage.removeItem("authToken");
-      }
+      // if (user) {
+      //   localStorage.setItem(
+      //     "user",
+      //     JSON.stringify({
+      //       uid: user.uid,
+      //       email: user.email,
+      //       displayName: user.displayName,
+      //       photoURL: user.photoURL,
+      //     })
+      //   );
+      // } else {
+      //   // Clear localStorage when not authenticated
+      //   localStorage.removeItem("user");
+      //   localStorage.removeItem("authToken");
+      // }
     });
 
     return () => unsubscribe();
   }, [auth]);
 
   const login = (user: User) => {
-    setUser(user);
+    user = user;
+    localStorage.setItem("user", JSON.stringify(user));
   };
 
   const logout = async () => {
     try {
       await signOut(auth);
-      setUser(null);
+      user = null;
       localStorage.removeItem("user");
       localStorage.removeItem("authToken");
     } catch (error) {
@@ -62,6 +63,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
+
+  console.log(((token !== null) && (user !== null)), "djasdadkjbasdbask", token, user)
 
   const value = {
     user,

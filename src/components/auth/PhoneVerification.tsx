@@ -180,7 +180,7 @@ export const PhoneVerification = () => {
       });
 
       if (user) {
-        user.phoneNumber = phoneNumber;
+        user.phone = phoneNumber;
       }
 
       localStorage.setItem("user", JSON.stringify(user));
