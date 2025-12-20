@@ -1,9 +1,6 @@
-import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "../Sidebar";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { toast } from "@/components/ui/sonner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,11 +10,6 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAuth = true }) => {
   const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
-
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [showWelcome, setShowWelcome] = useState(true);
-
-  const isMobile = useIsMobile();
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -34,7 +26,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
 
   // if user is authenticated and user mobile number is not complete then redirect to profile page
   if (isAuthenticated && !user?.phone) {
-    console.log(user, "asdsdsda")
+    if ("/login" == location.pathname) {
+      return null;
+    }
     return <Navigate to="/phone-verification" state={{ from: location }} replace />;
   }
 
@@ -51,21 +45,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <Navigate to="/index" replace />;
   }
 
-  const toggleSidebar = () => {
-    setShowSidebar(!showSidebar);
-  };
-
-  const handleNewChat = () => {
-    setShowWelcome(true);
-    toast("New chat started", {
-      description: "You can now select a category for your new chat.",
-    });
-  };
+  // const handleNewChat = () => {
+  //   setShowWelcome(true);
+  //   toast("New chat started", {
+  //     description: "You can now select a category for your new chat.",
+  //   });
+  // };
 
   return (
     <>
       <div className="flex h-screen overflow-hidden bg-background text-foreground">
-        <Sidebar onNewChat={handleNewChat} isOpen={isMobile ? showSidebar : true} onClose={toggleSidebar} />
+        <Sidebar />
         {children}
       </div>
     </>
