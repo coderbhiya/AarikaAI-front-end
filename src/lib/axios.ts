@@ -2,8 +2,8 @@ import axios from "axios";
 
 // Create an instance of axios with default config
 const axiosInstance = axios.create({
-  // baseURL: "https://api.brainai.in",
-  baseURL: "http://localhost:3000",
+  baseURL: "https://api.aarikaai.in",
+  // baseURL: "http://localhost:3000",
   timeout: 1200000,
   headers: {
     "Content-Type": "application/json",
@@ -35,8 +35,8 @@ axiosInstance.interceptors.response.use(
     // For example, handle 401 unauthorized errors
     if (error.response && error.response.status === 401) {
       // Handle unauthorized access
-        localStorage.removeItem('user');
-        localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
       // Redirect to login page or dispatch logout action
       window.location.href = "/";
     }
