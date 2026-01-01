@@ -19,8 +19,8 @@ import ProfilePage from "./pages/ProfilePage";
 import Privacy from "./pages/Privacy";
 import Termandconditions from "./pages/Termandconditions";
 import SkillScore from "./pages/SkillScore";
-import Notification from "./pages/Notification";
 import Reviews from "./pages/Reviews";
+import Notification from "./pages/Notification";
 
 const queryClient = new QueryClient();
 
