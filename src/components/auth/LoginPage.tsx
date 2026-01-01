@@ -134,131 +134,117 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full min-h-screen w-full">
-      {/* Left side with background pattern (only visible on desktop) */}
+    <div className="flex h-screen w-full bg-[#0a0a0a] overflow-hidden selection:bg-primary/30">
+      {/* Visual Side (Desktop) */}
       {!isMobile && (
-        <div className="hidden md:block md:w-[60%] bg-[#1D1E1F] relative">
-          <div className="absolute inset-0 bg-[url('https://cdn.prod.website-files.com/611e00fae5d1f200eb41e4e9/66b3be5a4f47d87bdc945227_image1-min.png')] bg-no-repeat bg-left opacity-10" />
+        <div className="hidden lg:flex lg:w-3/5 bg-[#0d0d0d] relative overflow-hidden items-center justify-center border-r border-white/[0.05]">
+          {/* Animated Background Elements */}
+          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-primary/10 blur-[150px] rounded-full animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-500/10 blur-[150px] rounded-full animate-pulse delay-700" />
+
+          <div className="relative z-10 p-20 max-w-2xl">
+            <div className="mb-12 inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl">
+              <Sparkles size={16} className="text-primary" />
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">The Future of Career Growth</span>
+            </div>
+            <h1 className="text-6xl font-bold text-white tracking-tight mb-8 leading-[1.1]">
+              Elevate your <span className="perplexity-gradient-text">Professional Journey</span> with Precision AI.
+            </h1>
+            <p className="text-gray-400 text-xl leading-relaxed mb-12">
+              Join thousands of professionals using CareerAI to unlock opportunities, refine their skills, and navigate their career path with clarity.
+            </p>
+
+            {/* Stats/Social Proof */}
+            <div className="grid grid-cols-3 gap-8 border-t border-white/[0.05] pt-12">
+              <div>
+                <div className="text-white text-2xl font-bold mb-1">50k+</div>
+                <div className="text-gray-500 text-sm font-medium">Active Users</div>
+              </div>
+              <div>
+                <div className="text-white text-2xl font-bold mb-1">98%</div>
+                <div className="text-gray-500 text-sm font-medium">Match Accuracy</div>
+              </div>
+              <div>
+                <div className="text-white text-2xl font-bold mb-1">24/7</div>
+                <div className="text-gray-500 text-sm font-medium">AI Support</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Abstract Grid Overlay */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         </div>
       )}
 
-      {/* Right side with login content */}
-      <div className="w-full md:w-[40%] flex flex-col justify-between items-center py-16 px-6 bg-[#09090b]">
-        {/* Mobile view has centered logo and welcome text */}
-        {isMobile ? (
-          <>
-            <div className="flex-grow flex flex-col justify-center items-center mt-10">
-              <Logo className="mb-8" />
-              <h1 className="text-[35px] font-medium text-white mt-6 mb-8 font-poppins text-center">
-                Welcome to CareerAI
-              </h1>
+      {/* Auth Side */}
+      <div className="w-full lg:w-2/5 flex flex-col items-center justify-center p-8 sm:p-12 relative">
+        {/* Logo/Header (Mobile & Desktop) */}
+        <div className="w-full max-w-sm mb-16">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="text-white font-bold text-xl">C</span>
             </div>
-            <div className="w-full max-w-md">
-              <p className="text-white/70 text-center mb-6">
-                Your story is unique — your career path should be too. CareerAI
-                helps you find what truly fits you.
-              </p>
-              <div className="flex flex-col space-y-4 w-full">
-                <Button
-                  variant="outline"
-                  className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5"
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading.google}
-                >
-                  {isLoading.google ? (
-                    <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                  ) : (
-                    <img
-                      src="https://cdn-icons-png.flaticon.com/512/2875/2875331.png"
-                      className="w-6 h-6 mr-2"
-                      alt="Google Icon"
-                    />
-                  )}
-                  <span className="text-white">Google</span>
-                </Button>
-                {/* <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
-                  {isLoading.apple ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <Apple className="w-5 h-5 text-white mr-2" />}
-                  <span className="text-white">Apple</span>
-                </Button> */}
-              </div>
-            </div>
-          </>
-        ) : (
-          // Desktop view has horizontal logo and login on the right
-          <>
-            <div className="w-full flex justify-center">
-              <div className="flex items-center">
-                <img
-                  src="/favicon.ico"
-                  className="w-[50px] h-[50px] mr-3"
-                  alt="Brain Icon"
-                />
-                <span className="text-[30px] font-medium text-white font-poppins">
-                  CareerAI
-                </span>
-                <span className="ml-2 bg-gray-500 rounded-full px-1 text-white font-bold text-xs">
-                  Beta
-                </span>
-              </div>
-            </div>
-
-            <div className="w-full max-w-md">
-              <h2 className="text-[35px] font-medium text-white mt-6 mb-5 font-poppins text-center">
-                Welcome to CareerAI
-              </h2>
-              <p className="text-white/70 text-center mb-6">
-                Your story is unique — your career path should be too. CareerAI
-                helps you find what truly fits you.
-              </p>
-              <div className="flex flex-col space-y-4 w-full">
-                <Button
-                  variant="outline"
-                  className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5"
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading.google}
-                >
-                  {isLoading.google ? (
-                    <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-                  ) : (
-                    <img
-                      src="https://cdn-icons-png.flaticon.com/512/2875/2875331.png"
-                      className="w-6 h-6 mr-2"
-                      alt="Google Icon"
-                    />
-                  )}
-                  <span className="text-white">Google</span>
-                </Button>
-                {/* <Button variant="outline" className="h-12 rounded-full border-white/10 bg-transparent hover:bg-white/5" onClick={handleAppleSignIn} disabled={isLoading.apple}>
-                  {isLoading.apple ? <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div> : <Apple className="w-5 h-5 text-white mr-2" />}
-                  <span className="text-white">Apple</span>
-                </Button> */}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Footer for both views */}
-        <div className="mt-16 text-center">
-          <div className="flex justify-center space-x-4 text-xs text-white/50">
-            <a href="/terms" className="hover:text-white/80">
-              Terms of use
-            </a>
-            <span>|</span>
-            <a href="/privacy" className="hover:text-white/80">
-              Privacy policy
-            </a>
+            <span className="text-white font-bold text-2xl tracking-tight">CareerAI</span>
           </div>
-          {!isMobile && (
-            <div className="mt-4 flex justify-center">
-              <img
-                src="/favicon.ico"
-                className="w-[30px] h-[30px] opacity-30"
-                alt="Brain Icon Small"
-              />
-            </div>
-          )}
+
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 tracking-tight">Welcome back</h2>
+          <p className="text-gray-400 text-lg leading-relaxed">
+            Please enter your details to access your professional dashboard.
+          </p>
         </div>
+
+        {/* Buttons */}
+        <div className="w-full max-w-sm space-y-4">
+          <button
+            onClick={handleGoogleSignIn}
+            disabled={isLoading.google}
+            className="w-full group relative flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white text-black font-bold transition-all hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50"
+          >
+            {isLoading.google ? (
+              <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+            ) : (
+              <>
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+                <span>Continue with Google</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => { }} // handleAppleSignIn if needed
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-white font-bold transition-all hover:bg-white/[0.06] active:scale-[0.98]"
+          >
+            <Apple size={20} className="fill-current" />
+            <span>Continue with Apple</span>
+          </button>
+
+          <div className="relative py-6">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.05]"></div></div>
+            <div className="relative flex justify-center text-xs uppercase tracking-widest font-black text-gray-500">
+              <span className="bg-[#0a0a0a] px-4">Enterprise access</span>
+            </div>
+          </div>
+
+          <button className="w-full py-4 text-sm font-bold text-gray-400 hover:text-white transition-colors">
+            Terms & Privacy Policy
+          </button>
+        </div>
+
+        {/* Footer info (Mobile only) */}
+        {isMobile && (
+          <div className="absolute bottom-8 left-0 right-0 text-center">
+            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Powered by CareerAI Alpha</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+const Sparkles = ({ size, className }: { size: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    <path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" />
+  </svg>
+);
+

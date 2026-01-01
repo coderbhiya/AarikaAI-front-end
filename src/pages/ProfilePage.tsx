@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import PersonalInfo from "@/components/profile/PersonalInfo";
 import Skills from "@/components/profile/Skills";
 import Experience from "@/components/profile/Experience";
-import { ArrowLeft, Menu } from "lucide-react";
+import { ArrowLeft, Menu, User, Briefcase, Award, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
@@ -13,20 +13,20 @@ const ProfilePage = () => {
   const tabs = [
     {
       id: "personal",
-      name: "Personal Info",
-      icon: "👤",
+      name: "Personal",
+      icon: <User size={18} />,
       component: PersonalInfo,
     },
     {
       id: "skills",
       name: "Skills",
-      icon: "🛠️",
+      icon: <Award size={18} />,
       component: Skills,
     },
     {
       id: "experience",
       name: "Experience",
-      icon: "💼",
+      icon: <Briefcase size={18} />,
       component: Experience,
     },
   ];
@@ -34,80 +34,75 @@ const ProfilePage = () => {
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component;
 
   return (
-    <div
-      className={`min-h-screen w-full sm:w-[90%] text-white overflow-y-auto mt-14 mx-auto`}
-    >
-      {/* Header */}
-      {/* Mobile Header */}
-      <div className="mobile-header md:hidden">
-        <button
-          className="mobile-back-button"
-          onClick={() => navigate("/chat")}
-        >
-          <ArrowLeft size={24} />
-        </button>
+    <div className="flex-1 h-screen overflow-y-auto bg-[#0a0a0a] relative">
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
-        <button className="mobile-more-button" onClick={toggleSidebar}>
-          <Menu size={24} />
-        </button>
-      </div>
-      <div className={`bg-white/5 border-gray-700 shadow-sm border-b`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4 sm:py-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl">
-                  {user?.displayName?.[0] || user?.email?.[0] || "U"}
+      <div className="container max-w-5xl mx-auto px-6 py-12 relative z-10">
+        {/* Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-4 mb-6">
+            <button
+              onClick={() => navigate("/chat")}
+              className="p-2.5 rounded-xl glass-button text-gray-400 hover:text-white"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <span className="text-primary font-bold tracking-widest uppercase text-xs">Profile Settings</span>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="flex items-center gap-6">
+              <div className="relative group">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] bg-gradient-to-tr from-primary to-emerald-400 p-1 shadow-2xl shadow-primary/20">
+                  <div className="w-full h-full rounded-[1.8rem] bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
+                    {user?.photoURL ? (
+                      <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-4xl font-black perplexity-gradient-text">
+                        {user?.displayName?.[0] || user?.email?.[0] || "U"}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h1 className={`text-xl sm:text-2xl font-bold text-white`}>
-                    {user?.displayName || "User Profile"}
-                  </h1>
-                  <p className={`text-sm sm:text-base text-gray-300`}>
-                    {user?.email || user?.phoneNumber}
-                  </p>
+                <div className="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-xl shadow-lg border border-white/10">
+                  <CheckCircle2 size={16} />
                 </div>
               </div>
-              <div className="mt-4 sm:mt-0">
-                <div
-                  className={`flex items-center space-x-2 text-sm text-gray-300`}
-                >
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span>Profile Active</span>
+
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-2">
+                  {user?.displayName || "User Profile"}
+                </h1>
+                <p className="text-gray-400 font-medium">{user?.email || user?.phoneNumber}</p>
+                <div className="flex items-center gap-2 mt-4 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 w-fit">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Curriculum Vitae Active</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Navigation Tabs */}
-      <div className={`bg-white/5 border-gray-700 border-b sticky top-0 z-10`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-0 overflow-x-auto">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-shrink-0 flex items-center space-x-2 px-4 py-3 sm:px-6 sm:py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? "border-blue-500 text-blue-400 bg-white/5 bg-opacity-50"
-                    : "border-transparent text-gray-300 hover:text-gray-100 hover:border-gray-600"
+        {/* Custom Tabs */}
+        <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] border border-white/[0.08] rounded-2xl w-fit mb-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeTab === tab.id
+                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                <span className="whitespace-nowrap">{tab.name}</span>
-              </button>
-            ))}
-          </nav>
+            >
+              {tab.icon}
+              {tab.name}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div
-          className={` border-gray-700 rounded-lg sm:rounded-xl shadow-sm border`}
-        >
+        {/* Content Area */}
+        <div className="glass-card rounded-[2.5rem] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
           {ActiveComponent && <ActiveComponent />}
         </div>
       </div>

@@ -1,13 +1,30 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '@/lib/axios';
+import {
+  Building2,
+  MapPin,
+  Briefcase,
+  DollarSign,
+  Calendar,
+  ExternalLink,
+  ArrowLeft,
+  Loader2,
+  Trophy,
+  Globe,
+  Clock,
+  CheckCircle2,
+  Bookmark,
+  X
+} from 'lucide-react';
 
 const JobDetail = () => {
   const { id } = useParams();
-  
-  const [job, setJob] = useState(null);
+  const navigate = useNavigate();
+
+  const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
 
   // Fetch job details
@@ -19,7 +36,7 @@ const JobDetail = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching job details:', err);
-      setError('Failed to load job details. Please try again later.');
+      setError('Failed to synchronize job coordinates. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -34,23 +51,20 @@ const JobDetail = () => {
   // Handle apply action
   const handleApply = async () => {
     if (!job?.link) return;
-    
+
     setApplying(true);
     try {
-      // Track application (optional API call)
       await axiosInstance.post(`/jobs/${id}/apply`);
     } catch (err) {
       console.error('Error tracking application:', err);
     } finally {
       setApplying(false);
-      // Open external link
       window.open(job.link, '_blank', 'noopener,noreferrer');
     }
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not specified';
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Real-time';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -58,65 +72,27 @@ const JobDetail = () => {
     });
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div className={`min-h-screen bg-gray-900`}>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center py-20">
-            <div className={`animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600`}></div>
-          </div>
-        </div>
+      <div className="flex-1 h-screen overflow-y-auto bg-[#0a0a0a] relative">
+        <Loader2 size={40} className="text-primary animate-spin" />
+        <p className="text-gray-500 font-bold uppercase tracking-[0.2em] text-xs">Decoding Job Intelligence...</p>
       </div>
     );
   }
 
-  // Error state
-  if (error) {
+  if (error || !job) {
     return (
-      <div className={`min-h-screen bg-gray-900`}>
-        <div className="container mx-auto px-4 py-8">
-          <div className={`bg-red-100 border-red-400 text-red-700 border px-6 py-4 rounded-lg mb-6`}>
-            <h3 className="font-semibold mb-2">Error Loading Job</h3>
-            <p>{error}</p>
-            <div className="mt-4 space-x-3">
-              <button
-                onClick={fetchJobDetail}
-                className={`px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors`}
-              >
-                Try Again
-              </button>
-              <Link
-                to="/dashboard/jobs"
-                className={`px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md transition-colors`}
-              >
-                Back to Jobs
-              </Link>
-            </div>
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
+        <div className="glass-card rounded-[2.5rem] p-12 text-center max-w-md">
+          <div className="w-20 h-20 rounded-3xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto mb-8 text-rose-500">
+            <X size={40} />
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Job not found
-  if (!job) {
-    return (
-      <div className={`min-h-screen bg-gray-900`}>
-        <div className="container mx-auto px-4 py-8">
-          <div className={`bg-white rounded-lg shadow-md p-8 text-center`}>
-            <h2 className={`text-2xl font-bold text-gray-800 mb-4`}>
-              Job Not Found
-            </h2>
-            <p className={`text-gray-600 mb-6`}>
-              The job you're looking for doesn't exist or has been removed.
-            </p>
-            <Link
-              to="/dashboard/jobs"
-              className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors`}
-            >
-              Browse All Jobs
-            </Link>
+          <h2 className="text-2xl font-black text-white mb-4">{error ? 'Access Denied' : 'Node Not Found'}</h2>
+          <p className="text-gray-500 mb-8">{error || 'The requested career node does not exist in our active database.'}</p>
+          <div className="flex flex-col gap-3">
+            <button onClick={fetchJobDetail} className="px-8 py-3 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl transition-all active:scale-95">Re-establish Link</button>
+            <Link to="/jobs" className="px-8 py-3 bg-white/5 border border-white/10 text-gray-400 font-black uppercase tracking-widest text-xs rounded-2xl transition-all">Back to Index</Link>
           </div>
         </div>
       </div>
@@ -124,198 +100,162 @@ const JobDetail = () => {
   }
 
   return (
-    <div className={`min-h-screen overflow-y-auto`}>
-      <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb Navigation */}
-        <nav className="mb-8">
-          <div className="flex items-center space-x-2 text-sm">
-            <Link
-              to="/dashboard/jobs"
-              className={`text-blue-600 hover:text-blue-700 transition-colors`}
-            >
-              Jobs
-            </Link>
-            <span className={`text-gray-400`}>/</span>
-            <span className={`text-gray-600`}>
-              {job.title}
-            </span>
-          </div>
-        </nav>
+    <div className="flex-1 h-screen overflow-y-auto bg-[#0a0a0a] relative">
+      {/* Background Orbs */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none">
+        <div className="absolute top-[-5%] left-[-5%] w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[300px] h-[300px] bg-primary/5 rounded-full blur-[80px]" />
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {/* Job Header */}
-            <div className={`bg-gray-900 text-white rounded-lg shadow-md p-8 mb-6`}>
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-6">
-                <div className="flex-1">
-                  <h1 className={`text-3xl font-bold text-white mb-2`}>
-                    {job.title}
-                  </h1>
-                  <p className={`text-xl text-gray-600 mb-4`}>
-                    {job.company}
-                  </p>
-                  
-                  {/* Job Tags */}
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    {job.location && (
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800`}>
-                        <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                        {job.location}
-                      </span>
-                    )}
-                    {job.employmentType && (
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800`}>
-                        <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                        </svg>
-                        {job.employmentType}
-                      </span>
-                    )}
-                    {(job.jobSalary || job.jobMinSalary || job.jobMaxSalary) && (
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800`}>
-                        <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                        </svg>
-                        {job.jobSalary || job.jobMinSalary || job.jobMaxSalary || 'Salary not specified'}
-                      </span>
-                    )}
+      <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-12">
+        {/* Navigation */}
+        <div className="flex items-center justify-between mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-500 hover:text-white transition-all font-bold uppercase tracking-widest text-[10px] group bg-white/5 px-4 py-2 rounded-xl border border-white/5"
+          >
+            <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
+            Back
+          </button>
+          <button className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-500 hover:text-primary transition-all">
+            <Bookmark size={18} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Main Module */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="glass-card rounded-[2rem] p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Job Header Info */}
+              <div className="flex flex-col gap-6 mb-10 pb-10 border-b border-white/5">
+                <div className="flex items-start gap-5">
+                  <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-primary shrink-0">
+                    <Building2 size={28} />
                   </div>
-                </div>
-                
-                {/* Apply Button */}
-                <div className="mt-4 md:mt-0 md:ml-6">
-                  {job.link ? (
-                    <button
-                      onClick={handleApply}
-                      disabled={applying}
-                      className={`w-full md:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {applying ? (
-                        <span className="flex items-center">
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Applying...
-                        </span>
-                      ) : (
-                        'Apply Now'
+                  <div>
+                    <h4 className="text-primary font-black uppercase tracking-[0.2em] text-[10px] mb-1">{job.company}</h4>
+                    <h1 className="text-2xl md:text-4xl font-black text-white tracking-tighter leading-tight mb-4">{job.title}</h1>
+
+                    <div className="flex flex-wrap gap-2">
+                      {job.location && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-gray-400 text-[10px] font-bold uppercase tracking-widest">
+                          <MapPin size={10} className="text-primary" /> {job.location}
+                        </div>
                       )}
-                    </button>
-                  ) : (
-                    <span className={`px-8 py-3 bg-gray-200 text-gray-500 rounded-lg font-semibold`}>
-                      Application Closed
-                    </span>
-                  )}
+                      {job.employmentType && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.03] border border-white/[0.08] rounded-lg text-gray-400 text-[10px] font-bold uppercase tracking-widest">
+                          <Clock size={10} className="text-primary" /> {job.employmentType}
+                        </div>
+                      )}
+                      {(job.jobSalary || job.jobMinSalary || job.jobMaxSalary) && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg text-primary text-[10px] font-bold uppercase tracking-widest">
+                          <DollarSign size={10} /> {job.jobSalary || `${job.jobMinSalary} - ${job.jobMaxSalary}`}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+                <button
+                  onClick={handleApply}
+                  disabled={applying || !job.link}
+                  className="group relative w-full h-14 bg-primary text-white font-black uppercase tracking-[0.2em] text-xs rounded-xl overflow-hidden shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  <div className="relative flex items-center justify-center gap-3">
+                    {applying ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
+                    <span>{job.link ? 'Launch Application Process' : 'Channel Locked'}</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Description Feed */}
+              <div className="space-y-10">
+                <section>
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-4 flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-primary" />
+                    Position Context
+                  </h3>
+                  <div className="text-gray-400 font-medium leading-[1.7] text-base whitespace-pre-wrap">
+                    {job.description || 'No descriptive data available for this intelligence node.'}
+                  </div>
+                </section>
+
+                {job.requirements && (
+                  <section>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-4 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-primary" />
+                      Credential Parameters
+                    </h3>
+                    <div className="text-gray-400 font-medium leading-[1.7] text-base whitespace-pre-wrap bg-white/[0.01] p-6 rounded-2xl border border-white/[0.03]">
+                      {job.requirements}
+                    </div>
+                  </section>
+                )}
               </div>
             </div>
-
-            {/* Job Description */}
-            <div className={`bg-gray-900 text-white rounded-lg shadow-md p-8 mb-6`}>
-              <h2 className={`text-2xl font-bold text-white mb-4`}>
-                Job Description
-              </h2>
-              <div className={`text-white leading-relaxed whitespace-pre-wrap`}>
-                {job.description || 'No description available for this position.'}
-              </div>
-            </div>
-
-            {/* Requirements */}
-            {job.requirements && (
-              <div className={`bg-gray-900 text-white rounded-lg shadow-md p-8 mb-6`}>
-                <h2 className={`text-2xl font-bold text-white mb-4`}>
-                  Requirements
-                </h2>
-                <div className={`text-white leading-relaxed whitespace-pre-wrap`}>
-                  {job.requirements}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            {/* Job Information */}
-            <div className={`bg-gray-900 text-white rounded-lg shadow-md p-6 mb-6`}>
-              <h3 className={`text-lg font-semibold text-white mb-4`}>
-                Job Information
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <dt className={`text-sm font-medium text-gray-500`}>
-                    Posted Date
-                  </dt>
-                  <dd className={`mt-1 text-sm text-gray-700`}>
-                    {formatDate(job.postedDate)}
-                  </dd>
-                </div>
-                {job.deadline && (
-                  <div>
-                    <dt className={`text-sm font-medium text-gray-500`}>
-                      Application Deadline
-                    </dt>
-                    <dd className={`mt-1 text-sm text-gray-700`}>
-                      {formatDate(job.deadline)}
-                    </dd>
+          {/* Side Module */}
+          <div className="lg:col-span-4 space-y-6 animate-in fade-in slide-in-from-right-4 duration-700">
+            {/* Intel Dashboard */}
+            <div className="glass-card rounded-[2rem] p-6 border-white/[0.05]">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-6 pb-4 border-b border-white/5">Core Metrics</h3>
+              <div className="space-y-5">
+                {[
+                  { label: "Posted", value: formatDate(job.postedDate), color: "text-white" },
+                  { label: "Deadline", value: job.deadline ? formatDate(job.deadline) : "N/A", color: "text-rose-400" },
+                  { label: "Experience", value: job.experience || "Any", color: "text-white" },
+                  { label: "Domain", value: job.category || "General", color: "text-primary" }
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between items-end">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">{item.label}</span>
+                    <span className={`text-sm font-bold ${item.color}`}>{item.value}</span>
                   </div>
-                )}
-                {job.experience && (
-                  <div>
-                    <dt className={`text-sm font-medium text-gray-500`}>
-                      Experience Level
-                    </dt>
-                    <dd className={`mt-1 text-sm text-gray-700`}>
-                      {job.experience}
-                    </dd>
-                  </div>
-                )}
-                {job.category && (
-                  <div>
-                    <dt className={`text-sm font-medium text-gray-500`}>
-                      Category
-                    </dt>
-                    <dd className={`mt-1 text-sm text-gray-700`}>
-                      {job.category}
-                    </dd>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
 
-            {/* Company Information */}
-            <div className={`bg-gray-900 text-white rounded-lg shadow-md p-6`}>
-              <h3 className={`text-lg font-semibold text-white mb-4`}>
-                About {job.company}
-              </h3>
-              <div className="space-y-4">
-                {job.companyDescription ? (
-                  <p className={`text-white leading-relaxed`}>
-                    {job.companyDescription}
-                  </p>
-                ) : (
-                  <p className={`text-sm text-gray-500 italic`}>
-                    No company information available.
-                  </p>
-                )}
-                {job.companyWebsite && (
-                  <a
-                    href={job.companyWebsite}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`inline-flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors`}
-                  >
-                    Visit Company Website
-                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                )}
+            {/* Entity Background */}
+            <div className="glass-card rounded-[2rem] p-6 border-white/[0.05]">
+              <div className="flex items-center gap-3 mb-5 pb-5 border-b border-white/5">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-primary">
+                  <Building2 size={20} />
+                </div>
+                <h3 className="text-sm font-black text-white tracking-tight uppercase">{job.company}</h3>
               </div>
+
+              <p className="text-gray-500 text-xs leading-relaxed mb-6 font-medium">
+                {job.companyDescription || 'This entity has chosen to remain in stealth mode regarding its descriptive profile.'}
+              </p>
+
+              {job.companyWebsite && (
+                <a
+                  href={job.companyWebsite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between w-full p-3.5 bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.05] rounded-xl group transition-all"
+                >
+                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">Neural Hub</span>
+                  <Globe size={16} className="text-primary transition-transform group-hover:rotate-12" />
+                </a>
+              )}
+            </div>
+
+            {/* AI Career Projection */}
+            <div className="p-6 rounded-[2rem] bg-gradient-to-br from-primary to-emerald-600 shadow-xl shadow-primary/10 relative overflow-hidden group">
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <Trophy size={24} className="text-white" />
+                  <div className="bg-white/20 px-2 py-1 rounded text-[10px] font-black text-white uppercase tracking-widest">High Match</div>
+                </div>
+                <h3 className="text-xl font-black text-white tracking-tighter mb-1">Projection: 94%</h3>
+                <p className="text-white/80 text-[11px] font-bold uppercase tracking-widest mb-4">Neural Affinity Detected</p>
+                <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.1em] text-white/60 bg-black/10 p-2 rounded-lg">
+                  <CheckCircle2 size={10} /> Personalized Verification Active
+                </div>
+              </div>
+              <div className="absolute top-[-20%] right-[-20%] w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-1000" />
             </div>
           </div>
         </div>

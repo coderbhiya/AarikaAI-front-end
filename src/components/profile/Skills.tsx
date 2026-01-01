@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getSkills, addSkill, updateSkill, deleteSkill } from "@/services/profileService";
 import { Link } from "react-router-dom";
+import { Plus, Trash2, Edit3, Folder, Target, Award, BarChart3, X, Check } from "lucide-react";
 
 const Skills = () => {
   const [skills, setSkills] = useState([]);
@@ -10,7 +11,6 @@ const Skills = () => {
 
   const skillCategories = ["Programming Languages", "Frameworks & Libraries", "Databases", "Cloud & DevOps", "Design & UI/UX", "Project Management", "Soft Skills", "Other"];
 
-  // Fetch skills when component mounts
   useEffect(() => {
     const fetchSkills = async () => {
       setIsLoading(true);
@@ -27,7 +27,6 @@ const Skills = () => {
     fetchSkills();
   }, []);
 
-  // ✅ Fixed: accept skillData directly (no state issue)
   const handleAddSkill = async (skillData) => {
     if (!skillData.name.trim() || !skillData.category) return;
 
@@ -50,7 +49,6 @@ const Skills = () => {
     }
   };
 
-  // ✅ Edit skill also takes data directly
   const handleEditSkill = async (skillId, updatedSkill) => {
     if (!updatedSkill.name.trim() || !updatedSkill.category) return;
 
@@ -94,115 +92,134 @@ const Skills = () => {
     return acc;
   }, {});
 
-  const SkillForm = ({ skill, onSave, onCancel }) => {
+  const SkillForm = ({ skill = null, onSave, onCancel }: { skill?: any; onSave: any; onCancel: any }) => {
     const [formData, setFormData] = useState({
       name: skill?.name || "",
       category: skill?.category || "",
     });
 
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      if (formData.name.trim() && formData.category) {
-        onSave(formData);
-      }
-    };
+    const isFormValid = formData.name.trim() && formData.category;
 
     return (
-      <form onSubmit={handleSubmit} className={`flex flex-col sm:flex-row gap-3 p-3 rounded-lg border-2 border-dashed bg-gray-800 border-gray-600`}>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-          placeholder="Skill name"
-          className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm border-gray-600 bg-gray-700 text-white placeholder-gray-400`}
-          autoFocus
-        />
-        <select value={formData.category} onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))} className={`flex-1 sm:flex-none sm:w-48 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm border-gray-600 bg-gray-700 text-white`}>
-          <option value="">Select category</option>
-          {skillCategories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-        <div className="flex space-x-2">
-          <button type="submit" disabled={isLoading || !formData.name.trim() || !formData.category} className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-            {isLoading ? "..." : "✓"}
-          </button>
-          <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors">
-            ✕
-          </button>
+      <div className="p-4 rounded-2xl bg-white/[0.03] border border-primary/30 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+            placeholder="Skill name (e.g. React)"
+            className="flex-1 bg-white/[0.05] border border-white/[0.1] text-white rounded-xl px-4 py-2 focus:outline-none focus:border-primary/50 transition-all text-sm"
+            autoFocus
+          />
+          <select
+            value={formData.category}
+            onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+            className="flex-1 sm:w-64 bg-white/[0.05] border border-white/[0.1] text-white rounded-xl px-4 py-2 focus:outline-none focus:border-primary/50 transition-all text-sm appearance-none cursor-pointer"
+          >
+            <option value="" className="bg-zinc-900">Select Category</option>
+            {skillCategories.map((cat) => (
+              <option key={cat} value={cat} className="bg-zinc-900">{cat}</option>
+            ))}
+          </select>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onSave(formData)}
+              disabled={isLoading || !isFormValid}
+              className="p-2 bg-primary hover:bg-primary/90 text-white rounded-xl transition-all disabled:opacity-50"
+            >
+              {isLoading ? <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Check size={20} />}
+            </button>
+            <button
+              onClick={onCancel}
+              className="p-2 bg-white/5 hover:bg-white/10 text-gray-400 rounded-xl transition-all"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
-      </form>
+      </div>
     );
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-8 sm:p-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
         <div>
-          <h2 className={`text-xl sm:text-2xl font-bold mb-2 text-white`}>Skills & Expertise</h2>
-          <p className={`text-sm sm:text-base text-gray-300`}>Manage your technical and professional skills</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Skills & Expertise</h2>
+          <p className="text-gray-400 font-medium">Showcase your technical powers and soft skills.</p>
         </div>
-        <div className="mt-4 sm:mt-0">
-          <button onClick={() => setIsAddingSkill(true)} disabled={isAddingSkill} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-            <span className="mr-2">➕</span>
-            Add Skill
-          </button>
-        </div>
+        <button
+          onClick={() => setIsAddingSkill(true)}
+          disabled={isAddingSkill}
+          className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50"
+        >
+          <Plus size={18} /> Add Skill
+        </button>
       </div>
 
-      {/* Add Skill Form */}
+      {/* Add Skill Form Area */}
       {isAddingSkill && (
-        <div className="mb-6">
-          <SkillForm onSave={(skillData) => handleAddSkill(skillData)} onCancel={() => setIsAddingSkill(false)} />
+        <div className="mb-12">
+          <SkillForm onSave={handleAddSkill} onCancel={() => setIsAddingSkill(false)} />
         </div>
       )}
 
-      {/* Skills by Category */}
-      <div className="space-y-6">
-        {Object.keys(groupedSkills).length === 0 ? (
-          <div className="text-center py-12">
-            <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-gray-800`}>
-              <span className="text-2xl text-gray-400">🛠️</span>
-            </div>
-            <h3 className={`text-lg font-medium mb-2 text-white`}>No skills added yet</h3>
-            <p className={`mb-4 text-gray-400`}>Start building your skill profile by adding your expertise</p>
-            <button onClick={() => setIsAddingSkill(true)} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-              <span className="mr-2">➕</span>
-              Add Your First Skill
-            </button>
+      {/* Category List */}
+      <div className="space-y-12">
+        {Object.keys(groupedSkills).length === 0 && !isAddingSkill ? (
+          <div className="p-20 text-center glass-card rounded-[2rem]">
+            <Award size={48} className="mx-auto text-gray-700 mb-6" />
+            <h3 className="text-xl font-bold text-white mb-2">No skills indexed yet</h3>
+            <p className="text-gray-500 max-w-sm mx-auto">Build your professional profile by indexing your core competencies.</p>
           </div>
         ) : (
-          Object.entries(groupedSkills).map(([category, categorySkills]) => (
-            <div key={category} className={`rounded-lg p-4 sm:p-6 bg-white/5 border border-gray-700`}>
-              <h3 className={`text-lg font-semibold mb-4 flex items-center text-white`}>
-                <span className="mr-2">📂</span>
+          Object.entries(groupedSkills).map(([category, categorySkills]: [string, any]) => (
+            <div key={category} className="animate-in fade-in slide-in-from-left-4 duration-500">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-500 mb-6 border-l-2 border-primary pl-4 flex items-center gap-3">
+                <Folder size={14} className="text-primary" />
                 {category}
-                <span className={`ml-2 px-2 py-1 text-xs rounded-full bg-gray-700 text-gray-300`}>{categorySkills.length}</span>
+                <span className="text-[10px] bg-white/[0.05] px-2 py-0.5 rounded-full border border-white/[0.05]">{categorySkills.length}</span>
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {categorySkills.map((skill, index) => (
-                  <div key={index}>
-                    {editingSkill === skill.id ? (
-                      <SkillForm skill={skill} onSave={(updatedSkill) => handleEditSkill(skill.skillId, updatedSkill)} onCancel={() => setEditingSkill(null)} />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categorySkills.map((skill) => (
+                  <div key={skill.skillId}>
+                    {editingSkill === skill.skillId ? (
+                      <SkillForm skill={skill} onSave={(updated) => handleEditSkill(skill.skillId, updated)} onCancel={() => setEditingSkill(null)} />
                     ) : (
-                      <div className={`group flex items-center justify-between p-3 rounded-lg border transition-colors bg-gray-700 border-gray-600 hover:border-gray-500`}>
-                        <span className={`font-medium truncate text-gray-200`}>
-                          {skill.name} (<span className={`text-sm ${skill.skillScore === 0 ? 'text-red-400' : 'text-green-400'}`}>Score: {skill.skillScore}</span>)
-                        </span>
-                        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {skill.skillScore == 0 && (
-                            <Link to={`/skill-score/${skill.skillId}`} className={`p-1 transition-colors text-gray-400 hover:text-blue-400`} title="Add skill score">
-                              Add Score
+                      <div className="group flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:border-primary/30 transition-all hover:bg-white/[0.04]">
+                        <div className="flex flex-col">
+                          <span className="text-white font-bold tracking-tight">{skill.name}</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Target size={10} className={skill.skillScore > 0 ? "text-primary" : "text-gray-600"} />
+                            <span className={`text-[10px] font-black uppercase tracking-tighter ${skill.skillScore > 0 ? "text-primary/70" : "text-gray-600"}`}>
+                              Score: {skill.skillScore || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                          {skill.skillScore === 0 && (
+                            <Link
+                              to={`/skill-score/${skill.skillId}`}
+                              className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-all"
+                              title="Calibrate skill score"
+                            >
+                              <BarChart3 size={16} />
                             </Link>
                           )}
-                          <button onClick={() => setEditingSkill(skill.skillId)} className={`p-1 transition-colors text-gray-400 hover:text-blue-400`} title="Edit skill">
-                            ✏️
+                          <button
+                            onClick={() => setEditingSkill(skill.skillId)}
+                            className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                          >
+                            <Edit3 size={16} />
                           </button>
-                          <button onClick={() => handleDeleteSkill(skill.skillId)} className={`p-1 transition-colors text-gray-400 hover:text-red-400`} title="Delete skill">
-                            🗑️
+                          <button
+                            onClick={() => handleDeleteSkill(skill.skillId)}
+                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                          >
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </div>
@@ -215,16 +232,18 @@ const Skills = () => {
         )}
       </div>
 
-      {/* Skills Summary */}
+      {/* Footer Summary */}
       {skills.length > 0 && (
-        <div className="mt-8 p-4 bg-white/5 border border-gray-700 rounded-lg">
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="text-blue-600 text-lg">📊</span>
-            <h4 className="font-semibold text-blue-900">Skills Summary</h4>
+        <div className="mt-16 p-8 rounded-[2rem] bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 flex items-center gap-6">
+          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
+            <BarChart3 size={32} />
           </div>
-          <p className="text-blue-800 text-sm">
-            You have <strong>{skills.length}</strong> skills across <strong>{Object.keys(groupedSkills).length}</strong> categories. Keep adding skills to showcase your expertise!
-          </p>
+          <div>
+            <h4 className="text-white font-bold mb-1">Expertise Coverage</h4>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              You've documented <span className="text-primary font-bold">{skills.length} skills</span> across <span className="text-primary font-bold">{Object.keys(groupedSkills).length} sectors</span>. Your profile depth is increasing.
+            </p>
+          </div>
         </div>
       )}
     </div>

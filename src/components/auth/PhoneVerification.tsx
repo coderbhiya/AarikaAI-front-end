@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  Phone,
+  ShieldCheck,
+  Lock,
+  Zap,
+  Globe,
+  Sparkles,
+  Loader2,
+  CheckCircle2
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { getAuth, RecaptchaVerifier, PhoneAuthProvider, signInWithPhoneNumber } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
-
 import axiosInstance from "@/lib/axios";
 
 export const PhoneVerification = () => {
@@ -20,7 +29,6 @@ export const PhoneVerification = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Clear any existing recaptcha when component mounts
     if (window.recaptchaVerifier) {
       try {
         window.recaptchaVerifier.clear();
@@ -31,7 +39,6 @@ export const PhoneVerification = () => {
     }
 
     return () => {
-      // Clear on component unmount
       if (window.recaptchaVerifier) {
         try {
           window.recaptchaVerifier.clear();
@@ -42,15 +49,12 @@ export const PhoneVerification = () => {
     };
   }, []);
 
-  // Set up recaptcha verifier
   const setupRecaptcha = () => {
-    // Clear any existing recaptcha containers first
     const existingContainer = document.getElementById("recaptcha-container");
     if (existingContainer) {
       existingContainer.innerHTML = "";
     }
 
-    // If there's an existing verifier, clear it
     if (window.recaptchaVerifier) {
       try {
         window.recaptchaVerifier.clear();
@@ -59,111 +63,26 @@ export const PhoneVerification = () => {
       }
     }
 
-    // Create a new recaptcha verifier
     window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
       size: "invisible",
       callback: () => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
         console.log("Recaptcha verified");
       },
       "expired-callback": () => {
-        // Response expired. Ask user to solve reCAPTCHA again.
         toast({
-          title: "Recaptcha expired",
-          description: "Please try again",
+          title: "Session Expired",
+          description: "Please refresh the neural link",
           variant: "destructive",
         });
       },
     });
   };
 
-  const handleVerifyPhone = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
-      toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid phone number",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Set up the invisible reCAPTCHA
-      setupRecaptcha();
-
-      // Format the phone number if needed
-      let formattedPhoneNumber = phoneNumber.trim();
-      if (!formattedPhoneNumber.startsWith("+")) {
-        formattedPhoneNumber = `+${formattedPhoneNumber}`;
-      }
-
-      console.log("Attempting to send verification code to:", formattedPhoneNumber);
-
-      // Save the phone number to localStorage for the OTP verification
-      localStorage.setItem("phoneNumber", formattedPhoneNumber);
-
-      // Send the verification code
-      const appVerifier = window.recaptchaVerifier;
-      const confirmationResult = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
-
-      // Store the confirmation result for later verification
-      window.confirmationResult = confirmationResult;
-
-      toast({
-        title: "Code Sent",
-        description: "Verification code has been sent to your phone",
-      });
-
-      // Navigate to OTP verification page
-      navigate("/otp-verification");
-    } catch (error: any) {
-      console.error("Phone verification error:", error);
-
-      let errorMessage = "Could not send verification code";
-      if (error.code === "auth/invalid-phone-number") {
-        errorMessage = "Please enter a valid phone number with country code (e.g., +1 for US)";
-      } else if (error.code === "auth/too-many-requests") {
-        errorMessage = "Too many attempts. Please try again later";
-      } else if (error.code === "auth/invalid-credential") {
-        errorMessage = "Authentication failed. Please log in again";
-        // Redirect to login page
-        navigate("/login");
-      }
-
-      toast({
-        title: "Verification Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-
-      // Reset the reCAPTCHA
-      if (window.recaptchaVerifier) {
-        try {
-          window.recaptchaVerifier.clear();
-        } catch (err) {
-          console.error("Error clearing recaptcha:", err);
-        }
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const handleLater = () => {
-    // Navigate to the main app without phone verification
-    navigate("/");
-    toast({
-      title: "Skipped Phone Verification",
-      description: "You can verify your phone number later",
-    });
-  };
-
   const handleUpdatePhone = async () => {
     if (!phoneNumber || phoneNumber.length < 10 || !/^[0-9+]+$/.test(phoneNumber)) {
       toast({
-        title: "Invalid Phone Number",
-        description: "Please enter a valid phone number",
+        title: "Protocol Violation",
+        description: "Invalid coordinate format. Please provide a valid phone number.",
         variant: "destructive",
       });
       return;
@@ -175,22 +94,21 @@ export const PhoneVerification = () => {
         phone: phoneNumber,
       });
       toast({
-        title: "Phone Number Updated",
-        description: "Your phone number has been updated successfully",
+        title: "Link Established",
+        description: "Your communication channel has been synchronized.",
       });
 
       if (user) {
         user.phone = phoneNumber;
       }
-
       localStorage.setItem("user", JSON.stringify(user));
 
       navigate("/");
     } catch (error) {
       console.error("Error updating phone number:", error);
       toast({
-        title: "Update Failed",
-        description: "Could not update phone number. Please try again",
+        title: "Synchronization Failure",
+        description: "Could not link channel. System error.",
         variant: "destructive",
       });
     } finally {
@@ -199,101 +117,137 @@ export const PhoneVerification = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full min-h-screen w-full">
-      {/* Left side with background pattern (only visible on desktop) */}
+    <div className="flex flex-col md:flex-row min-h-screen w-full bg-[#0a0a0a] overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]" />
+      </div>
+
+      {/* Left side (Desktop Only) */}
       {!isMobile && (
-        <div className="hidden md:flex md:w-[60%] bg-[#1D1E1F] relative flex-col justify-center items-center">
-          <div className="absolute inset-0 bg-[url('/lovable-uploads/258f009b-d1a2-4aaa-a138-e0dcb162ac06.png')] bg-no-repeat bg-left opacity-30" />
-          <div className="z-10 flex items-center">
-            <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true" className="w-[50px] h-[50px] mr-3" alt="Brain Icon" />
-            <span className="text-[30px] font-medium text-white font-poppins">BrainAI</span>
+        <div className="hidden lg:flex lg:w-3/5 relative items-center justify-center p-20">
+          <div className="absolute inset-0 bg-white/[0.02] bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:32px_32px]" />
+
+          <div className="relative z-10 max-w-xl">
+            <div className="flex items-center gap-4 mb-12 animate-in fade-in slide-in-from-left-8 duration-700">
+              <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/20">
+                <ShieldCheck size={36} className="text-white" />
+              </div>
+              <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase">Identity Core</h2>
+            </div>
+
+            <div className="space-y-6">
+              <div className="glass-card rounded-[2.5rem] p-8 border-white/[0.05] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Lock size={20} />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Neural Protection</h3>
+                </div>
+                <p className="text-gray-400 font-medium leading-relaxed uppercase tracking-widest text-xs">
+                  Your communication channels are encrypted via 2FA protocols, ensuring total entity isolation.
+                </p>
+              </div>
+
+              <div className="glass-card rounded-[2.5rem] p-8 border-white/[0.05] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                    <Globe size={20} />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Global Reach</h3>
+                </div>
+                <p className="text-gray-400 font-medium leading-relaxed uppercase tracking-widest text-xs">
+                  Synchronize your account across global nodes for seamless career intelligence retrieval.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Right side with phone verification content */}
-      <div className="w-full md:w-[40%] flex flex-col p-6 md:p-12 bg-[#09090b]">
-        {/* Mobile back button - only on mobile */}
-        {isMobile && (
-          <div className="mb-12">
-            <button className="p-4 bg-[#1A1B1C] rounded-md" onClick={() => navigate("/")}>
-              <ArrowLeft className="text-white h-5 w-5" />
+      {/* Right side with content */}
+      <div className="w-full lg:w-2/5 relative z-10 flex flex-col items-center justify-center p-8 md:p-12 lg:p-20 bg-black/40 backdrop-blur-3xl border-l border-white/5">
+        <div className="w-full max-w-sm flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-700">
+
+          {/* Header */}
+          <div className="mb-16">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white transition-all active:scale-95 mb-12"
+            >
+              <ArrowLeft size={20} />
             </button>
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary mb-2">
+                <Sparkles size={12} />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Verification Phase</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-[0.9]">
+                Channel<br />Sync
+              </h1>
+              <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Initialize communication link</p>
+            </div>
           </div>
-        )}
 
-        <div className={`flex flex-col ${isMobile ? "h-full" : ""}`}>
-          <div className={`${!isMobile ? "mt-24" : "mt-8"} mb-12`}>
-            <h1 className="text-[35px] font-medium text-white font-poppins">
-              Enter Your Phone
-              <br />
-              Number
-            </h1>
-          </div>
-
-          <div className="space-y-4">
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/50" />
-              <Input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="h-14 pl-12 bg-[#1A1B1C] border-none text-white rounded-md" placeholder={isMobile ? "+00 0000000 000" : "Phone Number"} />
+          {/* Form */}
+          <div className="space-y-6">
+            <div className="group relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-transparent rounded-2xl blur opacity-25 group-focus-within:opacity-100 transition-opacity" />
+              <div className="relative">
+                <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-primary" size={20} />
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="w-full h-16 pl-14 pr-6 bg-white/[0.03] border border-white/[0.08] text-white rounded-2xl font-bold text-lg focus:outline-none focus:border-primary transition-all placeholder:text-white/10"
+                  placeholder="+00 (000) 000-0000"
+                />
+              </div>
             </div>
 
-            {/* Hidden recaptcha container */}
             <div id="recaptcha-container"></div>
 
-            {/* <Button
-              className="w-full h-14 bg-[#1A1B1C] hover:bg-[#222324] text-white font-medium rounded-md"
-              onClick={handleVerifyPhone}
+            <button
+              onClick={handleUpdatePhone}
               disabled={isLoading}
+              className="w-full h-16 bg-primary text-white font-black uppercase tracking-[0.3em] text-[12px] rounded-2xl shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                <Loader2 className="animate-spin" size={20} />
               ) : (
-                "Verification"
+                <>
+                  <CheckCircle2 size={18} /> Establish Link
+                </>
               )}
-            </Button> */}
+            </button>
+          </div>
 
-            <Button variant="outline" className="w-full h-14 bg-transparent border-none bg-[#1A1B1C] hover:bg-[#222324] text-white font-medium rounded-md" onClick={handleUpdatePhone} disabled={isLoading}>
-              Save
-            </Button>
-
-            {/* <Button
-              variant="outline"
-              className="w-full h-14 bg-transparent border-none hover:bg-[#1A1B1C] text-white font-medium rounded-md"
-              onClick={handleLater}
-              disabled={isLoading}
-            >
-              Later
-            </Button> */}
+          {/* Legal Footer */}
+          <div className="mt-auto pt-12 flex flex-col items-center gap-6">
+            <div className="flex items-center gap-8">
+              <a href="/terms" className="text-[10px] font-black text-gray-700 hover:text-white uppercase tracking-widest transition-colors">Terms</a>
+              <span className="w-1 h-1 rounded-full bg-white/5" />
+              <a href="/privacy" className="text-[10px] font-black text-gray-700 hover:text-white uppercase tracking-widest transition-colors">Privacy</a>
+            </div>
+            <div className="flex items-center gap-2 text-primary opacity-20">
+              <div className="w-8 h-1 bg-current rounded-full" />
+              <div className="w-1 h-1 bg-current rounded-full" />
+            </div>
           </div>
         </div>
-
-        {/* Footer - only on desktop */}
-        {!isMobile && (
-          <div className="mt-auto mb-6 text-center">
-            <div className="flex justify-center space-x-4 text-xs text-white/50">
-              <a href="#" className="hover:text-white/80">
-                Terms of use
-              </a>
-              <span>|</span>
-              <a href="#" className="hover:text-white/80">
-                Privacy policy
-              </a>
-            </div>
-            <div className="mt-4 flex justify-center">
-              <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true" className="w-[30px] h-[30px] opacity-30" alt="Brain Icon Small" />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 };
 
-// Add RecaptchaVerifier to Window interface
 declare global {
   interface Window {
     recaptchaVerifier: any;
     confirmationResult: any;
   }
 }
+
+export default PhoneVerification;
+
 

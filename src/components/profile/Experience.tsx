@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getExperiences, addExperience, updateExperience, deleteExperience } from '@/services/profileService';
+import { Briefcase, Calendar, Plus, Trash2, Edit3, X, Check, Building2, MapPin, ExternalLink, Trophy } from "lucide-react";
 
 const Experience = () => {
   const [experiences, setExperiences] = useState([]);
@@ -7,7 +8,6 @@ const Experience = () => {
   const [editingExperience, setEditingExperience] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch experiences when component mounts
   useEffect(() => {
     const fetchExperiences = async () => {
       setIsLoading(true);
@@ -20,7 +20,7 @@ const Experience = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchExperiences();
   }, []);
 
@@ -28,7 +28,7 @@ const Experience = () => {
     setIsLoading(true);
     try {
       const response = await addExperience(experienceData);
-      
+
       if (response.success && response.experience) {
         setExperiences(prev => [response.experience, ...prev]);
         setIsAddingExperience(false);
@@ -44,9 +44,9 @@ const Experience = () => {
     setIsLoading(true);
     try {
       const response = await updateExperience(experienceId, updatedExperience);
-      
+
       if (response.success && response.experience) {
-        setExperiences(prev => prev.map(exp => 
+        setExperiences(prev => prev.map(exp =>
           exp.id === experienceId ? response.experience : exp
         ));
         setEditingExperience(null);
@@ -60,11 +60,11 @@ const Experience = () => {
 
   const handleDeleteExperience = async (experienceId) => {
     if (!window.confirm('Are you sure you want to delete this experience?')) return;
-    
+
     setIsLoading(true);
     try {
       const response = await deleteExperience(experienceId);
-      
+
       if (response.success) {
         setExperiences(prev => prev.filter(exp => exp.id !== experienceId));
       }
@@ -84,153 +84,149 @@ const Experience = () => {
   const calculateDuration = (startDate, endDate) => {
     const start = new Date(startDate);
     const end = endDate ? new Date(endDate) : new Date();
-    const diffTime = Math.abs(end - start);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
-    
+
     if (diffMonths < 12) {
-      return `${diffMonths} month${diffMonths !== 1 ? 's' : ''}`;
+      return `${diffMonths} mo${diffMonths !== 1 ? 's' : ''}`;
     } else {
       const years = Math.floor(diffMonths / 12);
       const months = diffMonths % 12;
-      return `${years} year${years !== 1 ? 's' : ''}${months > 0 ? ` ${months} month${months !== 1 ? 's' : ''}` : ''}`;
+      return `${years} yr${years !== 1 ? 's' : ''}${months > 0 ? ` ${months} mo${months !== 1 ? 's' : ''}` : ''}`;
     }
   };
 
-  const ExperienceForm = ({ experience, onSave, onCancel }) => {
+  const ExperienceForm = ({ experience = null, onSave, onCancel }: { experience?: any; onSave: any; onCancel: any }) => {
     const [formData, setFormData] = useState({
       companyName: experience?.companyName || '',
       role: experience?.role || '',
-      startDate: experience?.startDate || '',
-      endDate: experience?.endDate || '',
+      startDate: experience?.startDate ? new Date(experience.startDate).toISOString().split('T')[0] : '',
+      endDate: experience?.endDate ? new Date(experience.endDate).toISOString().split('T')[0] : '',
       description: experience?.description || '',
       achievements: experience?.achievements || '',
-      isCurrentJob: !experience?.endDate
+      isCurrentJob: experience ? !experience.endDate : true
     });
+
+    const isFormValid = formData.companyName.trim() && formData.role.trim() && formData.startDate;
 
     const handleSubmit = (e) => {
       e.preventDefault();
-      if (formData.companyName.trim() && formData.role.trim() && formData.startDate) {
+      if (isFormValid) {
         const dataToSave = {
           ...formData,
           endDate: formData.isCurrentJob ? null : formData.endDate
         };
-        delete dataToSave.isCurrentJob;
-        onSave(dataToSave);
+        const { isCurrentJob, ...finalData } = dataToSave as any;
+        onSave(finalData);
       }
     };
 
+    const inputClasses = `w-full bg-white/[0.05] border border-white/[0.1] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-all text-sm disabled:opacity-50`;
+
     return (
-      <div className={`border-2 border-dashed rounded-lg p-4 sm:p-6 bg-gray-800 border-gray-600`}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-medium text-gray-200 mb-2`}>
-                Company Name *
-              </label>
+      <div className="p-8 rounded-[2rem] bg-zinc-900 border border-primary/30 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Organization *</label>
               <input
                 type="text"
                 value={formData.companyName}
                 onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-600 bg-gray-700 text-white placeholder-gray-400`}
-                placeholder="Enter company name"
+                className={inputClasses}
+                placeholder="Ex: Google, SpaceX"
                 required
               />
             </div>
-            <div>
-              <label className={`block text-sm font-medium text-gray-200 mb-2`}>
-                Job Title *
-              </label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Position *</label>
               <input
                 type="text"
                 value={formData.role}
                 onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-600 bg-gray-700 text-white placeholder-gray-400`}
-                placeholder="Enter job title"
+                className={inputClasses}
+                placeholder="Ex: Senior Product Manager"
                 required
               />
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-medium text-gray-200 mb-2`}>
-                Start Date *
-              </label>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Start Date *</label>
               <input
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-600 bg-gray-700 text-white`}
+                className={inputClasses}
                 required
               />
             </div>
-            <div>
-              <label className={`block text-sm font-medium text-gray-200 mb-2`}>
-                End Date
-              </label>
-              <div className="space-y-2">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">End Date</label>
+              <div className="space-y-4">
                 <input
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
                   disabled={formData.isCurrentJob}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-600 bg-gray-700 text-white disabled:bg-gray-800 disabled:text-gray-500`}
+                  className={inputClasses}
                 />
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.isCurrentJob}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      isCurrentJob: e.target.checked,
-                      endDate: e.target.checked ? '' : prev.endDate
-                    }))}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className={`ml-2 text-sm text-gray-300`}>I currently work here</span>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${formData.isCurrentJob ? 'bg-primary border-primary' : 'border-white/20 group-hover:border-primary/50'}`}>
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={formData.isCurrentJob}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        isCurrentJob: e.target.checked,
+                        endDate: e.target.checked ? '' : prev.endDate
+                      }))}
+                    />
+                    {formData.isCurrentJob && <Check size={14} className="text-white" />}
+                  </div>
+                  <span className="text-xs font-bold text-gray-400 group-hover:text-gray-200 transition-colors uppercase tracking-widest">Ongoing Role</span>
                 </label>
               </div>
             </div>
           </div>
 
-          <div>
-            <label className={`block text-sm font-medium text-gray-200 mb-2`}>
-              Job Description
-            </label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Role Description</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none border-gray-600 bg-gray-700 text-white placeholder-gray-400`}
-              placeholder="Describe your role and responsibilities..."
+              className={`${inputClasses} resize-none h-32`}
+              placeholder="Key responsibilities and professional focus..."
             />
           </div>
 
-          <div>
-            <label className={`block text-sm font-medium text-gray-200 mb-2`}>
-              Key Achievements
-            </label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Notable Achievements</label>
             <textarea
               value={formData.achievements}
               onChange={(e) => setFormData(prev => ({ ...prev, achievements: e.target.value }))}
               rows={3}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none border-gray-600 bg-gray-700 text-white placeholder-gray-400`}
-              placeholder="List your key achievements and accomplishments..."
+              className={`${inputClasses} resize-none h-32`}
+              placeholder="Quantifiable impacts, projects, and awards..."
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+          <div className="flex gap-4 pt-4">
             <button
-              type="submit"
-              disabled={isLoading || !formData.companyName.trim() || !formData.role.trim() || !formData.startDate}
-              className="flex-1 sm:flex-none px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={handleSubmit}
+              disabled={isLoading || !isFormValid}
+              className="flex-1 px-8 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
             >
-              {isLoading ? 'Saving...' : (experience ? 'Update Experience' : 'Add Experience')}
+              {isLoading ? <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Check size={18} />}
+              {experience ? 'Commit Changes' : 'Initialize Experience'}
             </button>
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 sm:flex-none px-6 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors"
+              className="px-8 py-3 bg-white/[0.05] hover:bg-white/[0.1] text-gray-400 font-bold rounded-2xl transition-all"
             >
               Cancel
             </button>
@@ -241,117 +237,118 @@ const Experience = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-8 sm:p-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
         <div>
-          <h2 className={`text-xl sm:text-2xl font-bold text-white mb-2`}>
-            Work Experience
-          </h2>
-          <p className={`text-sm sm:text-base text-gray-300`}>
-            Showcase your professional journey and achievements
-          </p>
+          <h2 className="text-2xl font-bold text-white mb-2">Professional Journey</h2>
+          <p className="text-gray-400 font-medium">Log your career milestones and impact.</p>
         </div>
-        <div className="mt-4 sm:mt-0">
-          <button
-            onClick={() => setIsAddingExperience(true)}
-            disabled={isAddingExperience}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <span className="mr-2 text-white">➕</span>
-            Add Experience
-          </button>
-        </div>
+        <button
+          onClick={() => setIsAddingExperience(true)}
+          disabled={isAddingExperience}
+          className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50"
+        >
+          <Plus size={18} /> Add Journey Point
+        </button>
       </div>
 
-      {/* Add Experience Form */}
+      {/* Add Side */}
       {isAddingExperience && (
-        <div className="mb-6">
-          <ExperienceForm
-            onSave={handleAddExperience}
-            onCancel={() => setIsAddingExperience(false)}
-          />
+        <div className="mb-12">
+          <ExperienceForm onSave={handleAddExperience} onCancel={() => setIsAddingExperience(false)} />
         </div>
       )}
 
-      {/* Experience List */}
-      <div className="space-y-6">
-        {experiences.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
-              <span className="text-2xl text-gray-400">💼</span>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No work experience added yet</h3>
-            <p className="text-gray-500 mb-4">Start building your professional profile by adding your work experience</p>
-            <button
-              onClick={() => setIsAddingExperience(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <span className="mr-2">➕</span>
-              Add Your First Experience
-            </button>
+      {/* Experiences List */}
+      <div className="space-y-8 relative">
+        {/* Timeline Line */}
+        {experiences.length > 1 && (
+          <div className="absolute left-6 top-8 bottom-8 w-px bg-gradient-to-b from-primary/30 via-white/5 to-transparent hidden md:block" />
+        )}
+
+        {experiences.length === 0 && !isAddingExperience ? (
+          <div className="p-20 text-center glass-card rounded-[2rem]">
+            <Building2 size={48} className="mx-auto text-gray-700 mb-6" />
+            <h3 className="text-xl font-bold text-white mb-2">No journey points recorded</h3>
+            <p className="text-gray-500 max-w-sm mx-auto">Start documenting your professional evolution by adding your work history.</p>
           </div>
         ) : (
-          experiences.map((experience, index) => (
-            <div key={experience.id}>
+          experiences.map((experience: any, index) => (
+            <div key={experience.id} className="relative md:pl-16 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 100}ms` }}>
+              {/* Timeline Node */}
+              <div className="absolute left-4 top-8 w-4 h-4 rounded-full border-2 border-primary bg-[#0a0a0a] z-10 hidden md:block" />
+
               {editingExperience === experience.id ? (
                 <ExperienceForm
                   experience={experience}
-                  onSave={(updatedExperience) => handleEditExperience(experience.id, updatedExperience)}
+                  onSave={(updated) => handleEditExperience(experience.id, updated)}
                   onCancel={() => setEditingExperience(null)}
                 />
               ) : (
-                <div className="group bg-white/5 border border-gray-700 rounded-lg p-4 sm:p-6 hover:border-gray-600 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-white">{experience.role}</h3>
-                        {!experience.endDate && (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                            Current
-                          </span>
-                        )}
+                <div className="group bg-white/[0.02] border border-white/[0.05] rounded-[2rem] p-8 hover:border-primary/30 transition-all hover:bg-white/[0.04]">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+                    <div className="flex gap-6">
+                      <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-primary shrink-0">
+                        <Building2 size={32} />
                       </div>
-                      <p className="text-blue-600 font-medium mb-1 text-white">{experience.companyName}</p>
-                      <p className="text-sm text-gray-400">
-                        {formatDate(experience.startDate)} - {formatDate(experience.endDate)} • {calculateDuration(experience.startDate, experience.endDate)}
-                      </p>
+                      <div>
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-xl font-bold text-white tracking-tight">{experience.role}</h3>
+                          {!experience.endDate && (
+                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-500/20">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-400 text-sm font-medium">
+                          <span className="text-primary">{experience.companyName}</span>
+                          <span className="w-1 h-1 rounded-full bg-gray-700" />
+                          <div className="flex items-center gap-1.5">
+                            <Calendar size={12} />
+                            {formatDate(experience.startDate)} — {formatDate(experience.endDate)}
+                          </div>
+                          <span className="w-1 h-1 rounded-full bg-gray-700" />
+                          <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">{calculateDuration(experience.startDate, experience.endDate)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex space-x-2 mt-3 sm:mt-0 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
                       <button
                         onClick={() => setEditingExperience(experience.id)}
-                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                        title="Edit experience"
+                        className="p-2.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-all"
                       >
-                        ✏️
+                        <Edit3 size={18} />
                       </button>
                       <button
                         onClick={() => handleDeleteExperience(experience.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                        title="Delete experience"
+                        className="p-2.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
                       >
-                        🗑️
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </div>
-                  
-                  {experience.description && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-white mb-2">Description</h4>
-                      <p className="text-gray-400 text-sm leading-relaxed">{experience.description}</p>
-                    </div>
-                  )}
-                  
-                  {experience.achievements && (
-                    <div>
-                      <h4 className="text-sm font-medium text-white mb-2">Key Achievements</h4>
-                      <p className="text-gray-400 text-sm leading-relaxed">{experience.achievements}</p>
-                    </div>
-                  )}
-                  
-                  {index < experiences.length - 1 && (
-                    <div className="absolute left-8 mt-6 w-px h-6 bg-gray-600"></div>
-                  )}
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    {experience.description && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">
+                          <Briefcase size={12} /> The Mission
+                        </div>
+                        <p className="text-gray-400 text-sm leading-relaxed">{experience.description}</p>
+                      </div>
+                    )}
+
+                    {experience.achievements && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">
+                          <Trophy size={12} /> Key Impacts
+                        </div>
+                        <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-line">{experience.achievements}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -359,17 +356,18 @@ const Experience = () => {
         )}
       </div>
 
-      {/* Experience Summary */}
+      {/* Career Metrics Summary */}
       {experiences.length > 0 && (
-        <div className="mt-8 p-4 bg-gray-800 border border-gray-700 rounded-lg">
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="text-purple-600 text-lg">📈</span>
-            <h4 className="font-semibold text-purple-900">Career Summary</h4>
+        <div className="mt-16 p-8 rounded-[2rem] bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 flex items-center gap-6">
+          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
+            <Trophy size={32} />
           </div>
-          <p className="text-purple-800 text-sm">
-            You have <strong>{experiences.length}</strong> work experience{experiences.length !== 1 ? 's' : ''} in your profile.
-            {experiences.some(exp => !exp.endDate) && ' Currently employed at one position.'}
-          </p>
+          <div>
+            <h4 className="text-white font-bold mb-1">Career Velocity</h4>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              You have aggregated <span className="text-primary font-bold">{experiences.length} distinct professional epochs</span>. Each milestone strengthens your AI-powered career projection.
+            </p>
+          </div>
         </div>
       )}
     </div>

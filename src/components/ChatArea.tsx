@@ -11,6 +11,8 @@ import {
   Menu,
   Share,
   ArrowRight,
+  User,
+  Brain,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/components/ui/sonner";
@@ -68,7 +70,6 @@ const getFileIcon = (fileType) => {
 };
 
 const MessageList: React.FC<{ messages: Message[] }> = ({ messages }) => {
-  const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -80,62 +81,81 @@ const MessageList: React.FC<{ messages: Message[] }> = ({ messages }) => {
   }, [messages]);
 
   return (
-    <div className="space-y-8 w-full max-w-4xl mx-auto">
+    <div className="space-y-12 w-full max-w-4xl mx-auto pb-20">
       {messages.map((message) => (
         <div
           key={message.id}
-          className={`rounded-xl p-2 bg-white/5 backdrop-blur-sm border border-white/10 w-fit max-w-[80%] text-white ${
-            message.role === "user" ? "ml-auto" : "mr-auto"
-          }`}
+          className={`group animate-in fade-in slide-in-from-bottom-4 duration-500`}
         >
-          {message.message.split("\n\n").map((paragraph, idx) => {
-            return <Markdown text={paragraph} />;
-          })}
-          {/* File Attachments Display */}
-          {message.FileAttachments && message.FileAttachments.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {message.FileAttachments.map((file, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center space-x-3 p-3 rounded-xl bg-gray-700/50 border border-gray-600}`}
-                >
-                  <span className="text-2xl">{getFileIcon(file.mimeType)}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate text-gray-200`}>
-                      {file.originalName}
-                    </p>
-                    <p className={`text-xs text-gray-400`}>
-                      {formatFileSize(file.fileSize)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => window.open(`${file.filePath}`, "_blank")}
-                    className={`p-2 rounded-lg hover:bg-gray-600 text-gray-300 transition-colors`}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))}
+          <div className={`flex gap-4 sm:gap-6 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+            {/* Avatar/Icon Section */}
+            <div className={`shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-bold border ${message.role === "user"
+              ? "bg-white/[0.05] border-white/10 text-gray-300"
+              : "bg-primary/20 border-primary/20 text-primary"
+              }`}>
+              {message.role === "user" ? <User size={18} /> : <Brain size={20} />}
             </div>
-          )}
+
+            {/* Content Section */}
+            <div className={`flex-1 min-w-0 space-y-4 ${message.role === "user" ? "text-right" : "text-left"}`}>
+              <div className={`inline-block text-base sm:text-lg leading-relaxed ${message.role === "user"
+                ? "bg-white/[0.03] border border-white/[0.08] px-5 py-3 rounded-2xl text-gray-200"
+                : "text-gray-100 w-full"
+                }`}>
+                {message.message.split("\n\n").map((paragraph, idx) => (
+                  <div key={idx} className={idx > 0 ? "mt-4" : ""}>
+                    <Markdown text={paragraph} />
+                  </div>
+                ))}
+              </div>
+
+              {/* File Attachments */}
+              {message.FileAttachments && message.FileAttachments.length > 0 && (
+                <div className={`flex flex-wrap gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                  {message.FileAttachments.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] transition-all cursor-pointer group/file"
+                      onClick={() => window.open(`${file.filePath}`, "_blank")}
+                    >
+                      <span className="text-xl shrink-0 group-hover/file:scale-110 transition-transform">{getFileIcon(file.mimeType)}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold truncate text-gray-300">
+                          {file.originalName}
+                        </p>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter mt-0.5">
+                          {formatFileSize(file.fileSize)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className={`flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                <button
+                  className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all"
+                  onClick={() => {
+                    navigator.clipboard.writeText(message.message);
+                    toast.success("Copied to clipboard");
+                  }}
+                >
+                  <Copy size={14} />
+                </button>
+                <button className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all">
+                  <Share size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       ))}
       <div ref={messagesEndRef} />
     </div>
   );
 };
+
 
 const ChatArea: React.FC<ChatAreaProps> = ({
   onSendMessage,
@@ -245,38 +265,46 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   if (isMobile) {
     return (
-      <div className="flex-1 flex flex-col h-screen bg-background">
+      <div className="flex-1 flex flex-col h-screen bg-[#0a0a0a]">
         {/* Mobile Header */}
-        <div className="mobile-header">
+        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.05]">
           <button
-            className="mobile-back-button"
+            className="p-2 rounded-xl glass-button text-gray-400"
             onClick={() => navigate("/profile")}
           >
-            <ArrowLeft size={24} />
+            <User size={20} />
           </button>
 
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-white font-bold text-xs">C</span>
+            </div>
+            <span className="text-white font-semibold text-sm">CareerAI</span>
+          </div>
+
           <button
-            className="mobile-more-button"
+            className="p-2 rounded-xl glass-button text-gray-400"
             onClick={toggleSidebar}
           >
-            <Menu size={24} />
+            <Menu size={20} />
           </button>
         </div>
 
         {/* Mobile Content */}
-        <div className="mobile-content">
-          <>
-            <MessageList messages={messages} />
-            {isLoading && (
-              <div className="flex justify-start my-4">
-                <div className="text-white animate-pulse">Thinking...🤔</div>
+        <div className="flex-1 overflow-y-auto px-4 py-8 scroll-smooth">
+          <MessageList messages={messages} />
+          {isLoading && (
+            <div className="flex justify-start my-8 ml-4">
+              <div className="px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/[0.05] text-primary animate-pulse text-sm font-medium flex items-center gap-2">
+                <Brain size={16} className="animate-bounce" />
+                Thinking...
               </div>
-            )}
-          </>
+            </div>
+          )}
         </div>
 
         {/* Mobile Footer */}
-        <div className="mobile-footer">
+        <div className="sticky bottom-0 p-4 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent">
           <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
         </div>
       </div>
@@ -284,21 +312,52 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-screen">
-      <div className="flex-1 p-6 overflow-y-auto">
+    <div className="flex-1 flex flex-col h-screen bg-[#0a0a0a] relative overflow-hidden">
+      {/* Desktop Header */}
+      <div className="hidden md:flex sticky top-0 z-40 items-center justify-between px-8 py-5 bg-[#0a0a0a]/40 backdrop-blur-md border-b border-white/[0.03]">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <Brain size={18} />
+          </div>
+          <span className="text-sm font-black text-white uppercase tracking-[0.2em] italic">Career AI Core</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Neural Link Active</span>
+        </div>
+      </div>
+
+      {/* Background Decor */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-full pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto mt-6 px-6 py-8 md:py-12 h-screen scroll-smooth relative z-10">
         <MessageList messages={messages} />
         {isLoading && (
-          <div className="flex justify-center my-4">
-            <div className="text-white animate-pulse">Thinking...🤔</div>
+          <div className="max-w-4xl mx-auto flex justify-start my-8">
+            <div className="px-5 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.05] text-primary animate-pulse text-sm font-medium flex items-center gap-3">
+              <div className="flex gap-1">
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></div>
+              </div>
+              CareerAI is thinking...
+            </div>
           </div>
         )}
       </div>
 
-      <div className="p-6 border-t border-white/10">
+      {/* Input Blur/Fade Effect */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/90 to-transparent pointer-events-none z-20" />
+
+      <div className="relative z-30 pb-6 px-6">
         <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
       </div>
     </div>
   );
 };
+
 
 export default ChatArea;
