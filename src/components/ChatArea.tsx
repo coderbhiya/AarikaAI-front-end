@@ -279,7 +279,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-white font-bold text-xs">C</span>
             </div>
-            <span className="text-white font-semibold text-sm">CareerAI</span>
+            <span className="text-white font-semibold text-sm">AarikaAI</span>
           </div>
 
           <button
@@ -343,7 +343,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                 <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></div>
               </div>
-              CareerAI is thinking...
+              AarikaAI is thinking...
             </div>
           </div>
         )}

@@ -151,7 +151,7 @@ export const LoginPage: React.FC = () => {
               Elevate your <span className="perplexity-gradient-text">Professional Journey</span> with Precision AI.
             </h1>
             <p className="text-gray-400 text-xl leading-relaxed mb-12">
-              Join thousands of professionals using CareerAI to unlock opportunities, refine their skills, and navigate their career path with clarity.
+              Join thousands of professionals using AarikaAI to unlock opportunities, refine their skills, and navigate their career path with clarity.
             </p>
 
             {/* Stats/Social Proof */}
@@ -184,7 +184,7 @@ export const LoginPage: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center shadow-lg shadow-primary/20">
               <span className="text-white font-bold text-xl">C</span>
             </div>
-            <span className="text-white font-bold text-2xl tracking-tight">CareerAI</span>
+            <span className="text-white font-bold text-2xl tracking-tight">AarikaAI</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 tracking-tight">Welcome back</h2>
@@ -233,7 +233,7 @@ export const LoginPage: React.FC = () => {
         {/* Footer info (Mobile only) */}
         {isMobile && (
           <div className="absolute bottom-8 left-0 right-0 text-center">
-            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Powered by CareerAI Alpha</p>
+            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Powered by AarikaAI Alpha</p>
           </div>
         )}
       </div>

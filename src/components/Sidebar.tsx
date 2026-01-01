@@ -110,7 +110,7 @@ const Sidebar = () => {
               <span className="text-white font-bold text-lg">C</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-white font-semibold text-lg tracking-tight">CareerAI</span>
+              <span className="text-white font-semibold text-lg tracking-tight">AarikaAI</span>
               {/* <span className="text-xs text-primary font-bold tracking-widest uppercase">Beta</span> */}
             </div>
           </div>
