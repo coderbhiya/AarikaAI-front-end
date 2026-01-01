@@ -3,15 +3,9 @@ import {
     ArrowLeft,
     Bell,
     Link as LinkIcon,
-    CheckCircle2,
+    CheckCircle,
     Circle,
     Menu,
-    MoreHorizontal,
-    ExternalLink,
-    MailOpen,
-    Mail,
-    Loader2,
-    X
 } from "lucide-react";
 import axiosInstance from "@/lib/axios";
 import { Button } from "@/components/ui/button";
@@ -19,19 +13,8 @@ import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface NotificationItem {
-    id: number;
-    type: string;
-    title: string;
-    message: string;
-    isRead: boolean;
-    targetAll: boolean;
-    link: string;
-    createdAt: string;
-}
-
-const typeLabel = (type: string) => {
-    const map: Record<string, string> = {
+const typeLabel = (type) => {
+    const map = {
         job_alert: "Job Alert",
         application_update: "Application Update",
         ai_tip: "AI Tip",
@@ -44,8 +27,8 @@ const typeLabel = (type: string) => {
 const Notification = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-    const [selected, setSelected] = useState<NotificationItem | null>(null);
+    const [notifications, setNotifications] = useState([]);
+    const [selected, setSelected] = useState(null);
     const { toggleSidebar } = useAuth();
 
     const fetchNotifications = async () => {
@@ -55,7 +38,7 @@ const Notification = () => {
             setNotifications(res.data.notifications || []);
         } catch (err) {
             console.error("Failed to load notifications", err);
-            toast.error("Failed to synchronize notifications");
+            toast.error("Failed to load notifications");
         } finally {
             setLoading(false);
         }
@@ -65,7 +48,7 @@ const Notification = () => {
         fetchNotifications();
     }, []);
 
-    const markAsRead = async (n: NotificationItem) => {
+    const markAsRead = async (n) => {
         if (!n || n.targetAll || n.isRead) return;
         try {
             await axiosInstance.patch(`/notifications/${n.id}/read`);
@@ -77,14 +60,14 @@ const Notification = () => {
             setSelected((prev) =>
                 prev && prev.id === n.id ? { ...prev, isRead: true } : prev
             );
-            toast.success("Packet acknowledged");
+            toast.success("Marked as read");
         } catch (err) {
             console.error("Failed to mark as read", err);
-            toast.error("Acknowledgment failed");
+            toast.error("Could not mark as read");
         }
     };
 
-    const openLink = (url: string) => {
+    const openLink = (url) => {
         try {
             if (url) window.open(url, "_blank", "noopener,noreferrer");
         } catch (e) {
@@ -93,171 +76,152 @@ const Notification = () => {
     };
 
     return (
-        <div className="min-h-screen w-full bg-[#0a0a0a] relative overflow-x-hidden">
-            {/* Background Orbs */}
-            <div className="fixed top-0 left-0 w-full h-full pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
+        <div className="flex flex-col h-screen bg-background text-foreground px-4 w-full md:w-[90vw] md:max-w-[90vw]">
+            {/* Mobile/Header */}
+            <div className="mobile-header border-b border-white/10 block md:hidden">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mobile-back-button"
+                    onClick={() => navigate(-1)}
+                >
+                    <ArrowLeft size={20} />
+                </Button>
+                <h1 className="text-lg font-semibold flex items-center gap-2 md:hidden">
+                    <Bell size={18} /> Notifications
+                </h1>
+                <div className="w-10">
+                    <button className="mobile-more-button" onClick={toggleSidebar}>
+                        <Menu size={24} />
+                    </button>
+                </div>
             </div>
 
-            <div className="relative z-10 max-w-4xl mx-auto px-6 py-12 md:py-20">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-12">
-                    <div className="flex items-center gap-6">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white transition-all active:scale-95 group"
-                        >
-                            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-                        </button>
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Live Pulse</span>
-                            </div>
-                            <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">Intelligence Feed</h1>
+            {/* Content */}
+            <div className="mobile-content p-4">
+                <h1 className={`text-3xl font-bold mb-8 text-white`}>Notifications</h1>
+                {/* List */}
+                <div className="space-y-2 p-4">
+                    {loading && (
+                        <div className="text-sm text-gray-400">
+                            Loading notifications...
                         </div>
-                    </div>
-                </div>
+                    )}
 
-                {/* Content Area */}
-                <div className="space-y-4">
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center py-40 gap-4">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                                <Loader2 size={48} className="text-primary animate-spin relative z-10" />
-                            </div>
-                            <p className="text-gray-500 font-black uppercase tracking-[0.3em] text-[10px]">Synchronizing Neural Streams...</p>
-                        </div>
-                    ) : notifications.length === 0 ? (
-                        <div className="glass-card rounded-[3rem] p-20 text-center border-white/[0.05] relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                            <div className="relative z-10">
-                                <div className="w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mx-auto mb-10 group-hover:scale-110 transition-transform duration-700">
-                                    <Bell size={48} className="text-gray-800 group-hover:text-primary transition-colors" />
-                                </div>
-                                <h3 className="text-2xl font-black text-white mb-4 uppercase tracking-tighter italic">Void Detected</h3>
-                                <p className="text-gray-500 max-w-xs mx-auto font-medium leading-relaxed">
-                                    Your intelligence network is currently idling. New signals will manifest here as they are broadcast.
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        notifications.map((n, idx) => (
+                    {!loading && notifications.length === 0 && (
+                        <div className="text-sm text-gray-400">No notifications yet.</div>
+                    )}
+
+                    {!loading &&
+                        notifications.map((n) => (
                             <button
                                 key={n.id}
                                 onClick={() => setSelected(n)}
-                                className={`w-full group text-left p-6 md:p-8 rounded-[2rem] border transition-all animate-in fade-in slide-in-from-bottom-4 duration-500 ${n.isRead
-                                    ? "bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04]"
-                                    : "bg-white/[0.05] border-primary/20 hover:border-primary/40 shadow-lg shadow-primary/5"
-                                    }`}
-                                style={{ animationDelay: `${idx * 50}ms` }}
+                                className="w-full text-left p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                             >
-                                <div className="flex items-start justify-between gap-6">
-                                    <div className="flex gap-6">
-                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${n.isRead ? 'bg-white/[0.03] border-white/10 text-gray-600' : 'bg-primary/20 border-primary/30 text-primary'
-                                            }`}>
-                                            {n.isRead ? <MailOpen size={20} /> : <Mail size={20} />}
-                                        </div>
-
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-start gap-3">
+                                        {n.isRead ? (
+                                            <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                                        ) : (
+                                            <Circle className="w-5 h-5 text-gray-400 mt-0.5" />
+                                        )}
                                         <div>
-                                            <div className="flex flex-wrap items-center gap-2 mb-3">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
                                                     {typeLabel(n.type)}
                                                 </span>
                                                 {n.targetAll && (
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+                                                    <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
                                                         Broadcast
                                                     </span>
                                                 )}
-                                                {!n.isRead && (
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                                {n.isRead && (
+                                                    <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/30">
+                                                        Read
+                                                    </span>
                                                 )}
                                             </div>
-
-                                            <h3 className={`text-lg font-bold tracking-tight mb-2 ${n.isRead ? 'text-gray-400' : 'text-white'}`}>
-                                                {n.title || n.message?.slice(0, 80) || "Untitled Event"}
-                                            </h3>
-
-                                            <div className="text-xs font-bold text-gray-600 uppercase tracking-widest">
-                                                {new Date(n.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                                            <div className="font-medium">
+                                                {n.title || n.message?.slice(0, 80) || "Untitled"}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-1">
+                                                {new Date(n.createdAt).toLocaleString()}
                                             </div>
                                         </div>
                                     </div>
-
                                     {n.link && (
-                                        <button
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 openLink(n.link);
                                             }}
-                                            className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-primary transition-all active:scale-95 hidden md:block"
                                         >
-                                            <ExternalLink size={18} />
-                                        </button>
+                                            <LinkIcon className="w-4 h-4 mr-2" /> Open
+                                        </Button>
                                     )}
                                 </div>
                             </button>
-                        ))
-                    )}
+                        ))}
                 </div>
 
-                {/* Neural Overlay (Modal) */}
+                {/* Modal */}
                 {selected && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
                         <div
-                            className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+                            className="absolute inset-0 bg-black/60"
                             onClick={() => setSelected(null)}
                         ></div>
-                        <div className="relative z-10 w-full max-w-xl glass-card rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-300">
-                            <div className="flex items-start justify-between gap-6 mb-8">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                        <div className="relative z-10 w-full max-w-lg p-6 rounded-lg bg-neutral-900 border border-white/10">
+                            <div className="flex items-start justify-between mb-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Bell className="w-5 h-5" />
+                                        <span className="text-sm px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
                                             {typeLabel(selected.type)}
                                         </span>
                                         {selected.targetAll && (
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
-                                                Global Broadcast
+                                            <span className="text-sm px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                                Broadcast
+                                            </span>
+                                        )}
+                                        {selected.isRead && (
+                                            <span className="text-sm px-2 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/30">
+                                                Read
                                             </span>
                                         )}
                                     </div>
-                                    <h2 className="text-2xl font-black text-white leading-tight">
-                                        {selected.title || "Observation Point"}
+                                    <h2 className="text-xl font-semibold">
+                                        {selected.title || "Notification"}
                                     </h2>
-                                    <div className="text-xs font-bold text-gray-600 uppercase tracking-[0.2em]">
-                                        {new Date(selected.createdAt).toLocaleString([], { dateStyle: 'full', timeStyle: 'short' })}
+                                    <div className="text-xs text-gray-400 mt-1">
+                                        {new Date(selected.createdAt).toLocaleString()}
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => setSelected(null)}
-                                    className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-gray-500 transition-all"
-                                >
-                                    <X size={20} />
-                                </button>
+                                <Button variant="ghost" onClick={() => setSelected(null)}>
+                                    Close
+                                </Button>
                             </div>
 
-                            <div className="text-gray-400 font-medium leading-relaxed text-sm whitespace-pre-wrap mb-10 border-l-2 border-primary/20 pl-6 py-2">
+                            <div className="text-sm whitespace-pre-wrap">
                                 {selected.message}
                             </div>
 
-                            <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-white/5">
+                            <div className="mt-4 flex items-center gap-2">
                                 {selected.link && (
-                                    <button
-                                        onClick={() => openLink(selected.link)}
-                                        className="flex-1 px-8 py-3 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <ExternalLink size={16} /> Open Resource
-                                    </button>
+                                    <Button onClick={() => openLink(selected.link)}>
+                                        <LinkIcon className="w-4 h-4 mr-2" /> Open Link
+                                    </Button>
                                 )}
                                 {!selected.targetAll && !selected.isRead && (
-                                    <button
+                                    <Button
+                                        variant="secondary"
                                         onClick={() => markAsRead(selected)}
-                                        className="flex-1 px-8 py-3 bg-white/5 border border-white/10 text-gray-400 hover:text-white font-black uppercase tracking-widest text-xs rounded-2xl transition-all"
                                     >
-                                        Acknowledge
-                                    </button>
+                                        Mark as Read
+                                    </Button>
                                 )}
                             </div>
                         </div>
