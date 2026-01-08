@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Apple, Github } from "lucide-react";
+import { Apple, Github, Eye, EyeOff } from "lucide-react";
 import { Logo } from "@/components/logo/Logo";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   signInWithPopup,
+  signInWithEmailAndPassword,
   GoogleAuthProvider,
   OAuthProvider,
 } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axiosInstance from "@/lib/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/auth";
@@ -19,9 +20,15 @@ export const LoginPage: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { login, isAuthenticated, loading } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const [isLoading, setIsLoading] = useState({
     google: false,
     apple: false,
+    email: false,
   });
 
   // If already authenticated, redirect to chat
@@ -30,6 +37,71 @@ export const LoginPage: React.FC = () => {
       navigate("/chat", { replace: true });
     }
   }, [loading, isAuthenticated, navigate]);
+
+  // Email Sign-in handler
+  const handleEmailSignIn = async () => {
+    if (!email || !password) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter both email and password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading({ ...isLoading, email: true });
+    try {
+      // 1. Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2. Get ID Token
+      const token = await user.getIdToken();
+
+      // 3. Verify with backend
+      try {
+        const response = await axiosInstance.post("/auth/verify-token", {
+          idToken: token,
+        });
+
+        if (response.data.success) {
+          login(response.data.user);
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+          localStorage.setItem("authToken", response.data.token);
+
+          toast({
+            title: "Success",
+            description: "Signed in successfully!",
+          });
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
+        }
+      } catch (apiError) {
+        console.error("API verification failed:", apiError);
+        toast({
+          title: "Login Failed",
+          description: "Server verification failed",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Email login error:", error);
+      let message = "Could not sign in";
+      if (error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
+        message = 'Invalid email or password';
+      }
+
+      toast({
+        title: "Login Failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(prev => ({ ...prev, email: false }));
+    }
+  };
 
   // Google Sign-in handler
   const handleGoogleSignIn = async () => {
@@ -179,7 +251,7 @@ export const LoginPage: React.FC = () => {
       {/* Auth Side */}
       <div className="w-full lg:w-2/5 flex flex-col items-center justify-center p-8 sm:p-12 relative">
         {/* Logo/Header (Mobile & Desktop) */}
-        <div className="w-full max-w-sm mb-16">
+        <div className="w-full max-w-sm mb-8">
           <div className="flex items-center gap-4 mb-8">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center shadow-lg shadow-primary/20">
               <span className="text-white font-bold text-xl">C</span>
@@ -195,39 +267,94 @@ export const LoginPage: React.FC = () => {
 
         {/* Buttons */}
         <div className="w-full max-w-sm space-y-4">
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={isLoading.google}
-            className="w-full group relative flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white text-black font-bold transition-all hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50"
-          >
-            {isLoading.google ? (
-              <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-            ) : (
-              <>
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
-                <span>Continue with Google</span>
-              </>
-            )}
-          </button>
 
-          <button
-            onClick={() => { }} // handleAppleSignIn if needed
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-white font-bold transition-all hover:bg-white/[0.06] active:scale-[0.98]"
+          {/* Email/Password Form */}
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleEmailSignIn(); }}
+            className="space-y-4 mb-6"
           >
-            <Apple size={20} className="fill-current" />
-            <span>Continue with Apple</span>
-          </button>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Email Address</label>
+              <input
+                type="email"
+                required
+                className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-gray-600"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-gray-600 pr-10"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
 
-          <div className="relative py-6">
+            <button
+              type="submit"
+              disabled={isLoading.email}
+              className="w-full flex items-center justify-center px-6 py-4 rounded-2xl bg-primary text-white font-bold transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+            >
+              {isLoading.email ? (
+                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                "Sign In"
+              )}
+            </button>
+          </form>
+
+          <div className="relative py-2">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.05]"></div></div>
             <div className="relative flex justify-center text-xs uppercase tracking-widest font-black text-gray-500">
-              <span className="bg-[#0a0a0a] px-4">Enterprise access</span>
+              <span className="bg-[#0a0a0a] px-4">OR CONTINUE WITH</span>
             </div>
           </div>
 
-          <button className="w-full py-4 text-sm font-bold text-gray-400 hover:text-white transition-colors">
-            Terms & Privacy Policy
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={isLoading.google}
+              className="flex-1 group relative flex items-center justify-center p-4 rounded-2xl bg-white text-black font-bold transition-all hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50"
+            >
+              {isLoading.google ? (
+                <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+              ) : (
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
+              )}
+            </button>
+
+            <button
+              onClick={() => { }} // handleAppleSignIn if needed
+              className="flex-1 flex items-center justify-center p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-white font-bold transition-all hover:bg-white/[0.06] active:scale-[0.98]"
+            >
+              <Apple size={24} className="fill-current" />
+            </button>
+          </div>
+
+          <div className="text-center pt-4">
+            <p className="text-gray-500">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-primary font-bold hover:underline">
+                Create Account
+              </Link>
+            </p>
+          </div>
+
         </div>
 
         {/* Footer info (Mobile only) */}

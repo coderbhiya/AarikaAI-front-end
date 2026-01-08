@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PhoneNumber from "./pages/PhoneNumber";
 import Auth from "./pages/Auth";
+import Register from "./pages/Register";
 import UpdatesFaq from "./pages/UpdatesFaq";
 import { OTPVerification } from "@/components/auth/OTPVerification";
 import ApiDocs from "./pages/ApiDocs";
@@ -121,6 +122,7 @@ const App = () => (
 
             {/* Public Routes - No Authentication Required */}
             <Route path="/" element={<Auth />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Termandconditions />} />
 
