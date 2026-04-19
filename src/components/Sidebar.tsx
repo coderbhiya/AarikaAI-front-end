@@ -168,6 +168,13 @@ const Sidebar = () => {
               label="Digital Identity"
               active={pathname === "/profile"}
             />
+            <SidebarItem
+              to="/subscription"
+              icon={<Sparkles size={20} />}
+              label="Upgrade Plan"
+              active={pathname === "/subscription"}
+              badge="Pro"
+            />
           </div>
 
           <div>
