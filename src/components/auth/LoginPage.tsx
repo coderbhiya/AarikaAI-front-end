@@ -1,16 +1,32 @@
+"use client";
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Apple, Github, Eye, EyeOff } from "lucide-react";
-import { Logo } from "@/components/logo/Logo";
+import {
+  Apple,
+  Eye,
+  EyeOff,
+  Sparkles,
+  TrendingUp,
+  ShieldCheck,
+  Zap,
+  Cpu,
+  Activity,
+  Brain,
+  Mail,
+  Lock,
+  ArrowLeft
+} from "lucide-react";
+import BrainLogo from "@/components/BrainLogo";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   signInWithPopup,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
-  OAuthProvider,
 } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate, Link } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import axiosInstance from "@/lib/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/auth";
@@ -18,7 +34,7 @@ import { auth } from "@/lib/auth";
 export const LoginPage: React.FC = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const navigate = useRouter();
   const { login, isAuthenticated, loading } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -34,12 +50,12 @@ export const LoginPage: React.FC = () => {
   // If already authenticated, redirect to chat
   React.useEffect(() => {
     if (!loading && isAuthenticated) {
-      navigate("/chat", { replace: true });
+      navigate.replace("/chat");
     }
   }, [loading, isAuthenticated, navigate]);
 
-  // Email Sign-in handler
-  const handleEmailSignIn = async () => {
+  const handleEmailSignIn = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!email || !password) {
       toast({
         title: "Validation Error",
@@ -51,46 +67,31 @@ export const LoginPage: React.FC = () => {
 
     setIsLoading({ ...isLoading, email: true });
     try {
-      // 1. Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // 2. Get ID Token
       const token = await user.getIdToken();
 
-      // 3. Verify with backend
-      try {
-        const response = await axiosInstance.post("/auth/verify-token", {
-          idToken: token,
-        });
+      const response = await axiosInstance.post("/auth/verify-token", {
+        idToken: token,
+      });
 
-        if (response.data.success) {
-          login(response.data.user);
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-          localStorage.setItem("authToken", response.data.token);
+      if (response.data.success) {
+        login(response.data.user, response.data.token);
 
-          toast({
-            title: "Success",
-            description: "Signed in successfully!",
-          });
-
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
-        }
-      } catch (apiError) {
-        console.error("API verification failed:", apiError);
         toast({
-          title: "Login Failed",
-          description: "Server verification failed",
-          variant: "destructive",
+          title: "Welcome back",
+          description: "Login successful!",
         });
+
+        setTimeout(() => {
+          navigate.replace("/chat");
+        }, 500);
       }
     } catch (error: any) {
       console.error("Email login error:", error);
       let message = "Could not sign in";
       if (error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
-        message = 'Invalid email or password';
+        message = 'Invalid credentials detected.';
       }
 
       toast({
@@ -103,275 +104,183 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  // Google Sign-in handler
   const handleGoogleSignIn = async () => {
     setIsLoading({ ...isLoading, google: true });
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-
-      // Get the user token to send to your backend
       const token = await result.user.getIdToken();
 
-      // Update auth context
-      // login(result.user);
+      const response = await axiosInstance.post("/auth/google", {
+        idToken: token,
+        userData: result.user,
+      });
 
-      // Example of using axios to verify token with your backend
-      try {
-        const response = await axiosInstance.post("/auth/google", {
-          idToken: token,
-          userData: result.user,
-        });
+      if (response.data.success) {
+        login(response.data.user, response.data.token);
 
-        console.log("API verification response:", response.data);
-
-        // Process successful verification
-        if (response.data.success) {
-          login(response.data.user);
-          // Store any returned user data or tokens
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-          localStorage.setItem("authToken", response.data.token);
-        }
-        // Successfully signed in
         toast({
           title: "Success",
-          description: `Signed in as ${result.user.email}`,
+          description: `Identified as ${result.user.email}`,
         });
-        // Navigate to main app
+
         setTimeout(() => {
-          window.location.reload();
-        }, 3000);
-      } catch (apiError) {
-        console.error("API verification failed:", apiError);
+          navigate.replace("/chat");
+        }, 500);
       }
     } catch (error: any) {
       toast({
         title: "Login Failed",
-        description: error.message || "Could not sign in with Google",
+        description: error.message || "Google link failed to establish",
         variant: "destructive",
       });
       console.error("Google sign in error:", error);
     } finally {
-      setIsLoading({ ...isLoading, google: false });
-    }
-  };
-
-  // Apple Sign-in handler
-  const handleAppleSignIn = async () => {
-    setIsLoading({ ...isLoading, apple: true });
-    try {
-      const provider = new OAuthProvider("apple.com");
-      const result = await signInWithPopup(auth, provider);
-
-      // Get the user token
-      const token = await result.user.getIdToken();
-
-      // Update auth context
-      // login(result.user);
-
-      // Verify token with your backend
-      try {
-        const response = await axiosInstance.post("/auth/verify-token", {
-          token,
-        });
-
-        if (response.data.success) {
-          localStorage.setItem("authToken", response.data.accessToken);
-        }
-      } catch (apiError) {
-        console.error("API verification failed:", apiError);
-      }
-
-      // Successfully signed in
-      toast({
-        title: "Success",
-        description: `Signed in as ${result.user.email || "Apple user"}`,
-      });
-
-      // Navigate to phone verification page
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
-      // navigate("/phone-verification");
-    } catch (error: any) {
-      toast({
-        title: "Login Failed",
-        description: error.message || "Could not sign in with Apple",
-        variant: "destructive",
-      });
-      console.error("Apple sign in error:", error);
-    } finally {
-      setIsLoading({ ...isLoading, apple: false });
+      setIsLoading(prev => ({ ...prev, google: false }));
     }
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#0a0a0a] overflow-hidden selection:bg-primary/30">
+    <div className="flex min-h-screen w-full bg-white overflow-hidden selection:bg-primary/20">
       {/* Visual Side (Desktop) */}
       {!isMobile && (
-        <div className="hidden lg:flex lg:w-3/5 bg-[#0d0d0d] relative overflow-hidden items-center justify-center border-r border-white/[0.05]">
-          {/* Animated Background Elements */}
-          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-primary/10 blur-[150px] rounded-full animate-pulse" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-500/10 blur-[150px] rounded-full animate-pulse delay-700" />
+        <div className="hidden lg:flex lg:w-1/2 bg-[#f8faff] relative overflow-hidden items-center justify-center border-r border-slate-100">
+          <div className="absolute top-[-15%] right-[-15%] w-[80%] h-[80%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-emerald-400/5 blur-[100px] rounded-full animate-pulse delay-1000" />
+          <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
 
-          <div className="relative z-10 p-20 max-w-2xl">
-            <div className="mb-12 inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl">
-              <Sparkles size={16} className="text-primary" />
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">The Future of Career Growth</span>
+          <div className="relative z-10 p-12 max-w-xl animate-in fade-in slide-in-from-left-6 duration-700">
+            <div className="mb-8 inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-primary/10 bg-white shadow-sm">
+              <Sparkles size={11} className="text-primary" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-primary">Intelligence Hub</span>
             </div>
-            <h1 className="text-6xl font-bold text-white tracking-tight mb-8 leading-[1.1]">
-              Elevate your <span className="perplexity-gradient-text">Professional Journey</span> with Precision AI.
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-6 leading-[1.1]">
+              Accelerate <br />
+              your <span className="text-primary italic">Career.</span>
             </h1>
-            <p className="text-gray-400 text-xl leading-relaxed mb-12">
-              Join thousands of professionals using AarikaAI to unlock opportunities, refine their skills, and navigate their career path with clarity.
+            <p className="text-gray-500 font-medium text-[13px] leading-relaxed mb-10 max-w-sm">
+              The premium career optimization platform. Predict growth, analyze gaps, and master your professional trajectory.
             </p>
 
-            {/* Stats/Social Proof */}
-            <div className="grid grid-cols-3 gap-8 border-t border-white/[0.05] pt-12">
-              <div>
-                <div className="text-white text-2xl font-bold mb-1">50k+</div>
-                <div className="text-gray-500 text-sm font-medium">Active Users</div>
-              </div>
-              <div>
-                <div className="text-white text-2xl font-bold mb-1">98%</div>
-                <div className="text-gray-500 text-sm font-medium">Match Accuracy</div>
-              </div>
-              <div>
-                <div className="text-white text-2xl font-bold mb-1">24/7</div>
-                <div className="text-gray-500 text-sm font-medium">AI Support</div>
-              </div>
+            <div className="space-y-3">
+              {[
+                { title: "Precision Matching", desc: "Autonomous career trajectory mapping", color: "text-blue-600", bg: "bg-blue-50", icon: <Cpu size={16} /> },
+                { title: "Skill Gap Analysis", desc: "Real-time market requirement delta", color: "text-purple-600", bg: "bg-purple-50", icon: <Activity size={16} /> },
+                { title: "Strategic Roadmaps", desc: "Dynamic multi-phase evolution plans", color: "text-emerald-600", bg: "bg-emerald-50", icon: <Brain size={16} /> }
+              ].map((item, i) => (
+                <div key={i} className="flex gap-4 items-center p-4 rounded-xl border border-slate-100 bg-white hover:border-primary/20 hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 blur-2xl rounded-full translate-x-10 -translate-y-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className={`shrink-0 w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center ${item.color} shadow-inner group-hover:rotate-3 transition-transform duration-300 relative z-10`}>
+                    {item.icon}
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-slate-900 font-bold text-[12px] tracking-tight mb-0.5">{item.title}</h3>
+                    <p className="text-gray-500 text-[11px] font-medium leading-tight">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          {/* Abstract Grid Overlay */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         </div>
       )}
 
       {/* Auth Side */}
-      <div className="w-full lg:w-2/5 flex flex-col items-center justify-center p-8 sm:p-12 relative">
-        {/* Logo/Header (Mobile & Desktop) */}
-        <div className="w-full max-w-sm mb-8">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-emerald-400 flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-white font-bold text-xl">C</span>
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-start p-8 relative overflow-y-auto scrollbar-none">
+        <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
+          <div className="flex items-center gap-3.5 mb-6 group cursor-pointer">
+            <BrainLogo size={42} className="rounded-lg shadow-md" />
+            <div className="flex flex-col">
+              <span className="text-[#202124] font-bold text-xl tracking-tight leading-tight">Aarika.AI</span>
+              <span className="text-[9px] font-bold text-primary uppercase tracking-widest opacity-80">Professional Hub</span>
             </div>
-            <span className="text-white font-bold text-2xl tracking-tight">AarikaAI</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 tracking-tight">Welcome back</h2>
-          <p className="text-gray-400 text-lg leading-relaxed">
-            Please enter your details to access your professional dashboard.
-          </p>
-        </div>
+          <div className="mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#202124] mb-1 tracking-tight">Welcome back.</h2>
+            <p className="text-gray-500 text-[14px] font-medium">Continue your career journey.</p>
+          </div>
 
-        {/* Buttons */}
-        <div className="w-full max-w-sm space-y-4">
-
-          {/* Email/Password Form */}
-          <form
-            onSubmit={(e) => { e.preventDefault(); handleEmailSignIn(); }}
-            className="space-y-4 mb-6"
-          >
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Email Address</label>
-              <input
-                type="email"
-                required
-                className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-gray-600"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Password</label>
-              <div className="relative">
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1">Email Address</label>
+              <div className="relative group">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type="email"
                   required
-                  className="w-full px-4 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-gray-600 pr-10"
-                  placeholder="Enter password"
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-[12px] font-bold text-gray-700">Password</label>
+                <button type="button" className="text-[11px] font-bold text-primary hover:underline">Forgot?</button>
+              </div>
+              <div className="relative group">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
+                <input
+                  type="password"
+                  required
+                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading.email}
-              className="w-full flex items-center justify-center px-6 py-4 rounded-2xl bg-primary text-white font-bold transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+              className="w-full h-11 mt-2.5 rounded-lg bg-[#202124] text-white text-sm font-bold hover:bg-primary hover:shadow-lg active:scale-[0.98] disabled:opacity-50 shadow-md transition-all duration-300"
             >
               {isLoading.email ? (
-                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
               ) : (
                 "Sign In"
               )}
             </button>
           </form>
 
-          <div className="relative py-2">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/[0.05]"></div></div>
-            <div className="relative flex justify-center text-xs uppercase tracking-widest font-black text-gray-500">
-              <span className="bg-[#0a0a0a] px-4">OR CONTINUE WITH</span>
+          <div className="relative my-8 text-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-100"></div>
             </div>
+            <span className="relative px-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest bg-white">Professional Auth</span>
           </div>
 
-          <div className="flex gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={handleGoogleSignIn}
               disabled={isLoading.google}
-              className="flex-1 group relative flex items-center justify-center p-4 rounded-2xl bg-white text-black font-bold transition-all hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50"
+              className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11 disabled:opacity-50"
             >
-              {isLoading.google ? (
-                <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-              ) : (
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
-              )}
+              <img src="https://www.google.com/favicon.ico" className="w-3.5 h-3.5" alt="G" />
+              Google
             </button>
-
-            <button
-              onClick={() => { }} // handleAppleSignIn if needed
-              className="flex-1 flex items-center justify-center p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-white font-bold transition-all hover:bg-white/[0.06] active:scale-[0.98]"
-            >
-              <Apple size={24} className="fill-current" />
+            <button className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11">
+              <img src="https://github.com/favicon.ico" className="w-3.5 h-3.5" alt="GH" />
+              GitHub
             </button>
           </div>
 
-          <div className="text-center pt-4">
-            <p className="text-gray-500">
+          <div className="text-center mt-10">
+            <p className="text-[13px] text-gray-500 font-medium">
               Don't have an account?{" "}
-              <Link to="/register" className="text-primary font-bold hover:underline">
-                Create Account
-              </Link>
+              <Link href="/register" className="text-primary font-bold hover:underline ml-1 transition-all">Sign Up</Link>
             </p>
           </div>
-
         </div>
 
-        {/* Footer info (Mobile only) */}
-        {isMobile && (
-          <div className="absolute bottom-8 left-0 right-0 text-center">
-            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Powered by AarikaAI Alpha</p>
-          </div>
-        )}
+        <div className="mt-auto pb-6 text-center opacity-40">
+          <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-400">Secure AES-256 Encryption • CareerAI Cloud</p>
+        </div>
       </div>
     </div>
   );
 };
-
-const Sparkles = ({ size, className }: { size: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-    <path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" />
-  </svg>
-);
-

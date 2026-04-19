@@ -3,7 +3,7 @@ import { getExperiences, addExperience, updateExperience, deleteExperience } fro
 import { Briefcase, Calendar, Plus, Trash2, Edit3, X, Check, Building2, MapPin, ExternalLink, Trophy } from "lucide-react";
 
 const Experience = () => {
-  const [experiences, setExperiences] = useState([]);
+  const [experiences, setExperiences] = useState<any[]>([]);
   const [isAddingExperience, setIsAddingExperience] = useState(false);
   const [editingExperience, setEditingExperience] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -121,39 +121,39 @@ const Experience = () => {
       }
     };
 
-    const inputClasses = `w-full bg-white/[0.05] border border-white/[0.1] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-all text-sm disabled:opacity-50`;
+    const inputClasses = `w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg px-4 focus:outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all text-sm font-medium placeholder:text-slate-400 h-11`;
 
     return (
-      <div className="p-8 rounded-[2rem] bg-zinc-900 border border-primary/30 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Organization *</label>
+      <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm animate-in fade-in zoom-in-95 duration-500 relative overflow-hidden group">
+        <form onSubmit={handleSubmit} className="relative z-10 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1">Company *</label>
               <input
                 type="text"
                 value={formData.companyName}
                 onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
                 className={inputClasses}
-                placeholder="Ex: Google, SpaceX"
+                placeholder="Ex: Google, Microsoft"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Position *</label>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1">Title *</label>
               <input
                 type="text"
                 value={formData.role}
                 onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
                 className={inputClasses}
-                placeholder="Ex: Senior Product Manager"
+                placeholder="Ex: Software Engineer"
                 required
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Start Date *</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1">Start Date *</label>
               <input
                 type="date"
                 value={formData.startDate}
@@ -162,9 +162,9 @@ const Experience = () => {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">End Date</label>
-              <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1">End Date</label>
+              <div className="space-y-3">
                 <input
                   type="date"
                   value={formData.endDate}
@@ -172,8 +172,8 @@ const Experience = () => {
                   disabled={formData.isCurrentJob}
                   className={inputClasses}
                 />
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${formData.isCurrentJob ? 'bg-primary border-primary' : 'border-white/20 group-hover:border-primary/50'}`}>
+                <label className="flex items-center gap-2.5 cursor-pointer group/label">
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${formData.isCurrentJob ? 'bg-slate-900 border-slate-900' : 'border-slate-200 group-hover/label:border-primary/50'}`}>
                     <input
                       type="checkbox"
                       className="hidden"
@@ -184,49 +184,49 @@ const Experience = () => {
                         endDate: e.target.checked ? '' : prev.endDate
                       }))}
                     />
-                    {formData.isCurrentJob && <Check size={14} className="text-white" />}
+                    {formData.isCurrentJob && <Check size={14} className="text-white" strokeWidth={4} />}
                   </div>
-                  <span className="text-xs font-bold text-gray-400 group-hover:text-gray-200 transition-colors uppercase tracking-widest">Ongoing Role</span>
+                  <span className="text-[12px] font-medium text-gray-600">I am currently working in this role</span>
                 </label>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Role Description</label>
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-bold text-gray-700 ml-1">Description</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className={`${inputClasses} resize-none h-32`}
-              placeholder="Key responsibilities and professional focus..."
+              className={`${inputClasses} resize-none h-24 pt-3`}
+              placeholder="Describe your responsibilities and impact..."
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Notable Achievements</label>
+          <div className="space-y-1.5">
+            <label className="text-[12px] font-bold text-gray-700 ml-1">Key Achievements</label>
             <textarea
               value={formData.achievements}
               onChange={(e) => setFormData(prev => ({ ...prev, achievements: e.target.value }))}
               rows={3}
-              className={`${inputClasses} resize-none h-32`}
-              placeholder="Quantifiable impacts, projects, and awards..."
+              className={`${inputClasses} resize-none h-24 pt-3`}
+              placeholder="List your quantifiable successes and projects..."
             />
           </div>
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               onClick={handleSubmit}
               disabled={isLoading || !isFormValid}
-              className="flex-1 px-8 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+              className="flex-1 h-11 bg-slate-900 text-white font-bold text-sm rounded-lg shadow-sm hover:bg-primary active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {isLoading ? <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Check size={18} />}
-              {experience ? 'Commit Changes' : 'Initialize Experience'}
+              {isLoading ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Check size={16} />}
+              <span>{experience ? 'Save Changes' : 'Add Experience'}</span>
             </button>
             <button
               type="button"
               onClick={onCancel}
-              className="px-8 py-3 bg-white/[0.05] hover:bg-white/[0.1] text-gray-400 font-bold rounded-2xl transition-all"
+              className="px-6 h-11 bg-slate-50 border border-slate-200 text-slate-600 font-bold text-sm rounded-lg hover:bg-slate-100 transition-all"
             >
               Cancel
             </button>
@@ -237,48 +237,40 @@ const Experience = () => {
   };
 
   return (
-    <div className="p-8 sm:p-12">
+    <div className="p-6 md:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8 border-b border-gray-100 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-2">Professional Journey</h2>
-          <p className="text-gray-400 font-medium">Log your career milestones and impact.</p>
+          <h2 className="text-xl font-bold text-gray-900">Work Experience</h2>
+          <p className="text-gray-500 text-[13px]">Your professional journey and key achievements</p>
         </div>
         <button
           onClick={() => setIsAddingExperience(true)}
           disabled={isAddingExperience}
-          className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50"
+          className="px-5 py-2 bg-primary text-white font-semibold text-[14px] rounded-full hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
         >
-          <Plus size={18} /> Add Journey Point
+          <Plus size={18} /> Add Experience
         </button>
       </div>
 
-      {/* Add Side */}
+      {/* Add Section */}
       {isAddingExperience && (
-        <div className="mb-12">
+        <div className="mb-8">
           <ExperienceForm onSave={handleAddExperience} onCancel={() => setIsAddingExperience(false)} />
         </div>
       )}
 
       {/* Experiences List */}
-      <div className="space-y-8 relative">
-        {/* Timeline Line */}
-        {experiences.length > 1 && (
-          <div className="absolute left-6 top-8 bottom-8 w-px bg-gradient-to-b from-primary/30 via-white/5 to-transparent hidden md:block" />
-        )}
-
+      <div className="space-y-4 relative">
         {experiences.length === 0 && !isAddingExperience ? (
-          <div className="p-20 text-center glass-card rounded-[2rem]">
-            <Building2 size={48} className="mx-auto text-gray-700 mb-6" />
-            <h3 className="text-xl font-bold text-white mb-2">No journey points recorded</h3>
-            <p className="text-gray-500 max-w-sm mx-auto">Start documenting your professional evolution by adding your work history.</p>
+          <div className="p-12 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+            <Building2 size={32} className="mx-auto text-gray-300 mb-3" />
+            <h3 className="text-base font-semibold text-gray-900 mb-1">No experience listed yet</h3>
+            <p className="text-gray-500 max-w-xs mx-auto text-[13px]">Add your professional history to showcase your career growth.</p>
           </div>
         ) : (
-          experiences.map((experience: any, index) => (
-            <div key={experience.id} className="relative md:pl-16 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${index * 100}ms` }}>
-              {/* Timeline Node */}
-              <div className="absolute left-4 top-8 w-4 h-4 rounded-full border-2 border-primary bg-[#0a0a0a] z-10 hidden md:block" />
-
+          experiences.map((experience: any) => (
+            <div key={experience.id} className="relative">
               {editingExperience === experience.id ? (
                 <ExperienceForm
                   experience={experience}
@@ -286,69 +278,53 @@ const Experience = () => {
                   onCancel={() => setEditingExperience(null)}
                 />
               ) : (
-                <div className="group bg-white/[0.02] border border-white/[0.05] rounded-[2rem] p-8 hover:border-primary/30 transition-all hover:bg-white/[0.04]">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
-                    <div className="flex gap-6">
-                      <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-primary shrink-0">
-                        <Building2 size={32} />
+                <div className="group bg-white border border-gray-100 rounded-xl p-5 hover:shadow-sm transition-all">
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-3">
+                    <div className="flex gap-4">
+                      <div className="w-11 h-11 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 shrink-0">
+                        <Building2 size={20} />
                       </div>
                       <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="text-xl font-bold text-white tracking-tight">{experience.role}</h3>
-                          {!experience.endDate && (
-                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-500/20">
-                              Current
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-gray-400 text-sm font-medium">
-                          <span className="text-primary">{experience.companyName}</span>
-                          <span className="w-1 h-1 rounded-full bg-gray-700" />
-                          <div className="flex items-center gap-1.5">
-                            <Calendar size={12} />
+                        <h3 className="text-[16px] font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors">{experience.role}</h3>
+                        <p className="text-[14px] font-medium text-gray-700 mt-0.5">{experience.companyName}</p>
+                        <div className="flex items-center gap-2 text-[12px] text-gray-400 mt-1">
+                          <span className="flex items-center gap-1">
                             {formatDate(experience.startDate)} — {formatDate(experience.endDate)}
-                          </div>
-                          <span className="w-1 h-1 rounded-full bg-gray-700" />
-                          <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">{calculateDuration(experience.startDate, experience.endDate)}</span>
+                          </span>
+                          <span>•</span>
+                          <span>{calculateDuration(experience.startDate, experience.endDate)}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => setEditingExperience(experience.id)}
-                        className="p-2.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
                       >
-                        <Edit3 size={18} />
+                        <Edit3 size={16} />
                       </button>
                       <button
                         onClick={() => handleDeleteExperience(experience.id)}
-                        className="p-2.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    {experience.description && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">
-                          <Briefcase size={12} /> The Mission
-                        </div>
-                        <p className="text-gray-400 text-sm leading-relaxed">{experience.description}</p>
-                      </div>
-                    )}
+                  {experience.description && (
+                    <div className="mt-3 text-[13px] text-gray-600 leading-relaxed max-w-3xl">
+                      {experience.description}
+                    </div>
+                  )}
 
-                    {experience.achievements && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-600">
-                          <Trophy size={12} /> Key Impacts
-                        </div>
-                        <p className="text-gray-400 text-sm leading-relaxed whitespace-pre-line">{experience.achievements}</p>
-                      </div>
-                    )}
-                  </div>
+                  {experience.achievements && (
+                    <div className="mt-3 pl-4 border-l-2 border-gray-100">
+                      <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Impact</h4>
+                      <p className="text-[13px] text-gray-600 leading-relaxed">{experience.achievements}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -356,16 +332,16 @@ const Experience = () => {
         )}
       </div>
 
-      {/* Career Metrics Summary */}
+      {/* Footer Summary */}
       {experiences.length > 0 && (
-        <div className="mt-16 p-8 rounded-[2rem] bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 flex items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary">
-            <Trophy size={32} />
+        <div className="mt-8 p-5 rounded-xl bg-blue-50/30 border border-blue-100/50 flex flex-col md:flex-row items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm border border-blue-100">
+            <Trophy size={18} />
           </div>
-          <div>
-            <h4 className="text-white font-bold mb-1">Career Velocity</h4>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              You have aggregated <span className="text-primary font-bold">{experiences.length} distinct professional epochs</span>. Each milestone strengthens your AI-powered career projection.
+          <div className="text-center md:text-left">
+            <h4 className="text-gray-900 text-sm font-bold tracking-tight">Professional History</h4>
+            <p className="text-gray-500 text-[12px]">
+              Profile updated with <span className="text-primary font-semibold">{experiences.length} roles</span>. Your history is up track.
             </p>
           </div>
         </div>

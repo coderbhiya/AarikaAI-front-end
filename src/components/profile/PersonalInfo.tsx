@@ -1,10 +1,12 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfile, updateProfile } from '@/services/profileService';
 import { Edit3, Save, X, User, Mail, Phone, MapPin, Globe, CreditCard } from "lucide-react";
 
 const PersonalInfo = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,15 +24,24 @@ const PersonalInfo = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && !isEditing) {
+      const profile = user.UserProfile || user.userProfile || {};
       setFormData(prev => ({
         ...prev,
-        name: user.displayName || '',
+        name: user.name || user.displayName || '',
         email: user.email || '',
-        phone: user.phoneNumber || ''
+        phone: user.phone || '',
+        headline: profile.headline || '',
+        bio: profile.bio || '',
+        experienceYears: profile.experienceYears || '',
+        currentRole: profile.currentRole || '',
+        targetRole: profile.targetRole || '',
+        targetIndustry: profile.targetIndustry || '',
+        location: profile.location || '',
+        resumeUrl: profile.resumeUrl || ''
       }));
     }
-  }, [user]);
+  }, [user, isEditing]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -75,6 +86,9 @@ const PersonalInfo = () => {
     try {
       const response = await updateProfile(formData);
       if (response.success) {
+        if (response.user) {
+          updateUser(response.user);
+        }
         setIsEditing(false);
       }
     } catch (error) {
@@ -88,55 +102,52 @@ const PersonalInfo = () => {
     setIsEditing(false);
   };
 
-  const inputClasses = `w-full bg-white/[0.03] border border-white/[0.08] text-white rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-all placeholder:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed`;
+  const inputClasses = `w-full bg-slate-50/50 border border-slate-200/60 text-slate-900 rounded-lg px-4 focus:outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed text-[13px] font-medium h-11`;
 
   return (
-    <div className="p-8 sm:p-12">
+    <div className="p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
+      <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-2">Personal Information</h2>
-          <p className="text-gray-400 font-medium">Manage your personal and professional profile details.</p>
+          <h2 className="text-lg font-bold text-gray-900">Personal Information</h2>
+          <p className="text-gray-500 text-[12px]">Manage your basic profile details and summary</p>
         </div>
-
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {!isEditing ? (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all flex items-center gap-2 active:scale-95"
+              className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <Edit3 size={16} /> Edit Profile
+              <Edit3 size={18} />
             </button>
           ) : (
-            <>
+            <div className="flex gap-2">
               <button
                 onClick={handleCancel}
-                className="px-6 py-2.5 bg-white/[0.05] hover:bg-white/[0.1] text-gray-400 font-bold rounded-xl transition-all flex items-center gap-2"
+                className="px-4 h-9 flex items-center rounded-full border border-gray-300 text-gray-600 font-bold text-[12px] hover:bg-gray-50 transition-all"
               >
-                <X size={16} /> Cancel
+                Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 active:scale-95"
+                className="px-4 h-9 flex items-center rounded-full bg-primary text-white font-bold text-[12px] hover:bg-blue-700 disabled:opacity-50 transition-all"
               >
-                {isSaving ? <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
-                Save Changes
+                {isSaving ? "Saving..." : "Save Changes"}
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Form */}
-      <div className="space-y-12">
+      <div className="space-y-8">
         {/* Section: Basic */}
         <div>
-          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-500 mb-8 border-l-2 border-primary pl-4">Identity & Contact</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <User size={12} className="text-primary" /> Full Name
+          <h3 className="text-[15px] font-semibold text-gray-900 mb-4 px-1">Contact Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1 flex items-center gap-2">
+                <User size={13} /> Full Name
               </label>
               <input
                 type="text"
@@ -148,9 +159,9 @@ const PersonalInfo = () => {
                 placeholder="Ex. John Doe"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <Mail size={12} className="text-primary" /> Email
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1 flex items-center gap-2">
+                <Mail size={13} /> Email
               </label>
               <input
                 type="email"
@@ -162,9 +173,9 @@ const PersonalInfo = () => {
                 placeholder="john@example.com"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <Phone size={12} className="text-primary" /> Phone
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1 flex items-center gap-2">
+                <Phone size={13} /> Phone
               </label>
               <input
                 type="tel"
@@ -176,9 +187,9 @@ const PersonalInfo = () => {
                 placeholder="+1 (555) 000-0000"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <MapPin size={12} className="text-primary" /> Location
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1 flex items-center gap-2">
+                <MapPin size={13} /> Location
               </label>
               <input
                 type="text"
@@ -195,12 +206,10 @@ const PersonalInfo = () => {
 
         {/* Section: Professional */}
         <div>
-          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-500 mb-8 border-l-2 border-primary pl-4">Professional Compass</h3>
-          <div className="space-y-8">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                Headline
-              </label>
+          <h3 className="text-[15px] font-semibold text-gray-900 mb-4 px-1">Professional Focus</h3>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1">Professional Headline</label>
               <input
                 type="text"
                 name="headline"
@@ -208,43 +217,46 @@ const PersonalInfo = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={inputClasses}
-                placeholder="Senior Architect | ex-Google | AI Enthusiast"
+                placeholder="Strategizing the next move | AI Career Specialist"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                Biography
-              </label>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-bold text-gray-700 ml-1">About / Bio</label>
               <textarea
                 name="bio"
                 value={formData.bio}
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 rows={4}
-                className={`${inputClasses} resize-none h-32`}
-                placeholder="Craft your story..."
+                className={`${inputClasses} resize-none h-28 pt-3`}
+                placeholder="Briefly describe your professional background and goals..."
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Experience (Years)</label>
-                <select
-                  name="experienceYears"
-                  value={formData.experienceYears}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className={`${inputClasses} appearance-none cursor-pointer`}
-                >
-                  <option value="">Select Level</option>
-                  <option value="0-1">0-1 years</option>
-                  <option value="1-3">1-3 years</option>
-                  <option value="3-5">3-5 years</option>
-                  <option value="5-10">5-10 years</option>
-                  <option value="10+">10+ years</option>
-                </select>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-bold text-gray-700 ml-1">Experience Level</label>
+                <div className="relative">
+                  <select
+                    name="experienceYears"
+                    value={formData.experienceYears}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`${inputClasses} appearance-none cursor-pointer pr-10`}
+                  >
+                    <option value="">Select Level</option>
+                    <option value="0-1">0-1 years</option>
+                    <option value="1-3">1-3 years</option>
+                    <option value="3-5">3-5 years</option>
+                    <option value="5-10">5-10 years</option>
+                    <option value="10+">10+ years</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <Globe size={14} />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Current Role</label>
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-bold text-gray-700 ml-1">Current Role</label>
                 <input
                   type="text"
                   name="currentRole"
@@ -255,8 +267,8 @@ const PersonalInfo = () => {
                   placeholder="Software Engineer"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Target Role</label>
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-bold text-gray-700 ml-1">Target Role</label>
                 <input
                   type="text"
                   name="targetRole"
@@ -264,38 +276,7 @@ const PersonalInfo = () => {
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className={inputClasses}
-                  placeholder="Product Lead"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  Target Industry
-                </label>
-                <input
-                  type="text"
-                  name="targetIndustry"
-                  value={formData.targetIndustry}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className={inputClasses}
-                  placeholder="Fintech, Healthtech..."
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  Resume / Portfolio Link
-                </label>
-                <input
-                  type="url"
-                  name="resumeUrl"
-                  value={formData.resumeUrl}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className={inputClasses}
-                  placeholder="https://portfolio.com/resume"
+                  placeholder="Senior Lead Engineer"
                 />
               </div>
             </div>
@@ -305,6 +286,5 @@ const PersonalInfo = () => {
     </div>
   );
 };
-
 
 export default PersonalInfo;

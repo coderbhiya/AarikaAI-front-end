@@ -1,3 +1,5 @@
+"use client";
+
 
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
@@ -51,16 +53,16 @@ const VerifyPhone: React.FC<VerifyPhoneProps> = ({ onComplete }) => {
     return (
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         <div className="p-4">
-          <button className="p-2 rounded-lg bg-white/5">
+          <button className="p-2 rounded-md bg-white/5">
             <ArrowLeft size={24} />
           </button>
         </div>
         
         <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 w-full max-w-sm">
-            <h1 className="text-2xl font-bold mb-2 text-center">Verify Phone Number</h1>
-            <p className="text-sm text-center text-gray-400 mb-4">
-              We Have Sent Code To Your Phone Number
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+            <h1 className="text-xl font-bold mb-2 text-center tracking-tight">Verify Identity</h1>
+            <p className="text-xs text-center text-slate-400 mb-6 uppercase tracking-widest opacity-80">
+              Transmission Sent To Device
             </p>
             
             <p className="text-center text-gray-400 mb-6">+00 000000 0000</p>
@@ -72,7 +74,7 @@ const VerifyPhone: React.FC<VerifyPhoneProps> = ({ onComplete }) => {
                     <InputOTPSlot
                       key={i}
                       index={i}
-                      className="w-14 h-14 border-white/10 bg-white/5 rounded-lg text-white text-2xl"
+                      className="w-12 h-12 border-white/10 bg-white/5 rounded-md text-white text-xl font-bold"
                     />
                   ))}
                 </InputOTPGroup>
@@ -81,19 +83,19 @@ const VerifyPhone: React.FC<VerifyPhoneProps> = ({ onComplete }) => {
             
             <p className="text-center text-gray-400 mb-6">({formatTime(timer)})</p>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <Button 
-                className="w-full py-6 bg-white/10 hover:bg-white/20"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[10px] rounded-xl shadow-lg shadow-primary/20"
                 onClick={handleVerify}
               >
-                Verify
+                Verify Protocol
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full py-6 border-white/10 bg-transparent hover:bg-white/5 text-white"
+                className="w-full h-12 border-white/10 bg-transparent hover:bg-white/5 text-white font-bold uppercase tracking-widest text-[10px] rounded-xl"
                 onClick={handleSendAgain}
               >
-                Send Again
+                Resend Packet
               </Button>
             </div>
           </div>
@@ -149,37 +151,38 @@ const VerifyPhone: React.FC<VerifyPhoneProps> = ({ onComplete }) => {
       </div>
       
       {/* Right side with verification form */}
-      <div className="w-1/2 flex flex-col items-center justify-center p-12 bg-black">
-        <div className="max-w-md w-full">
-          <h1 className="text-4xl font-bold mb-12">Verify Phone Number</h1>
+      <div className="w-1/2 flex flex-col items-center justify-center p-12 bg-slate-900 relative">
+        <div className="absolute inset-0 bg-primary/5 opacity-50" />
+        <div className="max-w-md w-full relative z-10">
+          <h1 className="text-3xl font-bold mb-10 tracking-tight text-white">Verify Identity</h1>
           
           <div className="mb-10">
             <InputOTP maxLength={4} value={otp} onChange={setOtp}>
-              <InputOTPGroup>
+              <InputOTPGroup className="gap-3">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <InputOTPSlot
                     key={i}
                     index={i}
-                    className="w-24 h-14 border-white/10 bg-background rounded-md text-white text-2xl"
+                    className="w-16 h-16 border-white/10 bg-white/5 rounded-xl text-white text-2xl font-bold shadow-inner"
                   />
                 ))}
               </InputOTPGroup>
             </InputOTP>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Button 
-              className="w-full py-6 bg-white/10 hover:bg-white/20"
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[11px] rounded-xl shadow-xl shadow-primary/20"
               onClick={handleVerify}
             >
-              Verification
+              Confirm Synchronization
             </Button>
             <Button 
               variant="outline" 
-              className="w-full py-6 border-white/10 bg-transparent hover:bg-white/5 text-white"
+              className="w-full h-14 border-white/10 bg-transparent hover:bg-white/5 text-slate-400 hover:text-white font-bold uppercase tracking-widest text-[11px] rounded-xl"
               onClick={handleSendAgain}
             >
-              Send Again
+              Resend Package
             </Button>
           </div>
           

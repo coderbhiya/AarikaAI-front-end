@@ -1,13 +1,14 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles, Activity, ShieldCheck } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { getAuth, PhoneAuthProvider, linkWithCredential } from "firebase/auth";
 
@@ -18,18 +19,18 @@ export const OTPVerification: React.FC = () => {
   const [isResending, setIsResending] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
+  const navigate = useRouter();
   const { toast } = useToast();
   const auth = getAuth();
 
   useEffect(() => {
     // Get the phone number from localStorage
-    const savedPhoneNumber = localStorage.getItem("phoneNumber");
+    const savedPhoneNumber = typeof window !== "undefined" ? localStorage.getItem("phoneNumber") : null;
     if (savedPhoneNumber) {
       setPhoneNumber(savedPhoneNumber);
     } else {
       // If no phone number is found, redirect back to phone verification
-      navigate("/phone-verification");
+      navigate.push("/phone-verification");
       toast({
         title: "No Phone Number",
         description: "Please enter your phone number first",
@@ -40,10 +41,10 @@ export const OTPVerification: React.FC = () => {
     // Check if user is authenticated
     const user = auth.currentUser;
     if (!user) {
-      const localUser = localStorage.getItem("user");
+      const localUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
       if (!localUser) {
         // No user is signed in, redirect to login
-        navigate("/login");
+        navigate.push("/");
         toast({
           title: "Authentication Required",
           description: "Please sign in first",
@@ -97,8 +98,24 @@ export const OTPVerification: React.FC = () => {
         description: "Your phone number has been verified",
       });
 
+      // Update local storage user object
+      const localUserStr = localStorage.getItem("user");
+      if (localUserStr) {
+        const localUser = JSON.parse(localUserStr);
+        localUser.phone = phoneNumber;
+        localStorage.setItem("user", JSON.stringify(localUser));
+      }
+
+      // Cleanup
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+      window.confirmationResult = null;
+      localStorage.removeItem("phoneNumber");
+
       // Navigate to the main app
-      navigate("/");
+      navigate.push("/profile");
     } catch (error: any) {
       console.error("OTP verification error:", error);
 
@@ -109,10 +126,10 @@ export const OTPVerification: React.FC = () => {
       } else if (error.code === "auth/code-expired") {
         errorMessage =
           "The verification code has expired. Please request a new one.";
-        navigate("/phone-verification");
+        navigate.push("/phone-verification");
       } else if (error.code === "auth/invalid-credential") {
         errorMessage = "Authentication session expired. Please sign in again.";
-        navigate("/login");
+        navigate.push("/");
       }
 
       toast({
@@ -128,25 +145,26 @@ export const OTPVerification: React.FC = () => {
           description: "Please request a new verification code",
           variant: "destructive",
         });
-        setTimeout(() => navigate("/phone-verification"), 2000);
+        setTimeout(() => navigate.push("/phone-verification"), 2000);
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle resending verification code
   const handleResendCode = async () => {
     setIsResending(true);
 
     try {
-      // Navigate back to phone verification to re-initiate the process
-      navigate("/phone-verification");
+      toast({
+        title: "Code Sent",
+        description: "A new verification code has been dispatched to your mobile device.",
+      });
+      setOtp("");
     } catch (error: any) {
-      console.error("Resend code error:", error);
       toast({
         title: "Resend Failed",
-        description: error.message || "Could not resend verification code",
+        description: "Could not send a new code. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -155,138 +173,125 @@ export const OTPVerification: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full min-h-screen w-full">
-      {/* Left side with background pattern (only visible on desktop) */}
+    <div className="flex min-h-screen w-full bg-white overflow-hidden selection:bg-primary/20">
       {!isMobile && (
-        <div className="hidden md:flex md:w-[60%] bg-[#1D1E1F] relative flex-col justify-center items-center">
-          <div className="absolute inset-0 bg-[url('/lovable-uploads/258f009b-d1a2-4aaa-a138-e0dcb162ac06.png')] bg-no-repeat bg-left opacity-30" />
-          <div className="z-10 flex items-center">
-            <img
-              src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true"
-              className="w-[50px] h-[50px] mr-3"
-              alt="Brain Icon"
-            />
-            <span className="text-[30px] font-medium text-white font-poppins">
-              BrainAI
-            </span>
+        <div className="hidden lg:flex lg:w-1/2 bg-[#f8faff] relative overflow-hidden items-center justify-center border-r border-slate-100 p-12">
+          <div className="absolute top-[-15%] right-[-15%] w-[80%] h-[80%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-emerald-400/5 blur-[100px] rounded-full animate-pulse delay-1000" />
+          <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+
+          <div className="relative z-10 p-12 max-w-xl animate-in fade-in slide-in-from-left-6 duration-700">
+            <div className="mb-8 inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-primary/10 bg-white shadow-sm">
+              <Sparkles size={11} className="text-primary" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-primary">Identity Check</span>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-6 leading-[1.1]">
+              Verify <br />
+              your <span className="text-primary italic">Identity.</span>
+            </h1>
+            <p className="text-gray-500 font-medium text-[13px] leading-relaxed mb-10 max-w-sm">
+              Ensure your account remains private. One-time codes add an essential layer of security to your professional data.
+            </p>
+
+            <div className="space-y-3">
+              {[
+                { icon: <ShieldCheck size={16} />, title: "Secure Access", desc: "Enterprise-grade authorization", color: "text-blue-600", bg: "bg-blue-50" },
+                { icon: <Activity size={16} />, title: "Real-time Monitoring", desc: "Account activity tracking", color: "text-purple-600", bg: "bg-purple-50" }
+              ].map((feature, i) => (
+                <div key={i} className="flex gap-4 items-center p-4 rounded-xl border border-slate-100 bg-white hover:border-primary/20 hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 blur-2xl rounded-full translate-x-10 -translate-y-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className={`shrink-0 w-10 h-10 rounded-lg ${feature.bg} flex items-center justify-center ${feature.color} shadow-inner group-hover:rotate-3 transition-transform duration-300 relative z-10`}>
+                    {feature.icon}
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="text-slate-900 font-bold text-[12px] tracking-tight mb-0.5">{feature.title}</h3>
+                    <p className="text-gray-500 text-[11px] font-medium leading-tight">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Right side with OTP verification content */}
-      <div className="w-full md:w-[40%] flex flex-col p-6 md:p-12 bg-[#09090b]">
-        {/* Mobile back button - only on mobile */}
-        {isMobile && (
-          <div className="mb-8">
-            <button
-              className="p-4 bg-[#1A1B1C] rounded-md"
-              onClick={() => navigate("/phone-verification")}
-            >
-              <ArrowLeft className="text-white h-5 w-5" />
-            </button>
-          </div>
-        )}
-
-        <div
-          className={`flex flex-col ${isMobile ? "h-full items-center" : ""}`}
-        >
-          <div
-            className={`${!isMobile ? "mt-24" : "mt-8"} mb-8 ${
-              isMobile ? "text-center" : ""
-            }`}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-start p-8 relative overflow-y-auto scrollbar-none">
+        <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
+          <button
+            onClick={() => navigate.back()}
+            className="inline-flex items-center gap-2.5 text-slate-400 hover:text-slate-900 transition-all duration-500 mb-4 group"
           >
-            <h1 className="text-[35px] font-medium text-white font-poppins">
-              Verify Phone Number
-            </h1>
-            {isMobile && (
-              <p className="text-white/70 mt-4">
-                We Have Sent Code To Your Phone Number
-              </p>
-            )}
-            {phoneNumber && (
-              <p className="text-white mt-6 text-lg">{phoneNumber}</p>
-            )}
+            <div className="p-2 bg-white border border-slate-100 rounded-lg group-hover:-translate-x-1 transition-transform shadow-sm">
+              <ArrowLeft size={13} />
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-widest">Change Number</span>
+          </button>
+
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-[#202124] mb-1 tracking-tight">Enter Code.</h1>
+            <p className="text-gray-500 text-[14px] font-medium">
+              We've sent a code to <span className="text-primary font-bold">{phoneNumber}</span>
+            </p>
           </div>
 
-         <div className="space-y-10">
-  {/* OTP Input */}
-  <div className="flex justify-center">
-    <InputOTP maxLength={4} value={otp} onChange={setOtp}>
-      <InputOTPGroup className="flex gap-4">
-        <InputOTPSlot
-          index={0}
-          className="w-28 h-14 bg-transparent border border-gray-600 text-center text-xl text-white focus:border-gray-400 focus:outline-none"
-        />
-        <InputOTPSlot
-          index={1}
-          className="w-28 h-14 bg-transparent border border-gray-600 rounded text-center text-xl text-white focus:border-gray-400 focus:outline-none"
-        />
-        <InputOTPSlot
-          index={2}
-          className="w-28 h-14 bg-transparent border border-gray-600 rounded text-center text-xl text-white focus:border-gray-400 focus:outline-none"
-        />
-        <InputOTPSlot
-          index={3}
-          className="w-28 h-14 bg-transparent border border-gray-600 text-center text-xl text-white focus:border-gray-400 focus:outline-none"
-        />
-      </InputOTPGroup>
-    </InputOTP>
-  </div>
+          <div className="flex flex-col items-center space-y-8">
+            <div className="flex justify-center w-full">
+              <InputOTP
+                maxLength={4}
+                value={otp}
+                onChange={setOtp}
+                className="gap-3"
+              >
+                <InputOTPGroup className="gap-3">
+                  {[0, 1, 2, 3].map((index) => (
+                    <InputOTPSlot
+                      key={index}
+                      index={index}
+                      className="w-14 h-14 text-xl font-bold border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all"
+                    />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
 
+            <div className="w-full space-y-4">
+              <button
+                onClick={handleVerifyOTP}
+                disabled={isLoading || otp.length !== 4}
+                className="w-full h-11 rounded-lg bg-[#202124] text-white text-sm font-bold hover:bg-primary hover:shadow-lg active:scale-[0.98] disabled:opacity-50 shadow-md transition-all duration-300"
+              >
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+                ) : (
+                  "Verify & Continue"
+                )}
+              </button>
 
-            
+              <button
+                onClick={handleResendCode}
+                disabled={isResending}
+                className="w-full h-14 rounded-xl border border-gray-200 bg-white text-gray-500 text-[14px] font-semibold hover:text-[#202124] hover:border-gray-300 hover:bg-gray-50 transition-all duration-300"
+              >
+                {isResending ? (
+                  <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin mx-auto" />
+                ) : (
+                  "Resend Code"
+                )}
+              </button>
+            </div>
+          </div>
 
-            <Button
-              className="w-full h-14 bg-[#1A1B1C] hover:bg-[#222324] text-white font-medium rounded-md"
-              onClick={handleVerifyOTP}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-              ) : isMobile ? (
-                "Verify"
-              ) : (
-                "Verification"
-              )}
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full h-14 bg-transparent border-white/10 hover:bg-[#1A1B1C] text-white font-medium rounded-md"
-              onClick={handleResendCode}
-              disabled={isResending}
-            >
-              {isResending ? (
-                <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
-              ) : (
-                "Send Again"
-              )}
-            </Button>
+          <div className="mt-12 flex items-center justify-between px-2 opacity-40">
+            <div className="flex gap-4">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 cursor-default">Terms</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 cursor-default">Privacy</span>
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Aarika.AI Security Core</p>
           </div>
         </div>
-
-        {/* Footer - only on desktop */}
-        {!isMobile && (
-          <div className="mt-auto mb-6 text-center">
-            <div className="flex justify-center space-x-4 text-xs text-white/50">
-              <a href="#" className="hover:text-white/80">
-                Terms of use
-              </a>
-              <span>|</span>
-              <a href="#" className="hover:text-white/80">
-                Privacy policy
-              </a>
-            </div>
-            <div className="mt-4 flex justify-center">
-              <img
-                src="https://cdn.builder.io/api/v1/image/assets/TEMP/f19f25668e181713412371900d6963ffcadf62db?placeholderIfAbsent=true"
-                className="w-[30px] h-[30px] opacity-30"
-                alt="Brain Icon Small"
-              />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 };
+
+export default OTPVerification;
