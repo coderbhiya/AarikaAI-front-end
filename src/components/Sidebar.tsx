@@ -118,8 +118,8 @@ const Sidebar = () => {
         {/* Header */}
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate.push("/chat")}>
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
-              <BrainLogo size={20} />
+            <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center shadow-sm overflow-hidden">
+              <BrainLogo size={32} />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-[#202124] tracking-tight leading-none mb-1">Aarika.AI</h1>
