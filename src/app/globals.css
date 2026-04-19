@@ -50,7 +50,7 @@
 
   body {
     @apply bg-[#F8F9FA] text-[#202124] antialiased overflow-x-hidden min-h-screen relative;
-    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03", "tnum";
+    /* font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03", "tnum"; */
     font-family: 'Inter', 'Google Sans', -apple-system, sans-serif;
     letter-spacing: -0.01em;
   }
