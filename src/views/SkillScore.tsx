@@ -24,7 +24,7 @@ interface Message {
 }
 
 const SkillScore: React.FC = () => {
-  const { toggleSidebar } = useAuth();
+  const { user, toggleSidebar } = useAuth();
   const searchParams = useSearchParams();
   const skillId = searchParams.get("skillId");
   const navigate = useRouter();
@@ -122,7 +122,7 @@ const SkillScore: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-screen bg-[#F8F9FA] relative">
       {/* Header */}
-      <header className="sticky top-0 z-40 flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-[#F8F9FA]/80 backdrop-blur-xl border-b border-gray-100/50 w-full">
+      <header className="sticky top-0 z-40 flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-[#F8F9FA]/80 backdrop-blur-xl border-b border-gray-100/50 w-full animate-in fade-in slide-in-from-top duration-500">
         <div className="flex items-center gap-2 md:gap-3">
           <button
             onClick={toggleSidebar}
@@ -136,69 +136,97 @@ const SkillScore: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
-            <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-1000"
-                style={{ width: `${(currentIndex / 10) * 100}%` }}
-              />
+          <div className="hidden sm:flex items-center gap-4 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between items-center w-32">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Progress</span>
+                <span className="text-[10px] font-bold text-primary">{Math.round((currentIndex / 10) * 100)}%</span>
+              </div>
+              <div className="w-32 h-1 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${(currentIndex / 10) * 100}%` }}
+                />
+              </div>
             </div>
-            <span className="text-[12px] font-medium text-[#202124]">{currentIndex}/10</span>
           </div>
           <button className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all overflow-hidden shadow-sm" onClick={() => navigate.push("/profile")}>
-            <User size={16} />
+             {user?.photoURL ? (
+                <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <User size={16} />
+              )}
           </button>
         </div>
       </header>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-10 scrollbar-none">
-        <div className="max-w-4xl mx-auto space-y-12 pb-32">
-          {messages.map((m) => (
+      <main className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-4 md:px-8 pt-6 pb-32">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {messages.map((m, idx) => (
             <div
               key={m.id}
-              className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
+              className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"} animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out`}
+              style={{ animationDelay: `${idx * 100}ms` }}
             >
-              <div className={`flex items-center gap-3 mb-2 px-1 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-                {!m.role.includes("assistant") ? (
-                  <div className="w-6 h-6 rounded-full bg-gray-200" />
-                ) : (
-                  <BrainLogo size={16} />
-                )}
-                <span className="text-[11px] font-medium text-gray-400">
-                  {m.role === "user" ? "You" : "CareerAI"}
+              <div className={`flex items-center gap-2.5 mb-2 px-1 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center border shadow-sm overflow-hidden ${
+                  m.role === "user" ? "bg-white border-gray-100" : "bg-primary/5 border-primary/10"
+                }`}>
+                  {m.role === "user" ? (
+                    user?.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold text-primary">{user?.displayName?.[0] || user?.email?.[0] || "U"}</span>
+                  ) : (
+                    <BrainLogo size={18} />
+                  )}
+                </div>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
+                  {m.role === "user" ? "Identity" : "AarikaAI Analyst"}
                 </span>
               </div>
 
-              <div className={`message-bubble-${m.role === "user" ? "user" : "ai"} p-4 rounded-2xl bg-white shadow-sm border border-gray-100`}>
+              <div className={`message-bubble-${m.role === "user" ? "user" : "ai"} transition-all duration-300`}>
                 <Markdown text={m.message} />
               </div>
             </div>
           ))}
 
-          {isLoading && (
-            <div className="flex items-center gap-4 animate-pulse">
-              <Loader2 size={18} className="text-primary animate-spin" />
-              <p className="text-[13px] text-gray-400">Analyzing your response...</p>
+          {isLoading && currentIndex < 10 && (
+            <div className="flex justify-start my-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex items-center gap-3 px-1">
+                <div className="w-7 h-7 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10">
+                  <BrainLogo size={16} />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="typing-dot" />
+                  <div className="typing-dot" />
+                  <div className="typing-dot" />
+                </div>
+              </div>
             </div>
           )}
+
+          {isLoading && currentIndex >= 10 && (
+            <div className="flex flex-col items-center justify-center py-12 gap-4 animate-in zoom-in-95 duration-700">
+               <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+               <p className="text-[14px] font-medium text-gray-400 animate-pulse tracking-tight">Synthesizing Assessment Data...</p>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
-      </div>
+      </main>
 
       {/* Input Field */}
       {currentIndex < 10 && (
-        <div className="fixed bottom-8 left-0 right-0 px-4">
+        <footer className="absolute bottom-0 left-0 right-0 z-30 px-3 md:px-6 pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
           <div className="max-w-4xl mx-auto">
-            <div className="p-2 shadow-2xl bg-white/90 backdrop-blur-md rounded-2xl border border-gray-100">
-              <ChatInput
-                onSendMessage={handleSendMessage}
-                isLoading={isLoading}
-                fileInputShow={false}
-              />
-            </div>
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading}
+              fileInputShow={false}
+            />
           </div>
-        </div>
+        </footer>
       )}
     </div>
   );

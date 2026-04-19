@@ -160,7 +160,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       {/* Footer Info */}
       <div className="mt-3 text-center">
         <p className="text-[11px] text-[#444746]/60 font-normal tracking-tight">
-          CareerAI may display inaccurate info, so double-check its responses. <span className="underline cursor-pointer">Your privacy & CareerAI Apps</span>
+          AarikaAI may display inaccurate info, so double-check its responses. <span className="underline cursor-pointer">Your privacy & AarikaAI Apps</span>
         </p>
       </div>
     </div>

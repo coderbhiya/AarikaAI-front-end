@@ -278,7 +278,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         <div className="mt-auto pb-6 text-center opacity-40">
-          <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-400">Secure AES-256 Encryption • CareerAI Cloud</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-400">Secure AES-256 Encryption • AarikaAI Cloud</p>
         </div>
       </div>
     </div>

@@ -102,7 +102,7 @@ const ChatArea: React.FC = () => {
                         <Menu size={18} className="md:w-5 md:h-5" />
                     </button>
                     <div className="flex items-center gap-2">
-                        <span className="text-[17px] font-semibold text-[#444746] tracking-tight">CareerAI</span>
+                        <span className="text-[17px] font-semibold text-[#444746] tracking-tight">AarikaAI</span>
                         <div className="px-1.5 py-0.5 rounded-md bg-primary/5 border border-primary/10">
                             <span className="text-[10px] font-bold text-primary uppercase tracking-tight">v3.0</span>
                         </div>

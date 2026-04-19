@@ -228,7 +228,7 @@ const JobDetail = () => {
 
                 <div className="flex items-center gap-2 p-2 bg-white rounded-2xl border border-primary/5 text-emerald-600 text-[12px] font-semibold">
                   <CheckCircle2 size={16} />
-                  Verified by CareerAI Core
+                  Verified by AarikaAI Core
                 </div>
               </div>
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-[80px] rounded-full translate-x-10 -translate-y-10" />

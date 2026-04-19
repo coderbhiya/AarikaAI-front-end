@@ -2,8 +2,11 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 
 export const metadata = {
-  title: "CareerAI",
-  description: "CareerAI platform",
+  title: "AarikaAI",
+  description: "AarikaAI platform",
+  icons: {
+    icon: "/aarika-logo.png",
+  },
 };
 
 export default function RootLayout({
