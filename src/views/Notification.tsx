@@ -123,12 +123,12 @@ const Notification = () => {
 
                     {!loading && notifications.length === 0 && (
                         <div className="p-16 text-center bg-white border border-slate-100 rounded-2xl animate-in zoom-in duration-700 shadow-sm relative overflow-hidden">
-                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full translate-x-10 -translate-y-10" />
-                             <div className="w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-4 border border-slate-100 shadow-inner text-slate-300 relative z-10">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full translate-x-10 -translate-y-10" />
+                            <div className="w-14 h-14 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-4 border border-slate-100 shadow-inner text-slate-300 relative z-10">
                                 <Bell size={24} />
-                             </div>
-                             <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-2 uppercase relative z-10">Clear Frequency</h3>
-                             <p className="text-slate-400 font-bold text-[11px] uppercase tracking-widest relative z-10 opacity-70">No neural notifications detected.</p>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-2 uppercase relative z-10">Clear Frequency</h3>
+                            <p className="text-slate-400 font-bold text-[11px] uppercase tracking-widest relative z-10 opacity-70">No neural notifications detected.</p>
                         </div>
                     )}
 
@@ -214,7 +214,7 @@ const Notification = () => {
                                     {new Date(selected.createdAt).toLocaleString()}
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setSelected(null)}
                                 className="p-2 bg-slate-50 border border-slate-100 rounded-xl text-slate-400 hover:text-red-500 transition-all duration-500 active:scale-90"
                             >
@@ -228,7 +228,7 @@ const Notification = () => {
 
                         <div className="flex flex-col md:flex-row items-center gap-3">
                             {selected.link && (
-                                <button 
+                                <button
                                     onClick={() => openLink(selected.link)}
                                     className="w-full md:w-auto px-10 py-3.5 bg-slate-900 hover:bg-primary text-white font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all duration-500 shadow-md active:scale-95 flex items-center justify-center gap-2.5"
                                 >
@@ -247,7 +247,6 @@ const Notification = () => {
                     </div>
                 </div>
             )}
-            </div>
         </div>
     );
 };
