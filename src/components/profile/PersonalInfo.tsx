@@ -25,7 +25,7 @@ const PersonalInfo = () => {
 
   useEffect(() => {
     if (user && !isEditing) {
-      const profile = user.UserProfile || user.userProfile || {};
+      const profile = user.UserProfile || {};
       setFormData(prev => ({
         ...prev,
         name: user.name || user.displayName || '',
