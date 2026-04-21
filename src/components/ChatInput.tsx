@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Paperclip, X, Globe, Shield, ArrowRight, Mic, Plus } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 interface ChatInputProps {
   onSendMessage: (message: string, files?: File[]) => void;
@@ -147,8 +148,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 type="submit"
                 disabled={!(message.trim() || selectedFiles.length > 0) || isLoading}
                 className={`p-2.5 md:p-3 rounded-full transition-all duration-300 flex items-center justify-center ${(message.trim() || selectedFiles.length > 0) && !isLoading
-                    ? "text-primary hover:bg-white/50"
-                    : "text-gray-300 pointer-events-none"
+                  ? "text-primary hover:bg-white/50"
+                  : "text-gray-300 pointer-events-none"
                   }`}
               >
                 <ArrowRight size={isMobile ? 22 : 24} strokeWidth={2.5} />
