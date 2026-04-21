@@ -14,6 +14,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   toggleSidebar: () => void;
+  showSidebar: boolean;
   updateUser: (updatedUser: User) => void;
 }
 
@@ -49,10 +50,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           displayName: firebaseUser.displayName || existingData.displayName || existingData.name,
           photoURL: firebaseUser.photoURL || existingData.photoURL,
         };
-        
+
         setUser(transformedUser);
         localStorage.setItem("user", JSON.stringify(transformedUser));
-        
+
         // Sync with backend to get latest profile data
         syncProfile();
       } else {
@@ -83,7 +84,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: backendUser.phone,
           role: backendUser.role,
           UserProfile: backendUser.UserProfile || backendUser.userProfile,
-          userProfile: backendUser.userProfile || backendUser.UserProfile
         };
         updateUser(enrichedUser);
       }

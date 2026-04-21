@@ -75,10 +75,10 @@ const ProfilePage = () => {
                         <CheckCircle2 size={18} className="text-blue-600" />
                       </div>
                       <p className="text-[#1d2226] text-[16px] leading-tight mb-2 font-medium">
-                        {(user?.UserProfile?.headline || user?.userProfile?.headline) || "Strategizing the next move | AI Career Specialist"}
+                        {(user?.UserProfile?.headline) || "Strategizing the next move | AI Career Specialist"}
                       </p>
                       <div className="flex flex-wrap items-center gap-x-2 text-[14px] text-gray-500">
-                        <span>{(user?.UserProfile?.location || user?.userProfile?.location) || "San Francisco, California, United States"}</span>
+                        <span>{(user?.UserProfile?.location) || "San Francisco, California, United States"}</span>
                         <span className="text-gray-300">•</span>
                         <button className="text-blue-600 font-semibold hover:underline">Contact info</button>
                       </div>
