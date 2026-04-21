@@ -219,7 +219,7 @@ export const LoginPage: React.FC = () => {
             <div className="space-y-1.5">
               <div className="flex justify-between items-center px-1">
                 <label className="text-[12px] font-bold text-gray-700">Password</label>
-                <button type="button" className="text-[11px] font-bold text-primary hover:underline">Forgot?</button>
+                <Link href="/forgot-password" title="Forgot Password" className="text-[11px] font-bold text-primary hover:underline">Forgot?</Link>
               </div>
               <div className="relative group">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />

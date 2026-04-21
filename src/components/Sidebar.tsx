@@ -163,6 +163,13 @@ const Sidebar = () => {
               active={pathname === "/jobs"}
             />
             <SidebarItem
+              to="/notifications"
+              icon={<Bell size={20} />}
+              label="Notification Hub"
+              active={pathname === "/notifications"}
+              badge={undefined} // Potential to add dynamic count later
+            />
+            <SidebarItem
               to="/profile"
               icon={<User size={20} />}
               label="Digital Identity"

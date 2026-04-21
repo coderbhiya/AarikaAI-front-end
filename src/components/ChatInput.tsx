@@ -7,6 +7,7 @@ interface ChatInputProps {
   onFocus?: () => void;
   isLoading?: boolean;
   fileInputShow?: boolean;
+  disablePaste?: boolean;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -14,6 +15,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onFocus = () => { },
   isLoading = false,
   fileInputShow = true,
+  disablePaste = false,
 }) => {
   const [message, setMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -59,6 +61,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
       if (inputRef.current) {
         inputRef.current.style.height = "auto";
       }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (disablePaste) {
+      e.preventDefault();
+      toast.warning("Strategic Intel: Manual input is required for this assessment to ensure accuracy.");
     }
   };
 
@@ -110,6 +119,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onFocus={onFocus}
+              onPaste={handlePaste}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
