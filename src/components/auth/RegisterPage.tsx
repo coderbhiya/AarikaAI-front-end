@@ -9,7 +9,8 @@ import {
     Lock,
     Shield,
     Activity,
-    Cpu
+    Cpu,
+    Phone
 } from "lucide-react";
 import BrainLogo from "@/components/BrainLogo";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -33,6 +34,7 @@ export const RegisterPage: React.FC = () => {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
+        phone: "",
         password: "",
         confirmPassword: "",
     });
@@ -70,6 +72,7 @@ export const RegisterPage: React.FC = () => {
                 userData: {
                     name: formData.name,
                     email: formData.email,
+                    phone: formData.phone,
                 }
             });
 
@@ -168,15 +171,15 @@ export const RegisterPage: React.FC = () => {
                         <p className="text-gray-500 text-[14px] font-medium">Join thousands of professionals on Aarika.AI.</p>
                     </div>
 
-                    <form onSubmit={handleRegister} className="space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-gray-700 ml-1">Full Name</label>
+                    <form onSubmit={handleRegister} className="space-y-3.5">
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
                             <div className="relative group">
-                                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
+                                <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
                                 <input
                                     type="text"
                                     required
-                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white transition-all duration-300 placeholder:text-gray-300 h-10.5"
                                     placeholder="John Doe"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -184,14 +187,14 @@ export const RegisterPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-[12px] font-bold text-gray-700 ml-1">Email Address</label>
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
                             <div className="relative group">
-                                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
+                                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
                                 <input
                                     type="email"
                                     required
-                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white transition-all duration-300 placeholder:text-gray-300 h-10.5"
                                     placeholder="name@example.com"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -199,15 +202,33 @@ export const RegisterPage: React.FC = () => {
                             </div>
                         </div>
 
+                        <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Phone Number</label>
+                            <div className="relative group">
+                                <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
+                                <input
+                                    type="tel"
+                                    required
+                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white transition-all duration-300 placeholder:text-gray-300 h-10.5"
+                                    placeholder="+91 00000 00000"
+                                    value={formData.phone}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9+]/g, '');
+                                        setFormData({ ...formData, phone: val });
+                                    }}
+                                />
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-[12px] font-bold text-gray-700 ml-1">Password</label>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Password</label>
                                 <div className="relative group">
-                                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
+                                    <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
                                     <input
                                         type="password"
                                         required
-                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white transition-all duration-300 placeholder:text-gray-300 h-10.5"
                                         placeholder="••••••••"
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -215,14 +236,14 @@ export const RegisterPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-[12px] font-bold text-gray-700 ml-1">Confirm</label>
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1">Confirm</label>
                                 <div className="relative group">
-                                    <Shield size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
+                                    <Shield size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
                                     <input
                                         type="password"
                                         required
-                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white transition-all duration-300 placeholder:text-gray-300 h-10.5"
                                         placeholder="••••••••"
                                         value={formData.confirmPassword}
                                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
