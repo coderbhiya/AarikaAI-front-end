@@ -268,7 +268,7 @@ export const RegisterPage: React.FC = () => {
                     <div className="text-center mt-10">
                         <p className="text-[13px] text-gray-500 font-medium">
                             Already have an account?{" "}
-                            <Link href="/login" className="text-primary font-bold hover:underline ml-1 transition-all">Sign In</Link>
+                            <Link href="/" className="text-primary font-bold hover:underline ml-1 transition-all">Sign In</Link>
                         </p>
                     </div>
                 </div>

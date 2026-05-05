@@ -112,9 +112,9 @@ export const ForgotPasswordPage: React.FC = () => {
       {/* Auth Side */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-start p-8 relative overflow-y-auto scrollbar-none">
         <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
-          <Link href="/login" className="inline-flex items-center gap-2.5 text-slate-400 hover:text-slate-900 transition-all duration-500 mb-6 group">
+          <Link href="/" className="inline-flex items-center gap-2.5 text-slate-400 hover:text-slate-900 transition-all duration-500 mb-6 group">
             <div className="p-2 bg-white border border-slate-100 rounded-lg group-hover:-translate-x-1 transition-transform shadow-sm">
-                <ArrowLeft size={13} />
+              <ArrowLeft size={13} />
             </div>
             <span className="text-[9px] font-bold uppercase tracking-widest text-[#202124]">Back to Sign In</span>
           </Link>
@@ -132,7 +132,7 @@ export const ForgotPasswordPage: React.FC = () => {
               {isSubmitted ? "Check your email." : "Reset password."}
             </h2>
             <p className="text-gray-500 text-[14px] font-medium leading-relaxed">
-              {isSubmitted 
+              {isSubmitted
                 ? `We've sent a recovery link to ${email}. Please check your inbox and spam folder.`
                 : "Enter your email address and we'll send you a link to reset your password."
               }
@@ -181,7 +181,7 @@ export const ForgotPasswordPage: React.FC = () => {
 
           <div className="text-center mt-12">
             <p className="text-[13px] text-gray-400 font-medium tracking-tight">
-                Need more help? <a href="mailto:support@aarika.ai" className="text-primary font-bold hover:underline ml-1">Contact Support</a>
+              Need more help? <a href="mailto:support@aarika.ai" className="text-primary font-bold hover:underline ml-1">Contact Support</a>
             </p>
           </div>
         </div>
