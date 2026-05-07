@@ -170,12 +170,6 @@ const Sidebar = () => {
               badge={undefined} // Potential to add dynamic count later
             />
             <SidebarItem
-              to="/profile"
-              icon={<User size={20} />}
-              label="Digital Identity"
-              active={pathname === "/profile"}
-            />
-            <SidebarItem
               to="/subscription"
               icon={<Sparkles size={20} />}
               label="Upgrade Plan"
@@ -184,7 +178,7 @@ const Sidebar = () => {
             />
           </div>
 
-          <div>
+          {/* <div>
             <h3 className="px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Recent Logs</h3>
             <div className="space-y-1">
               {[
@@ -198,7 +192,7 @@ const Sidebar = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Footer */}
