@@ -20,6 +20,19 @@ export const updateProfile = async (profileData) => {
   }
 };
 
+export const autoFillProfileFromResume = async (filePath: string, originalName: string) => {
+  try {
+    const response = await axiosInstance.post(`/profile/auto-fill-from-resume`, {
+      filePath,
+      originalName
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error auto-filling profile from resume:", error);
+    throw error;
+  }
+};
+
 // Skills API
 export const getSkills = async () => {
   try {

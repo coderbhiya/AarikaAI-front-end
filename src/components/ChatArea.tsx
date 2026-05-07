@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChats, sendChatMessage, uploadFile } from "@/services/chatService";
+import { autoFillProfileFromResume } from "@/services/profileService";
 import MessageList from "./chat/MessageList";
 import BrainLogo from "./BrainLogo";
 import SuggestionChips from "./chat/SuggestionChips";
@@ -22,7 +23,7 @@ const ChatArea: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const { data: messages = [], isLoading: isChatsLoading } = useQuery({
+    const { data: messages = [], isLoading: isChatsLoading, isError, error } = useQuery({
         queryKey: ["chats"],
         queryFn: getChats,
     });
@@ -85,6 +86,27 @@ const ChatArea: React.FC = () => {
 
     const handleSendMessage = async (text: string, attachedFiles?: File[]) => {
         const uploadedFiles = attachedFiles ? await handleFileUploads(attachedFiles) : [];
+        
+        // Check for resumes and trigger auto-fill
+        if (uploadedFiles.length > 0) {
+            const resumeFile = uploadedFiles.find(f => 
+                f.originalName.toLowerCase().includes("resume") || 
+                f.originalName.toLowerCase().includes("cv") ||
+                [".pdf", ".doc", ".docx"].includes(f.fileType.toLowerCase())
+            );
+
+            if (resumeFile) {
+                toast.promise(autoFillProfileFromResume(resumeFile.filePath, resumeFile.originalName), {
+                    loading: "Parsing resume to update profile...",
+                    success: () => {
+                        queryClient.invalidateQueries({ queryKey: ["profile"] });
+                        return "Profile updated automatically from resume! 🚀";
+                    },
+                    error: "Could not auto-fill profile."
+                });
+            }
+        }
+
         chatMutation.mutate({ text, files: uploadedFiles });
     };
 
@@ -125,7 +147,23 @@ const ChatArea: React.FC = () => {
             {/* Content Area */}
             <main ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-3 md:px-6 pt-4 md:pt-6 pb-24 md:pb-20">
                 <div className="max-w-4xl mx-auto w-full">
-                    {isChatsLoading ? (
+                    {isError ? (
+                        <div className="flex flex-col justify-center items-center h-[70vh] gap-4 p-8 text-center bg-red-50/50 rounded-3xl border border-red-100 animate-in fade-in zoom-in duration-500">
+                            <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center text-red-600 mb-2">
+                                <Shield size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-red-900">Connection Interrupted</h3>
+                            <p className="text-sm text-red-700 max-w-sm">
+                                {(error as any)?.response?.data?.message || (error as any)?.message || "The neural link could not be established. Please check your network and refresh."}
+                            </p>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="mt-4 px-6 py-2 bg-red-600 text-white rounded-full font-bold text-sm hover:bg-red-700 transition-all shadow-lg shadow-red-200 active:scale-95"
+                            >
+                                Reconnect System
+                            </button>
+                        </div>
+                    ) : isChatsLoading ? (
                         <div className="flex flex-col justify-center items-center h-[70vh] gap-4">
                             <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                             <span className="text-[13px] font-medium text-gray-400 animate-pulse">Establishing Connection...</span>
@@ -145,7 +183,7 @@ const ChatArea: React.FC = () => {
                             <SuggestionChips onSelect={(text) => handleSendMessage(text)} />
                         </div>
                     ) : (
-                        <MessageList messages={messages} />
+                        <MessageList messages={messages} onSendMessage={handleSendMessage} />
                     )}
 
                     {isProcessing && (

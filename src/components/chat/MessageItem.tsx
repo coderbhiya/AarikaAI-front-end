@@ -9,9 +9,12 @@ import RoadmapCard from "./cards/RoadmapCard";
 import SkillGapCard from "./cards/SkillGapCard";
 import ResumeAnalysisCard from "./cards/ResumeAnalysisCard";
 import SWOTCard from "./cards/SWOTCard";
+import CollegeCard from "./cards/CollegeCard";
+import QuizCard from "./cards/QuizCard";
 
 interface MessageItemProps {
   message: Message;
+  onSendMessage?: (text: string) => void;
 }
 
 const formatFileSize = (bytes: number) => {
@@ -29,11 +32,34 @@ const getFileIcon = (fileType: string) => {
   return <FileIcon size={16} className="text-gray-400" />;
 };
 
-const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => {
   const isUser = message.role === "user";
 
   const renderContent = () => {
     const text = message.message;
+
+    // Quiz Card Logic
+    const quizTagRegex = /\[QUIZ_CARD\]([\s\S]*?)\[\/QUIZ_CARD\]/i;
+    const quizMatch = text.match(quizTagRegex);
+
+    if (quizMatch) {
+      try {
+        const quizData = JSON.parse(quizMatch[1]);
+        const cleanText = text.replace(quizTagRegex, "").trim();
+
+        return (
+          <div className="flex flex-col gap-2 w-full">
+            {cleanText && <Markdown text={cleanText} />}
+            <QuizCard
+              options={quizData.options}
+              onSelect={(option) => onSendMessage?.(option)}
+            />
+          </div>
+        );
+      } catch (err) {
+        console.error("Failed to parse quiz card data", err);
+      }
+    }
 
     // Simple tag detection for demonstration
     if (text.includes("[JOB_CARD]")) {
@@ -92,6 +118,58 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
           }}
         />
       );
+    }
+
+    // Handle College/University Cards with typo resilience (Closing tag is optional)
+    const collegeTagRegex = /\[(COLLEGE|COLUMN|UNIVERSITY)_CARD\]([\s\S]*?)(?:\[\/(COLLEGE|COLUMN|UNIVERSITY)_CARD\]|$)/i;
+    const collegeMatch = text.match(collegeTagRegex);
+
+    if (collegeMatch) {
+      try {
+        let rawData = collegeMatch[2].trim();
+        rawData = rawData.replace(/```json|```/g, "").trim();
+        
+        // Isolate only the JSON part: from first [ to last ]
+        const firstBracket = rawData.indexOf("[");
+        const lastBracket = rawData.lastIndexOf("]");
+        if (firstBracket !== -1 && lastBracket !== -1) {
+          rawData = rawData.substring(firstBracket, lastBracket + 1);
+        } else if (rawData.startsWith("{")) {
+            // If it's a single object or list of objects without brackets, find last }
+            const lastBrace = rawData.lastIndexOf("}");
+            if (lastBrace !== -1) rawData = rawData.substring(0, lastBrace + 1);
+        }
+
+        let colleges;
+        try {
+          colleges = JSON.parse(rawData);
+        } catch (e) {
+          console.warn("[MessageItem] JSON parse failed, attempting repair...");
+          try {
+            if (rawData.startsWith("{") && !rawData.startsWith("[")) {
+              colleges = JSON.parse(`[${rawData}]`);
+            } else {
+              throw e;
+            }
+          } catch (e2) {
+            console.error("[MessageItem] JSON repair failed:", e2);
+            throw e2;
+          }
+        }
+
+        if (!Array.isArray(colleges)) colleges = [colleges];
+
+        const cleanText = text.replace(collegeTagRegex, "").trim();
+        return (
+          <div className="flex flex-col gap-2 w-full max-w-2xl">
+            {cleanText && <Markdown text={cleanText} />}
+            <CollegeCard colleges={colleges} />
+          </div>
+        );
+      } catch (err) {
+        console.error("Failed to parse college card data", err);
+        return <Markdown text={text} />;
+      }
     }
 
     return <Markdown text={text} />;

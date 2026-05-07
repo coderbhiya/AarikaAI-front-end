@@ -5,7 +5,7 @@ import axiosInstance from "@/lib/axios";
 import { 
   ArrowLeft, Search, MapPin, Briefcase, X, ChevronRight, 
   Filter, Menu, User, Bookmark, ExternalLink, Building2, 
-  DollarSign, Loader2, Trophy, Globe, Clock, CheckCircle2, Zap 
+  DollarSign, Loader2, Trophy, Globe, Clock, CheckCircle2, Zap, Shield 
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +20,7 @@ const Jobs = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [eligibility, setEligibility] = useState<any>({ canApply: true, message: "", lowProficiencySkills: [], notAttemptedSkills: [] });
   
   // Selection State
   const [selectedJob, setSelectedJob] = useState<any>(null);
@@ -59,6 +60,7 @@ const Jobs = () => {
 
       const fetchedJobs = response.data.jobs;
       setJobs(fetchedJobs);
+      setEligibility(response.data.eligibility);
       setPagination({
         ...pagination,
         total: response.data.pagination.total,
@@ -355,12 +357,27 @@ const Jobs = () => {
                         </div>
                         
                         <div className="flex items-center gap-3 pt-3">
-                          <button 
-                            onClick={() => window.open(selectedJob.link, '_blank')}
-                            className="px-6 py-2 bg-primary text-white font-bold text-[14px] rounded-full hover:bg-blue-600 shadow-md shadow-primary/10 transition-all flex items-center gap-2"
-                          >
-                            <Zap size={14} fill="currentColor" /> Apply
-                          </button>
+                          {eligibility?.canApply ? (
+                            <button 
+                              onClick={() => window.open(selectedJob.link, '_blank')}
+                              className="px-6 py-2 bg-primary text-white font-bold text-[14px] rounded-full hover:bg-blue-600 shadow-md shadow-primary/10 transition-all flex items-center gap-2"
+                            >
+                              <Zap size={14} fill="currentColor" /> Apply
+                            </button>
+                          ) : (
+                            <div className="flex flex-col gap-2">
+                              <button 
+                                onClick={() => navigate.push("/chat")}
+                                className="px-6 py-2 bg-gray-200 text-gray-500 font-bold text-[14px] rounded-full cursor-not-allowed flex items-center gap-2"
+                                title={eligibility?.message}
+                              >
+                                <Shield size={14} /> Improve Skills to Apply
+                              </button>
+                              <p className="text-[11px] text-red-500 font-bold max-w-xs leading-tight">
+                                {eligibility?.message}
+                              </p>
+                            </div>
+                          )}
                           <button className="px-5 py-2 border border-gray-300 text-[#202124] font-bold text-[14px] rounded-full hover:bg-gray-50 transition-all flex items-center gap-2">
                              <Bookmark size={14} /> Save
                           </button>
