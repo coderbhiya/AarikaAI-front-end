@@ -23,16 +23,28 @@ const ChatArea: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    const [streamingReply, setStreamingReply] = useState<string | null>(null);
+    const [searchProgress, setSearchProgress] = useState<string | null>(null);
+
     const { data: messages = [], isLoading: isChatsLoading, isError, error } = useQuery({
         queryKey: ["chats"],
         queryFn: getChats,
     });
 
     const chatMutation = useMutation({
-        mutationFn: async ({ text, files }: { text: string; files: FileAttachment[] }) => {
-            return sendChatMessage(text, files);
+        mutationFn: async ({ text, files, webSearch }: { text: string; files: FileAttachment[]; webSearch?: boolean }) => {
+            setStreamingReply("");
+            setSearchProgress("Searching career trends...");
+            return sendChatMessage(text, files, webSearch, (chunk) => {
+                if (chunk.type === "progress") {
+                    setSearchProgress(chunk.message);
+                } else if (chunk.type === "text") {
+                    setSearchProgress(null);
+                    setStreamingReply((prev) => (prev || "") + chunk.content);
+                }
+            });
         },
-        onMutate: async ({ text, files }) => {
+        onMutate: async ({ text, files, webSearch }) => {
             await queryClient.cancelQueries({ queryKey: ["chats"] });
             const previousChats = queryClient.getQueryData<Message[]>(["chats"]);
 
@@ -49,16 +61,21 @@ const ChatArea: React.FC = () => {
         },
         onError: (err, newMessage, context) => {
             queryClient.setQueryData(["chats"], context?.previousChats);
+            setStreamingReply(null);
+            setSearchProgress(null);
             toast.error("Transmission failed. Please retry.");
         },
-        onSuccess: (reply) => {
+        onSuccess: (result) => {
             const aiMessage: Message = {
                 id: (Date.now() + 1).toString(),
-                message: reply,
+                message: result.reply,
                 role: "assistant",
+                citations: result.citations,
                 createdAt: new Date().toISOString(),
             };
             queryClient.setQueryData<Message[]>(["chats"], (old) => [...(old || []), aiMessage]);
+            setStreamingReply(null);
+            setSearchProgress(null);
         },
     });
 
@@ -84,7 +101,7 @@ const ChatArea: React.FC = () => {
         }
     };
 
-    const handleSendMessage = async (text: string, attachedFiles?: File[]) => {
+    const handleSendMessage = async (text: string, attachedFiles?: File[], webSearch?: boolean) => {
         const uploadedFiles = attachedFiles ? await handleFileUploads(attachedFiles) : [];
         
         // Check for resumes and trigger auto-fill
@@ -107,7 +124,7 @@ const ChatArea: React.FC = () => {
             }
         }
 
-        chatMutation.mutate({ text, files: uploadedFiles });
+        chatMutation.mutate({ text, files: uploadedFiles, webSearch });
     };
 
     const isProcessing = chatMutation.isPending || isUploading;
@@ -183,23 +200,42 @@ const ChatArea: React.FC = () => {
                             <SuggestionChips onSelect={(text) => handleSendMessage(text)} />
                         </div>
                     ) : (
-                        <MessageList messages={messages} onSendMessage={handleSendMessage} />
+                        <MessageList 
+                            messages={
+                                streamingReply 
+                                ? [...messages, { id: "streaming", role: "assistant", message: streamingReply, createdAt: new Date().toISOString() }]
+                                : messages
+                            } 
+                            onSendMessage={handleSendMessage} 
+                        />
                     )}
 
-                    {isProcessing && (
+                    {isProcessing && !streamingReply && (
                         <div className="flex justify-start my-8 animate-in fade-in slide-in-from-left-4 duration-500">
                             <div className="flex items-center gap-3 px-1">
                                 <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10">
                                     <BrainLogo size={18} />
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <div className="typing-dot" />
-                                    <div className="typing-dot" />
-                                    <div className="typing-dot" />
-                                </div>
+                                {searchProgress ? (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-full shadow-sm">
+                                        <div className="w-3.5 h-3.5 border-2 border-primary/20 border-t-primary rounded-full animate-spin shrink-0" />
+                                        <span className="text-[12px] font-semibold text-gray-500 animate-pulse select-none">
+                                            {searchProgress}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="typing-dot" />
+                                        <div className="typing-dot" />
+                                        <div className="typing-dot" />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
+                    
+                    {/* Invisible spacer to allow scrolling past the fixed footer */}
+                    <div className="h-32 md:h-40 flex-shrink-0 w-full" />
                 </div>
             </main>
 
