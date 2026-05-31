@@ -27,6 +27,7 @@ export interface Message {
   message: string;
   role: "user" | "assistant";
   FileAttachments?: FileAttachment[] | null;
+  citations?: any[] | null;
   createdAt: string | Date;
 }
 

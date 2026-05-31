@@ -1,6 +1,6 @@
 import React from "react";
 import { Message } from "@/types";
-import { Copy, Share, Download, FileText, ImageIcon, File as FileIcon } from "lucide-react";
+import { Copy, Share, Download, FileText, ImageIcon, File as FileIcon, Globe, ExternalLink } from "lucide-react";
 import Markdown from "@/components/common/Markdown";
 import { toast } from "sonner";
 import BrainLogo from "../BrainLogo";
@@ -194,6 +194,42 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => 
           <div className={`${isUser ? "message-bubble-user" : "message-bubble-ai"}`}>
             {renderContent()}
           </div>
+
+          {/* Citations Section */}
+          {!isUser && message.citations && message.citations.length > 0 && (
+            <div className="flex flex-col gap-2 mt-3 px-1 w-full max-w-2xl">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 select-none">
+                <Globe size={11} className="text-gray-400" />
+                Sources & Citations
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {message.citations.map((cite: any, index: number) => {
+                  let hostname = "";
+                  try {
+                    hostname = new URL(cite.url).hostname;
+                  } catch (e) {
+                    hostname = cite.source || "Web Search";
+                  }
+                  return (
+                    <a
+                      key={index}
+                      href={cite.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-primary/5 text-gray-700 hover:text-primary border border-gray-100 hover:border-primary/20 shadow-sm transition-all duration-300 active:scale-95 group/cite"
+                    >
+                      <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-gray-100 text-[10px] font-bold text-gray-500 group-hover/cite:bg-primary/10 group-hover/cite:text-primary transition-colors">
+                        {index + 1}
+                      </span>
+                      <span className="truncate max-w-[160px]">{cite.title}</span>
+                      <span className="text-[10px] text-gray-400 font-normal group-hover/cite:text-primary/60">({hostname})</span>
+                      <ExternalLink size={10} className="text-gray-300 group-hover/cite:text-primary transition-colors" />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* File Attachments */}
           {message.FileAttachments && message.FileAttachments.length > 0 && (

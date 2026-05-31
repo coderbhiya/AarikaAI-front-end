@@ -4,7 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 interface ChatInputProps {
-  onSendMessage: (message: string, files?: File[]) => void;
+  onSendMessage: (message: string, files?: File[], webSearch?: boolean) => void;
   onFocus?: () => void;
   isLoading?: boolean;
   fileInputShow?: boolean;
@@ -20,6 +20,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const [message, setMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [webSearchActive, setWebSearchActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const isMobile = useIsMobile();
@@ -56,7 +57,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if ((message.trim() || selectedFiles.length > 0) && !isLoading) {
-      onSendMessage(message, selectedFiles);
+      onSendMessage(message, selectedFiles, webSearchActive);
       setMessage("");
       setSelectedFiles([]);
       if (inputRef.current) {
@@ -103,18 +104,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onSubmit={handleSubmit}
           className="relative flex flex-col w-full bg-[#F0F4F9] border-none rounded-[28px] group transition-all duration-300"
         >
-          <div className="flex items-end px-2 pt-2">
-            {fileInputShow && (
-              <button
-                type="button"
-                onClick={handleImageClick}
-                className="p-2.5 md:p-3 mb-1 rounded-full text-[#444746] hover:bg-white/50 transition-colors shrink-0"
-                disabled={isLoading}
-              >
-                <Plus size={isMobile ? 20 : 22} strokeWidth={2.5} />
-              </button>
-            )}
-
+          <div className="flex flex-col w-full px-4 pt-3 pb-2">
             <textarea
               ref={inputRef}
               value={message}
@@ -127,33 +117,68 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   handleSubmit();
                 }
               }}
-              placeholder={isLoading ? "Generating strategy..." : "Enter a prompt here"}
-              className="w-full bg-transparent text-[#202124] focus:outline-none resize-none px-2 md:px-4 pt-3 pb-3.5 text-[15px] md:text-[16px] placeholder-[#444746]/60 font-normal min-h-[44px] max-h-[200px] scrollbar-none leading-relaxed"
+              placeholder={isLoading ? "Generating strategy..." : "Ask Aarika anything..."}
+              className="w-full bg-transparent text-[#202124] focus:outline-none resize-none text-[15px] md:text-[16px] placeholder-[#444746]/60 font-normal min-h-[44px] max-h-[200px] scrollbar-none leading-relaxed"
               rows={1}
               disabled={isLoading}
             />
 
-            <div className="flex items-center gap-1 mb-1 pr-1 md:pr-2">
-              {!message.trim() && !selectedFiles.length && !isMobile && (
+            {/* Bottom Utilities Row */}
+            <div className="flex items-center justify-between border-t border-gray-200/30 mt-2 pt-2">
+              <div className="flex items-center gap-2">
+                {fileInputShow && (
+                  <button
+                    type="button"
+                    onClick={handleImageClick}
+                    className="p-2 rounded-full text-[#444746] hover:bg-white transition-colors shrink-0 flex items-center justify-center border border-transparent active:scale-95"
+                    disabled={isLoading}
+                    title="Upload resume or files"
+                  >
+                    <Plus size={16} strokeWidth={2.5} />
+                  </button>
+                )}
+
+                {/* Web Search Toggle Pill */}
                 <button
                   type="button"
-                  className="p-3 rounded-full text-[#444746] hover:bg-white/50 transition-colors"
-                  disabled={isLoading}
-                >
-                  <Mic size={22} strokeWidth={2} />
-                </button>
-              )}
-
-              <button
-                type="submit"
-                disabled={!(message.trim() || selectedFiles.length > 0) || isLoading}
-                className={`p-2.5 md:p-3 rounded-full transition-all duration-300 flex items-center justify-center ${(message.trim() || selectedFiles.length > 0) && !isLoading
-                  ? "text-primary hover:bg-white/50"
-                  : "text-gray-300 pointer-events-none"
+                  onClick={() => setWebSearchActive(!webSearchActive)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-300 ${
+                    webSearchActive
+                      ? "bg-primary/10 border-primary/20 text-primary shadow-sm"
+                      : "bg-transparent border-gray-300/60 text-[#444746] hover:bg-white"
                   }`}
-              >
-                <ArrowRight size={isMobile ? 22 : 24} strokeWidth={2.5} />
-              </button>
+                  disabled={isLoading}
+                  title="Search the web for real-time information"
+                >
+                  <Globe size={13} strokeWidth={2.5} className={webSearchActive ? "animate-pulse" : ""} />
+                  <span>Search Web</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${webSearchActive ? "bg-primary" : "bg-gray-400"}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {!message.trim() && !selectedFiles.length && !isMobile && (
+                  <button
+                    type="button"
+                    className="p-2 rounded-full text-[#444746] hover:bg-white transition-colors flex items-center justify-center"
+                    disabled={isLoading}
+                  >
+                    <Mic size={18} strokeWidth={2} />
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!(message.trim() || selectedFiles.length > 0) || isLoading}
+                  className={`p-2 rounded-full transition-all duration-300 flex items-center justify-center ${
+                    (message.trim() || selectedFiles.length > 0) && !isLoading
+                      ? "bg-primary text-white shadow-md shadow-primary/20 hover:scale-105 active:scale-95"
+                      : "text-gray-300 pointer-events-none bg-transparent"
+                  }`}
+                >
+                  <ArrowRight size={18} strokeWidth={2.5} />
+                </button>
+              </div>
             </div>
           </div>
 

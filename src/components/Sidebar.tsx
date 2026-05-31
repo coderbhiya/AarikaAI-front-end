@@ -157,6 +157,12 @@ const Sidebar = () => {
               active={pathname === "/chat"}
             />
             <SidebarItem
+              to="/journey"
+              icon={<Compass size={20} />}
+              label="Career Journey"
+              active={pathname === "/journey"}
+            />
+            <SidebarItem
               to="/jobs"
               icon={<Briefcase size={20} />}
               label="Mission Hunt"
