@@ -29,6 +29,7 @@ import {
   UserPlus,
   Briefcase,
   Server
+  Briefcase
 } from "lucide-react";
 import {
   adminLogin,
@@ -64,6 +65,7 @@ export default function AdminPanel() {
 
   // Dashboard & Navigation State
   const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs">("dashboard");
   const [stats, setStats] = useState<any>(null);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
 
