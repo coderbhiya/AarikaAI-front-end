@@ -80,8 +80,8 @@ export const deleteUser = async (id: string | number) => {
   return response.data;
 };
 
-export const getPrompts = async () => {
-  const response = await adminAxios.get("/prompts");
+export const getPrompts = async (search = "") => {
+  const response = await adminAxios.get("/prompts", { params: { search } });
   return response.data.prompts;
 };
 

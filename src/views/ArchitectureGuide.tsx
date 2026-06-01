@@ -144,7 +144,7 @@ The prompt hierarchy is modular, dynamic, and strictly separated:
 
 - **Lightweight Mode**: The biggest cost and latency saver. Bypasses 80% of RAG processing for casual queries.
 - **Embedding Batching**: Document RAG chunks are embedded in batches of 100 to avoid rate limits and reduce network latency.
-- **Context Compression**: The \`contextSynthesizer.js\` uses \`gpt-4o-mini\` to compress raw chunks into dense markdown. This spends a tiny amount of tokens upfront to save thousands of tokens on the final expensive reasoning pass.
+- **Context Compression**: The \`contextSynthesizer.js\` uses \`gpt-5.4-mini\` to compress raw chunks into dense markdown. This spends a tiny amount of tokens upfront to save thousands of tokens on the final expensive reasoning pass.
 - **Circuit Breakers**: \`circuitBreakerEngine.js\` wraps Vector DB, Web Search, and LLM calls with timeouts (e.g., 3000ms). If a secondary service is slow, it degrades gracefully rather than hanging the user's stream.
 
 ---
@@ -160,8 +160,8 @@ The prompt hierarchy is modular, dynamic, and strictly separated:
 ## 14. COST OPTIMIZATION STRATEGY
 
 - **Model Tiering**: 
-  - \`gpt-4o-mini\` is used for Intent Classification, Context Synthesis, and Background Memory Extraction.
-  - \`gpt-4o\` (or Claude 3.5 Sonnet) is reserved ONLY for the final user-facing response generation in heavy recommendation/guidance stages.
+  - \`gpt-5.4-mini\` is used for Intent Classification, Context Synthesis, and Background Memory Extraction.
+  - \`gpt-5.5\` (or Claude 3.5 Sonnet) is reserved ONLY for the final user-facing response generation in heavy recommendation/guidance stages.
 - **Dynamic Retrieval Limits**: \`intelligenceDepthController\` ensures new users only run Vector Searches for \`maxMemories: 1\`, preventing token waste on cold-start users.
 
 ---

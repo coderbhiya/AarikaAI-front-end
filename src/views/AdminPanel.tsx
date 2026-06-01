@@ -78,6 +78,7 @@ export default function AdminPanel() {
 
   // Prompts Tab State
   const [promptsList, setPromptsList] = useState<any[]>([]);
+  const [promptSearch, setPromptSearch] = useState("");
   const [isPromptsLoading, setIsPromptsLoading] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<any>(null);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
@@ -140,7 +141,7 @@ export default function AdminPanel() {
   const fetchPrompts = async () => {
     setIsPromptsLoading(true);
     try {
-      const data = await getPrompts();
+      const data = await getPrompts(promptSearch);
       setPromptsList(data || []);
     } catch (err: any) {
       toast.error("Failed to fetch prompts");
@@ -193,6 +194,16 @@ export default function AdminPanel() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [jobSearch]);
+
+  // Search debouncing for prompts
+  useEffect(() => {
+    if (!isAuthenticated || activeTab !== "prompts") return;
+    const delayDebounceFn = setTimeout(() => {
+      fetchPrompts();
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [promptSearch]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -949,13 +960,28 @@ export default function AdminPanel() {
           {activeTab === "prompts" && (
             <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300">
               {/* Header and Add Button */}
-              <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Configured system prompts ({promptsList.length})
-                </span>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    Configured system prompts ({promptsList.length})
+                  </span>
+                  
+                  {/* Search */}
+                  <div className="relative w-full md:w-64">
+                    <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={promptSearch}
+                      onChange={(e) => setPromptSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50/50 border border-slate-200 rounded-lg text-xs focus:border-blue-500 focus:bg-white transition-all outline-none"
+                      placeholder="Search prompts by title or class..."
+                    />
+                  </div>
+                </div>
+
                 <button
                   onClick={() => handleOpenPromptModal(null)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-md active:scale-95"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-md active:scale-95 w-full md:w-auto"
                 >
                   <Plus size={14} /> New Prompt
                 </button>
