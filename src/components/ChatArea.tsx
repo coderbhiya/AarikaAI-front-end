@@ -8,12 +8,13 @@ import { Menu, User, Sparkles, Zap, Shield, Globe } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getChats, sendChatMessage, uploadFile } from "@/services/chatService";
+import { getChats, sendChatMessage, uploadFile, getWelcomeMessage } from "@/services/chatService";
 import { autoFillProfileFromResume } from "@/services/profileService";
 import MessageList from "./chat/MessageList";
 import BrainLogo from "./BrainLogo";
 import SuggestionChips from "./chat/SuggestionChips";
 import { Message, FileAttachment } from "@/types";
+import { ProfileSyncModal } from "./profile/ProfileSyncModal";
 
 const ChatArea: React.FC = () => {
     const isMobile = useIsMobile();
@@ -22,6 +23,8 @@ const ChatArea: React.FC = () => {
     const { toggleSidebar } = useAuth();
     const [isUploading, setIsUploading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+    const [pendingSnapshotForModal, setPendingSnapshotForModal] = useState<any>(null);
 
     const [streamingReply, setStreamingReply] = useState<string | null>(null);
     const [searchProgress, setSearchProgress] = useState<string | null>(null);
@@ -30,6 +33,17 @@ const ChatArea: React.FC = () => {
         queryKey: ["chats"],
         queryFn: getChats,
     });
+
+    useEffect(() => {
+        // Fetch proactive welcome message once on mount if chat history exists
+        if (!isChatsLoading && messages.length > 0) {
+            getWelcomeMessage().then((msg) => {
+                if (msg) {
+                    queryClient.setQueryData<Message[]>(["chats"], (old) => [...(old || []), msg]);
+                }
+            }).catch(console.error);
+        }
+    }, [isChatsLoading, messages.length > 0]); // Run once when messages are first loaded
 
     const chatMutation = useMutation({
         mutationFn: async ({ text, files, webSearch }: { text: string; files: FileAttachment[]; webSearch?: boolean }) => {
@@ -113,14 +127,28 @@ const ChatArea: React.FC = () => {
             );
 
             if (resumeFile) {
-                toast.promise(autoFillProfileFromResume(resumeFile.filePath, resumeFile.originalName), {
-                    loading: "Parsing resume to update profile...",
-                    success: () => {
-                        queryClient.invalidateQueries({ queryKey: ["profile"] });
-                        return "Profile updated automatically from resume! 🚀";
-                    },
-                    error: "Could not auto-fill profile."
-                });
+                toast.promise(
+                    (async () => {
+                        const res = await autoFillProfileFromResume(resumeFile.filePath, resumeFile.originalName);
+                        if (res.success && res.diff && (res.diff.updatedFields?.length > 0 || res.diff.addedFields?.length > 0 || res.diff.conflicts?.length > 0)) {
+                            const aiMessage: Message = {
+                                id: Date.now().toString(),
+                                message: `[RESUME_SYNC_CARD]${JSON.stringify({ diff: res.diff, snapshot: res.snapshot })}[/RESUME_SYNC_CARD]`,
+                                role: "assistant",
+                                createdAt: new Date().toISOString(),
+                            };
+                            queryClient.setQueryData<Message[]>(["chats"], (old) => [...(old || []), aiMessage]);
+                        } else {
+                            toast.info("No profile updates detected in the uploaded resume.");
+                        }
+                        return res;
+                    })(),
+                    {
+                        loading: "Parsing resume to update profile...",
+                        success: "Resume parsed successfully! Review differences to update your profile.",
+                        error: "Could not auto-fill profile."
+                    }
+                );
             }
         }
 
@@ -245,6 +273,17 @@ const ChatArea: React.FC = () => {
                     <ChatInput onSendMessage={handleSendMessage} isLoading={isProcessing} />
                 </div>
             </footer>
+
+            <ProfileSyncModal
+                isOpen={isSyncModalOpen}
+                onClose={(updated) => {
+                    setIsSyncModalOpen(false);
+                    if (updated) {
+                        queryClient.invalidateQueries({ queryKey: ["profile"] });
+                    }
+                }}
+                pendingResumeSnapshot={pendingSnapshotForModal}
+            />
         </div>
     );
 };

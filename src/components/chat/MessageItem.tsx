@@ -11,6 +11,9 @@ import ResumeAnalysisCard from "./cards/ResumeAnalysisCard";
 import SWOTCard from "./cards/SWOTCard";
 import CollegeCard from "./cards/CollegeCard";
 import QuizCard from "./cards/QuizCard";
+import ResumeSyncCard from "./cards/ResumeSyncCard";
+import TimelineCard from "./cards/TimelineCard";
+import BadgeCard from "./cards/BadgeCard";
 
 interface MessageItemProps {
   message: Message;
@@ -61,62 +64,109 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => 
       }
     }
 
-    // Simple tag detection for demonstration
-    if (text.includes("[JOB_CARD]")) {
+    // Helper function to extract JSON from tags
+    const extractJsonData = (tagName: string) => {
+      const regex = new RegExp(`\\[${tagName}\\]([\\s\\S]*?)(?:\\[\\/${tagName}\\]|$)`, "i");
+      const match = text.match(regex);
+      if (match) {
+        try {
+          let rawData = match[1].trim();
+          rawData = rawData.replace(/```json|```/g, "").trim();
+          
+          const firstBrace = rawData.indexOf("{");
+          const lastBrace = rawData.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            rawData = rawData.substring(firstBrace, lastBrace + 1);
+          }
+          const data = JSON.parse(rawData);
+          const cleanText = text.replace(regex, "").trim();
+          return { data, cleanText };
+        } catch (err) {
+          console.error(`Failed to parse ${tagName} data`, err);
+          return null;
+        }
+      }
+      return null;
+    };
+
+    // Dynamic Card Parsing
+    const jobData = extractJsonData("JOB_CARD");
+    if (jobData) {
       return (
-        <JobCard
-          title="Senior Frontend Engineer"
-          company="Google"
-          location="Remote"
-          salary="$180k - $240k"
-          matchPercentage={94}
-        />
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {jobData.cleanText && <Markdown text={jobData.cleanText} />}
+          <JobCard {...jobData.data} />
+        </div>
       );
     }
-    if (text.includes("[ROADMAP_CARD]")) {
+
+    const roadmapData = extractJsonData("ROADMAP_CARD");
+    if (roadmapData) {
       return (
-        <RoadmapCard
-          title="Full-Stack Mastery Path"
-          steps={[
-            { title: "Frontend Fundamentals", duration: "2 Weeks", isCompleted: true },
-            { title: "Backend Architecture", duration: "4 Weeks", isCompleted: false },
-            { title: "System Design & DevOps", duration: "6 Weeks", isCompleted: false }
-          ]}
-        />
+        <div className="flex flex-col gap-2 w-full max-w-3xl">
+          {roadmapData.cleanText && <Markdown text={roadmapData.cleanText} />}
+          <RoadmapCard title={roadmapData.data.title} steps={roadmapData.data.steps} />
+        </div>
       );
     }
-    if (text.includes("[SKILL_GAP_CARD]")) {
+
+    const skillGapData = extractJsonData("SKILL_GAP_CARD");
+    if (skillGapData) {
       return (
-        <SkillGapCard
-          skills={[
-            { name: "System Design", priority: "high", isMissing: true },
-            { name: "React Query", priority: "medium", isMissing: true },
-            { name: "Tailwind CSS", priority: "low", isMissing: false }
-          ]}
-        />
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {skillGapData.cleanText && <Markdown text={skillGapData.cleanText} />}
+          <SkillGapCard {...skillGapData.data} />
+        </div>
       );
     }
-    if (text.includes("[RESUME_CARD]")) {
+
+    const resumeData = extractJsonData("RESUME_CARD");
+    if (resumeData) {
       return (
-        <ResumeAnalysisCard
-          score={86}
-          insights={[
-            { category: "Impact", points: ["Used strong action verbs", "Quantified 3 key achievements"] },
-            { category: "Structure", points: ["Clean hierarchical layout", "ATS readable sections"] }
-          ]}
-        />
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {resumeData.cleanText && <Markdown text={resumeData.cleanText} />}
+          <ResumeAnalysisCard {...resumeData.data} />
+        </div>
       );
     }
-    if (text.includes("[SWOT_CARD]")) {
+
+    const resumeSyncData = extractJsonData("RESUME_SYNC_CARD");
+    if (resumeSyncData) {
       return (
-        <SWOTCard
-          data={{
-            strengths: ["Strong React expertise", "Product mindset"],
-            weaknesses: ["Limitied AWS experience", "Public speaking"],
-            opportunities: ["Transition to Lead role", "Open source impact"],
-            threats: ["Crowded job market", "AI role shifts"]
-          }}
-        />
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {resumeSyncData.cleanText && <Markdown text={resumeSyncData.cleanText} />}
+          <ResumeSyncCard diff={resumeSyncData.data.diff} snapshot={resumeSyncData.data.snapshot} />
+        </div>
+      );
+    }
+
+    const timelineData = extractJsonData("TIMELINE_CARD");
+    if (timelineData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-3xl">
+          {timelineData.cleanText && <Markdown text={timelineData.cleanText} />}
+          <TimelineCard month={timelineData.data.month} events={timelineData.data.events} />
+        </div>
+      );
+    }
+
+    const badgeData = extractJsonData("BADGE_CARD");
+    if (badgeData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {badgeData.cleanText && <Markdown text={badgeData.cleanText} />}
+          <BadgeCard type={badgeData.data.type} message={badgeData.data.message} />
+        </div>
+      );
+    }
+
+    const swotData = extractJsonData("SWOT_CARD");
+    if (swotData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {swotData.cleanText && <Markdown text={swotData.cleanText} />}
+          <SWOTCard data={swotData.data} />
+        </div>
       );
     }
 

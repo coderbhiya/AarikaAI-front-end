@@ -1,15 +1,30 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Paperclip, X, Globe, Shield, ArrowRight, Mic, Plus } from "lucide-react";
+import { Paperclip, X, Globe, Shield, ArrowRight, Mic, Plus, Cpu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ChatInputProps {
-  onSendMessage: (message: string, files?: File[], webSearch?: boolean) => void;
+  onSendMessage: (message: string, files?: File[], webSearch?: boolean, engine?: string) => void;
   onFocus?: () => void;
   isLoading?: boolean;
   fileInputShow?: boolean;
   disablePaste?: boolean;
 }
+
+const engines = [
+  { id: "query_intent", name: "AarikaGPT" },
+  { id: "retrieval", name: "Retrieval Orchestrator" },
+  { id: "execution", name: "Execution Strategy Engine" },
+  { id: "confidence", name: "Confidence Engine" },
+  { id: "compression", name: "Compression Engine" },
+];
 
 const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
@@ -21,6 +36,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [message, setMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [webSearchActive, setWebSearchActive] = useState(false);
+  const [selectedEngine, setSelectedEngine] = useState(engines[0].id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const isMobile = useIsMobile();
@@ -57,7 +73,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if ((message.trim() || selectedFiles.length > 0) && !isLoading) {
-      onSendMessage(message, selectedFiles, webSearchActive);
+      onSendMessage(message, selectedFiles, webSearchActive, selectedEngine);
       setMessage("");
       setSelectedFiles([]);
       if (inputRef.current) {
@@ -142,7 +158,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 <button
                   type="button"
                   onClick={() => setWebSearchActive(!webSearchActive)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-300 ${
+                  className={`flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 rounded-full text-[11px] md:text-xs font-semibold border transition-all duration-300 shrink-0 ${
                     webSearchActive
                       ? "bg-primary/10 border-primary/20 text-primary shadow-sm"
                       : "bg-transparent border-gray-300/60 text-[#444746] hover:bg-white"
@@ -151,12 +167,29 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   title="Search the web for real-time information"
                 >
                   <Globe size={13} strokeWidth={2.5} className={webSearchActive ? "animate-pulse" : ""} />
-                  <span>Search Web</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${webSearchActive ? "bg-primary" : "bg-gray-400"}`} />
+                  <span className="hidden sm:inline">Search Web</span>
+                  <span className="sm:hidden">Web</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ml-0.5 ${webSearchActive ? "bg-primary" : "bg-gray-400"}`} />
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <Select value={selectedEngine} onValueChange={setSelectedEngine}>
+                  <SelectTrigger className="h-[28px] px-2 md:px-3 text-[10px] md:text-[11px] bg-white/60 border-gray-200/60 rounded-full w-[100px] sm:w-[110px] md:w-[130px] font-semibold text-gray-700 shadow-sm hover:bg-white transition-colors focus:ring-0 focus:ring-offset-0 shrink-0">
+                    <div className="flex items-center gap-1 md:gap-1.5 truncate">
+                      <Cpu size={12} className="text-primary/80 shrink-0" />
+                      <SelectValue placeholder="Engine" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl shadow-lg border-gray-100 min-w-[140px]">
+                    {engines.map((engine) => (
+                      <SelectItem key={engine.id} value={engine.id} className="text-[12px] font-medium rounded-lg cursor-pointer focus:bg-primary/5 focus:text-primary">
+                        {engine.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 {!message.trim() && !selectedFiles.length && !isMobile && (
                   <button
                     type="button"

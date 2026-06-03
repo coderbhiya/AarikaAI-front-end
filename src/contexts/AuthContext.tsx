@@ -16,6 +16,7 @@ interface AuthContextType {
   toggleSidebar: () => void;
   showSidebar: boolean;
   updateUser: (updatedUser: User) => void;
+  syncProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,7 +42,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (firebaseUser) {
         // Load existing data from localStorage to avoid losing profile enrichment
         const savedUserStr = localStorage.getItem("user");
-        const existingData = savedUserStr ? JSON.parse(savedUserStr) : { uid: firebaseUser.uid };
+        let existingData: any = { uid: firebaseUser.uid };
+
+        if (savedUserStr) {
+          try {
+            const parsed = JSON.parse(savedUserStr);
+            if (parsed.uid === firebaseUser.uid || parsed.email === firebaseUser.email) {
+              existingData = parsed;
+            } else {
+              // Different user account detected, clear stale local storage data to prevent state leakage
+              localStorage.removeItem("user");
+              localStorage.removeItem("authToken");
+            }
+          } catch (e) {
+            console.error("Failed to parse saved user from localStorage:", e);
+          }
+        }
 
         const transformedUser: User = {
           ...existingData,
@@ -84,6 +100,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: backendUser.phone,
           role: backendUser.role,
           UserProfile: backendUser.UserProfile || backendUser.userProfile,
+          credits: backendUser.credits,
+          hasSharedOnLinkedIn: backendUser.hasSharedOnLinkedIn,
         };
         updateUser(enrichedUser);
       }
@@ -98,6 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (authToken) {
       setToken(authToken);
       localStorage.setItem("authToken", authToken);
+      syncProfile();
     }
   };
 
@@ -141,6 +160,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     showSidebar,
     toggleSidebar,
     updateUser,
+    syncProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

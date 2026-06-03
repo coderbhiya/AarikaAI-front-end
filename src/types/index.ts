@@ -7,6 +7,8 @@ export interface User {
   phone?: string;
   role?: string;
   UserProfile?: any;
+  credits?: number;
+  hasSharedOnLinkedIn?: boolean;
 }
 
 export interface FileAttachment {

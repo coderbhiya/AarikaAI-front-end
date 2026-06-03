@@ -5,14 +5,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import PersonalInfo from "@/components/profile/PersonalInfo";
 import Skills from "@/components/profile/Skills";
 import Experience from "@/components/profile/Experience";
-import { Briefcase, Award, CheckCircle2, Download, ExternalLink, MapPin, Globe, Camera, Menu, User } from "lucide-react";
+import Education from "@/components/profile/Education";
+import Projects from "@/components/profile/Projects";
+import { Briefcase, Award, CheckCircle2, Download, ExternalLink, MapPin, Globe, Camera, Menu, User, Sparkles, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { ProfileSyncModal } from "@/components/profile/ProfileSyncModal";
 
 const ProfilePage = () => {
-  const { user, toggleSidebar } = useAuth();
+  const { user, toggleSidebar, syncProfile } = useAuth();
   const navigate = useRouter();
   const isMobile = useIsMobile();
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[#F0F2F5] relative overflow-hidden">
@@ -39,6 +44,31 @@ const ProfilePage = () => {
 
       <div className="flex-1 overflow-y-auto pb-20 scrollbar-none">
         <div className="max-w-[1128px] mx-auto pt-6 px-4">
+          {/* Banner alert if pendingResumeSnapshot exists */}
+          {user?.UserProfile?.pendingResumeSnapshot && (
+            <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-50/90 to-indigo-50/90 dark:from-slate-900/90 dark:to-indigo-950/20 backdrop-blur-md border border-blue-200/50 dark:border-blue-900/30 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Unsaved Resume Details Detected
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                    We parsed a resume but haven't applied all changes to your profile.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSyncModalOpen(true)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 whitespace-nowrap"
+              >
+                Review Changes <ArrowRight size={14} />
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
             {/* Main Column */}
@@ -114,6 +144,16 @@ const ProfilePage = () => {
                   <Experience />
                 </div>
 
+                {/* Education Card */}
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  <Education />
+                </div>
+
+                {/* Projects Card */}
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  <Projects />
+                </div>
+
                 {/* Skills Card */}
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                   <Skills />
@@ -124,6 +164,18 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+
+      <ProfileSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={async (updated) => {
+          setIsSyncModalOpen(false);
+          if (updated) {
+            await syncProfile();
+            window.location.reload();
+          }
+        }}
+        pendingResumeSnapshot={user?.UserProfile?.pendingResumeSnapshot as any}
+      />
     </div>
   );
 };

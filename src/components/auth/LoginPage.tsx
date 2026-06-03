@@ -21,9 +21,9 @@ import BrainLogo from "@/components/BrainLogo";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   signInWithPopup,
-  signInWithEmailAndPassword,
   GoogleAuthProvider,
 } from "firebase/auth";
+import { useLinkedIn } from 'react-linkedin-login-oauth2';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -45,6 +45,7 @@ export const LoginPage: React.FC = () => {
     google: false,
     apple: false,
     email: false,
+    linkedin: false,
   });
 
   // If already authenticated, redirect to chat
@@ -67,16 +68,15 @@ export const LoginPage: React.FC = () => {
 
     setIsLoading({ ...isLoading, email: true });
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      const token = await user.getIdToken();
-
-      const response = await axiosInstance.post("/auth/verify-token", {
-        idToken: token,
-      });
+      // Use our own backend login endpoint — custom-registered users exist only in our DB, not Firebase
+      const response = await axiosInstance.post("/auth/login", { email, password });
 
       if (response.data.success) {
-        login(response.data.user, response.data.token);
+        const userData = {
+          email,
+          displayName: email.split("@")[0],
+        };
+        login(userData, response.data.token);
 
         toast({
           title: "Welcome back",
@@ -89,10 +89,8 @@ export const LoginPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Email login error:", error);
-      let message = "Could not sign in";
-      if (error.code === 'auth/invalid-login-credentials' || error.code === 'auth/invalid-credential') {
-        message = 'Invalid credentials detected.';
-      }
+      const serverMessage = error?.response?.data?.message;
+      let message = serverMessage || "Invalid email or password";
 
       toast({
         title: "Login Failed",
@@ -139,6 +137,50 @@ export const LoginPage: React.FC = () => {
       setIsLoading(prev => ({ ...prev, google: false }));
     }
   };
+
+  const handleLinkedInSuccess = React.useCallback(async (code: string) => {
+    setIsLoading(prev => ({ ...prev, linkedin: true }));
+    try {
+      const response = await axiosInstance.post("/auth/linkedin", { 
+        code, 
+        redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/linkedin` : "http://localhost:3001/linkedin"
+      });
+      if (response.data.success) {
+        login(response.data.user, response.data.token);
+        toast({ title: "Welcome back", description: "Login successful!" });
+        setTimeout(() => { navigate.replace("/chat"); }, 500);
+      }
+    } catch (error: any) {
+      console.error("LinkedIn login error:", error);
+      toast({ title: "Login Failed", description: "LinkedIn authentication failed", variant: "destructive" });
+    } finally {
+      setIsLoading(prev => ({ ...prev, linkedin: false }));
+    }
+  }, [login, navigate, toast]);
+
+  const handleLinkedInError = React.useCallback((error: any) => {
+    console.error(error);
+    setIsLoading(prev => ({ ...prev, linkedin: false }));
+    toast({ title: "Login Failed", description: "LinkedIn popup closed or failed", variant: "destructive" });
+  }, [toast]);
+
+  const { linkedInLogin } = useLinkedIn({
+    clientId: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID || "",
+    redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/linkedin` : "http://localhost:3001/linkedin",
+    scope: 'openid profile email',
+    onSuccess: handleLinkedInSuccess,
+    onError: handleLinkedInError,
+  });
+
+  const handleLinkedInSignIn = () => {
+    if (!process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID) {
+      toast({ title: "Configuration Error", description: "LinkedIn Client ID is missing in environment", variant: "destructive" });
+      return;
+    }
+    // Don't set loading true here immediately to prevent re-render before popup opens
+    linkedInLogin();
+  };
+
 
   return (
     <div className="flex min-h-screen w-full bg-white overflow-hidden selection:bg-primary/20">
@@ -263,9 +305,14 @@ export const LoginPage: React.FC = () => {
               <img src="https://www.google.com/favicon.ico" className="w-3.5 h-3.5" alt="G" />
               Google
             </button>
-            <button className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11">
-              <img src="https://github.com/favicon.ico" className="w-3.5 h-3.5" alt="GH" />
-              GitHub
+            <button 
+              type="button"
+              onClick={handleLinkedInSignIn}
+              disabled={isLoading.linkedin}
+              className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11 disabled:opacity-50"
+            >
+              <img src="https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg" className="w-4 h-4" alt="IN" />
+              LinkedIn
             </button>
           </div>
 

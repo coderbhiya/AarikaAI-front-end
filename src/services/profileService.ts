@@ -114,3 +114,105 @@ export const deleteExperience = async (id) => {
     throw error;
   }
 };
+
+// Projects API
+export const getProjects = async () => {
+  try {
+    const response = await axiosInstance.get(`/profile/projects`);
+    return response.data.projects;
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    throw error;
+  }
+};
+
+export const addProject = async (projectData) => {
+  try {
+    const response = await axiosInstance.post(`/profile/projects`, projectData);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding project:", error);
+    throw error;
+  }
+};
+
+export const updateProject = async (id, projectData) => {
+  try {
+    const response = await axiosInstance.put(`/profile/projects/${id}`, projectData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating project:", error);
+    throw error;
+  }
+};
+
+export const deleteProject = async (id) => {
+  try {
+    const response = await axiosInstance.delete(`/profile/projects/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    throw error;
+  }
+};
+
+export const approveResumeChanges = async (approvedData: { approvedFields: any; conflictResolution?: any }) => {
+  try {
+    const response = await axiosInstance.post(`/profile/approve-resume-changes`, approvedData);
+    return response.data;
+  } catch (error) {
+    console.error("Error approving resume changes:", error);
+    throw error;
+  }
+};
+
+export const clearPendingResume = async () => {
+  try {
+    const response = await axiosInstance.post(`/profile/clear-pending-resume`);
+    return response.data;
+  } catch (error) {
+    console.error("Error clearing pending resume:", error);
+    throw error;
+  }
+};
+
+// Education API
+export const getEducations = async () => {
+  try {
+    const response = await axiosInstance.get(`/profile/educations`);
+    return response.data.educations;
+  } catch (error) {
+    console.error("Error fetching educations:", error);
+    throw error;
+  }
+};
+
+export const addEducation = async (educationData) => {
+  try {
+    const response = await axiosInstance.post(`/profile/educations`, educationData);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding education:", error);
+    throw error;
+  }
+};
+
+export const updateEducation = async (id, educationData) => {
+  try {
+    const response = await axiosInstance.put(`/profile/educations/${id}`, educationData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating education:", error);
+    throw error;
+  }
+};
+
+export const deleteEducation = async (id) => {
+  try {
+    const response = await axiosInstance.delete(`/profile/educations/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting education:", error);
+    throw error;
+  }
+};

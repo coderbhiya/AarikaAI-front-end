@@ -79,3 +79,8 @@ export const uploadFile = async (file: File): Promise<FileAttachment> => {
   });
   return response.data.file;
 };
+
+export const getWelcomeMessage = async (): Promise<Message | null> => {
+  const response = await axiosInstance.get("/chat/welcome");
+  return response.data.message || null;
+};
