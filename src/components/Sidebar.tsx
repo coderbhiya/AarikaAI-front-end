@@ -16,7 +16,8 @@ import {
   Zap,
   Globe,
   Compass,
-  ArrowUpRight
+  ArrowUpRight,
+  Megaphone
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter, usePathname } from "next/navigation";
@@ -182,6 +183,14 @@ const Sidebar = () => {
               active={pathname === "/subscription"}
               badge="Pro"
             />
+            {user?.role === 'admin' && (
+              <SidebarItem
+                to="/admin/marketing"
+                icon={<Megaphone size={20} />}
+                label="Marketing"
+                active={pathname === "/admin/marketing"}
+              />
+            )}
           </div>
 
           {/* <div>

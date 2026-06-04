@@ -134,7 +134,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 }
               }}
               placeholder={isLoading ? "Generating strategy..." : "Ask Aarika anything..."}
-              className="w-full bg-transparent text-[#202124] focus:outline-none resize-none text-[15px] md:text-[16px] placeholder-[#444746]/60 font-normal min-h-[44px] max-h-[200px] scrollbar-none leading-relaxed"
+              className="w-full bg-transparent text-[#202124] focus:outline-none resize-none text-[16px] md:text-[16px] placeholder-[#444746]/60 font-normal min-h-[44px] max-h-[200px] scrollbar-none leading-relaxed"
               rows={1}
               disabled={isLoading}
             />
@@ -227,7 +227,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       </div>
 
       {/* Footer Info */}
-      <div className="mt-3 text-center">
+      <div className="mt-3 text-center hidden md:block">
         <p className="text-[11px] text-[#444746]/60 font-normal tracking-tight">
           AarikaAI may display inaccurate info, so double-check its responses. <span className="underline cursor-pointer">Your privacy & AarikaAI Apps</span>
         </p>

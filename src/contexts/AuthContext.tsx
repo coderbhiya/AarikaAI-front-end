@@ -102,6 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           UserProfile: backendUser.UserProfile || backendUser.userProfile,
           credits: backendUser.credits,
           hasSharedOnLinkedIn: backendUser.hasSharedOnLinkedIn,
+          createdAt: backendUser.createdAt,
         };
         updateUser(enrichedUser);
       }

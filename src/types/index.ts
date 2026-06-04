@@ -9,6 +9,7 @@ export interface User {
   UserProfile?: any;
   credits?: number;
   hasSharedOnLinkedIn?: boolean;
+  createdAt?: string;
 }
 
 export interface FileAttachment {

@@ -78,6 +78,7 @@ export const RegisterPage: React.FC = () => {
 
             if (response.data.success) {
                 login(response.data.user, response.data.token);
+                localStorage.setItem("isNewSignup", "true");
 
                 toast({
                     title: "Registration Complete",
