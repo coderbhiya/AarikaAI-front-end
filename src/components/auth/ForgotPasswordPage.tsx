@@ -12,11 +12,10 @@ import {
 } from "lucide-react";
 import BrainLogo from "@/components/BrainLogo";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { sendPasswordResetEmail } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import axiosInstance from "@/lib/axios";
 
 export const ForgotPasswordPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -24,10 +23,12 @@ export const ForgotPasswordPage: React.FC = () => {
   const navigate = useRouter();
 
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       toast({
@@ -40,24 +41,52 @@ export const ForgotPasswordPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
-      setIsSubmitted(true);
-      toast({
-        title: "Success",
-        description: "Password reset link sent to your email!",
-      });
-    } catch (error: any) {
-      console.error("Reset password error:", error);
-      let message = "Could not send reset link";
-      if (error.code === 'auth/user-not-found') {
-        message = 'No account found with this email.';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'Please enter a valid email address.';
+      const response = await axiosInstance.post("/auth/forgot-password", { email });
+      if (response.data.success) {
+        setIsOtpSent(true);
+        toast({
+          title: "Success",
+          description: "If the email exists, a reset code has been sent.",
+        });
       }
-
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
       toast({
         title: "Error",
-        description: message,
+        description: error.response?.data?.message || "Failed to send reset code",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp || !newPassword) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter both OTP and new password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await axiosInstance.post("/auth/reset-password", { email, otp, newPassword });
+      if (response.data.success) {
+        toast({
+          title: "Success",
+          description: "Password reset successfully! You can now log in.",
+        });
+        navigate.push("/");
+      }
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to reset password",
         variant: "destructive",
       });
     } finally {
@@ -129,18 +158,18 @@ export const ForgotPasswordPage: React.FC = () => {
 
           <div className="mb-8">
             <h2 className="text-2xl md:text-3xl font-bold text-[#202124] mb-1 tracking-tight">
-              {isSubmitted ? "Check your email." : "Reset password."}
+              {isOtpSent ? "Enter reset code." : "Reset password."}
             </h2>
             <p className="text-gray-500 text-[14px] font-medium leading-relaxed">
-              {isSubmitted
-                ? `We've sent a recovery link to ${email}. Please check your inbox and spam folder.`
-                : "Enter your email address and we'll send you a link to reset your password."
+              {isOtpSent
+                ? `We've sent a 6-digit code to ${email}. Please enter it below with your new password.`
+                : "Enter your email address and we'll send you a code to reset your password."
               }
             </p>
           </div>
 
-          {!isSubmitted ? (
-            <form onSubmit={handleResetPassword} className="space-y-6">
+          {!isOtpSent ? (
+            <form onSubmit={handleSendOtp} className="space-y-6">
               <div className="space-y-1.5 focus-within:ring-0">
                 <label className="text-[12px] font-bold text-gray-700 ml-1">Email Address</label>
                 <div className="relative group">
@@ -164,19 +193,57 @@ export const ForgotPasswordPage: React.FC = () => {
                 {isLoading ? (
                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
                 ) : (
-                  "Send Reset Link"
+                  "Send Reset Code"
                 )}
               </button>
             </form>
           ) : (
-            <div className="space-y-4">
+            <form onSubmit={handleResetPassword} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-1.5 focus-within:ring-0">
+                  <label className="text-[12px] font-bold text-gray-700 ml-1">6-Digit Code</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11 text-center tracking-widest"
+                    placeholder="123456"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5 focus-within:ring-0">
+                  <label className="text-[12px] font-bold text-gray-700 ml-1">New Password</label>
+                  <input
+                    type="password"
+                    required
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+              </div>
               <button
-                onClick={() => setIsSubmitted(false)}
-                className="w-full h-11 rounded-lg border border-gray-200 bg-white text-[#202124] text-sm font-bold hover:bg-gray-50 transition-all duration-300"
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 mt-2 rounded-lg bg-[#202124] text-white text-sm font-bold hover:bg-primary hover:shadow-lg active:scale-[0.98] disabled:opacity-50 shadow-md transition-all duration-300"
               >
-                Resend Email
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+                ) : (
+                  "Reset Password"
+                )}
               </button>
-            </div>
+              
+              <button
+                type="button"
+                onClick={() => setIsOtpSent(false)}
+                className="w-full h-11 rounded-lg border border-gray-200 bg-white text-[#202124] text-sm font-bold hover:bg-gray-50 transition-all duration-300 mt-2"
+              >
+                Use a different email
+              </button>
+            </form>
           )}
 
           <div className="text-center mt-12">

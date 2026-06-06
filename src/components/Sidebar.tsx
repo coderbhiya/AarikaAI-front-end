@@ -183,7 +183,7 @@ const Sidebar = () => {
               active={pathname === "/subscription"}
               badge="Pro"
             />
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
               <SidebarItem
                 to="/admin/marketing"
                 icon={<Megaphone size={20} />}

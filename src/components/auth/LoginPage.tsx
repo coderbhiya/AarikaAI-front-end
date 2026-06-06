@@ -159,9 +159,9 @@ export const LoginPage: React.FC = () => {
   }, [login, navigate, toast]);
 
   const handleLinkedInError = React.useCallback((error: any) => {
-    console.error(error);
     setIsLoading(prev => ({ ...prev, linkedin: false }));
-    toast({ title: "Login Failed", description: "LinkedIn popup closed or failed", variant: "destructive" });
+    const errorMessage = error?.errorMessage || error?.message || "LinkedIn popup closed or failed. Please try again.";
+    toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
   }, [toast]);
 
   const { linkedInLogin } = useLinkedIn({

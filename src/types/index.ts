@@ -31,6 +31,7 @@ export interface Message {
   role: "user" | "assistant";
   FileAttachments?: FileAttachment[] | null;
   citations?: any[] | null;
+  artifact?: any;
   createdAt: string | Date;
 }
 

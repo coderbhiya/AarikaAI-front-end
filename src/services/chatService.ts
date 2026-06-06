@@ -11,7 +11,7 @@ export const sendChatMessage = async (
   fileAttachments: FileAttachment[] = [],
   webSearch?: boolean,
   onChunk?: (chunk: any) => void
-): Promise<{ reply: string; citations: any[] }> => {
+): Promise<{ reply: string; citations: any[]; artifact?: any }> => {
   const token = localStorage.getItem("authToken");
   
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/chat`, {
@@ -31,6 +31,7 @@ export const sendChatMessage = async (
   const decoder = new TextDecoder();
   let finalReply = "";
   let finalCitations: any[] = [];
+  let finalArtifact: any = null;
   let buffer = "";
 
   if (reader) {
@@ -52,6 +53,7 @@ export const sendChatMessage = async (
               if (data.type === "done") {
                 finalReply = data.reply;
                 finalCitations = data.citations || [];
+                finalArtifact = data.artifact || null;
               } else if (onChunk) {
                 onChunk(data);
               }
@@ -66,7 +68,7 @@ export const sendChatMessage = async (
     }
   }
 
-  return { reply: finalReply, citations: finalCitations };
+  return { reply: finalReply, citations: finalCitations, artifact: finalArtifact };
 };
 
 export const uploadFile = async (file: File): Promise<FileAttachment> => {
