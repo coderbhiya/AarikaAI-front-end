@@ -26,7 +26,8 @@ export default function MarketingPanel() {
     try {
       // Use the admin token here
       const token = localStorage.getItem("adminToken");
-      const res = await fetch("http://localhost:3002/api/marketing/email", {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3002";
+      const res = await fetch(`${baseUrl}/api/marketing/email`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -65,7 +66,8 @@ export default function MarketingPanel() {
     setIsSendingWa(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch("http://localhost:3002/api/marketing/whatsapp", {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3002";
+      const res = await fetch(`${baseUrl}/api/marketing/whatsapp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
