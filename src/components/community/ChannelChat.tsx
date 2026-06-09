@@ -39,6 +39,17 @@ export default function ChannelChat({ channel }: { channel: any }) {
         setMessages((prev) => [...prev, message]);
       });
 
+      newSocket.on("guard_warning", (data: any) => {
+        setMessages((prev) => [
+          ...prev, 
+          { 
+            message: data.message, 
+            isSystem: true, 
+            createdAt: new Date().toISOString() 
+          }
+        ]);
+      });
+
       setSocket(newSocket);
     };
 
@@ -75,6 +86,17 @@ export default function ChannelChat({ channel }: { channel: any }) {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.map((msg, idx) => {
+          if (msg.isSystem) {
+            return (
+              <div key={idx} className="flex justify-center my-4">
+                <div className="bg-red-50 text-red-600 px-4 py-2 rounded-full text-xs font-medium border border-red-100 flex items-center gap-2 shadow-sm">
+                  <span>⚠️</span>
+                  {msg.message}
+                </div>
+              </div>
+            );
+          }
+
           const isCurrentUser = msg.User?.id === user?.uid || msg.userId === user?.uid; // Approximation
           const isAi = msg.isAiReply || msg.User?.id === "aarika-bot";
           
