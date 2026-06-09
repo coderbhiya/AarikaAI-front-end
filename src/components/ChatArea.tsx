@@ -306,7 +306,7 @@ const ChatArea: React.FC = () => {
                                 </div>
 
                                 <h2 className="text-[28px] md:text-[32px] font-bold text-[#1F2937] tracking-tight mb-2 text-center">
-                                    Hi {user?.fullName?.split(' ')[0] || user?.name?.split(' ')[0] || 'User'}! 👋
+                                    Hi {user?.displayName?.split(' ')[0] || (user as any)?.name?.split(' ')[0] || 'User'}! 👋
                                 </h2>
                                 <p className="text-[#6B7280] text-[15px] max-w-sm text-center mb-8 font-medium">
                                     Your AI Career Companion is ready to help you grow.
