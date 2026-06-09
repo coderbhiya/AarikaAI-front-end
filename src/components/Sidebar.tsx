@@ -17,7 +17,8 @@ import {
   Globe,
   Compass,
   ArrowUpRight,
-  Megaphone
+  Megaphone,
+  Users
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter, usePathname } from "next/navigation";
@@ -162,6 +163,12 @@ const Sidebar = () => {
               icon={<Compass size={20} />}
               label="Career Journey"
               active={pathname === "/journey"}
+            />
+            <SidebarItem
+              to="/community"
+              icon={<Users size={20} />}
+              label="Community"
+              active={pathname === "/community"}
             />
             <SidebarItem
               to="/jobs"
