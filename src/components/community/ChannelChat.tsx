@@ -6,10 +6,10 @@ import { Send, Hash, Bot } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
 
 export default function ChannelChat({ channel }: { channel: any }) {
-  const { getToken, user } = useAuth();
+  const { user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -19,7 +19,7 @@ export default function ChannelChat({ channel }: { channel: any }) {
     let newSocket: Socket;
 
     const connectSocket = async () => {
-      const token = await getToken();
+      const token = localStorage.getItem("authToken");
       if (!token) return;
 
       newSocket = io(SOCKET_URL, {
@@ -47,7 +47,7 @@ export default function ChannelChat({ channel }: { channel: any }) {
     return () => {
       if (newSocket) newSocket.disconnect();
     };
-  }, [channel.id, getToken]);
+  }, [channel.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
