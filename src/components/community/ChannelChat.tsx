@@ -36,18 +36,32 @@ export default function ChannelChat({ channel }: { channel: any }) {
       });
 
       newSocket.on("new_message", (message: any) => {
-        setMessages((prev) => [...prev, message]);
+        setMessages((prev) => {
+          // If this message has a tempId, replace the optimistic message
+          if (message.tempId) {
+            const exists = prev.find(m => m.tempId === message.tempId || m.id === message.id);
+            if (exists) {
+              return prev.map(m => m.tempId === message.tempId ? message : m);
+            }
+          }
+          // Otherwise, just append it
+          return [...prev, message];
+        });
       });
 
       newSocket.on("guard_warning", (data: any) => {
-        setMessages((prev) => [
-          ...prev, 
-          { 
-            message: data.message, 
-            isSystem: true, 
-            createdAt: new Date().toISOString() 
-          }
-        ]);
+        setMessages((prev) => {
+          // Remove the optimistic message if it was blocked
+          const filtered = data.tempId ? prev.filter(m => m.tempId !== data.tempId) : prev;
+          return [
+            ...filtered, 
+            { 
+              message: data.message, 
+              isSystem: true, 
+              createdAt: new Date().toISOString() 
+            }
+          ];
+        });
       });
 
       setSocket(newSocket);
@@ -68,7 +82,26 @@ export default function ChannelChat({ channel }: { channel: any }) {
     e.preventDefault();
     if (!inputValue.trim() || !socket) return;
     
-    socket.emit("send_message", { channelId: channel.id, message: inputValue });
+    // Optimistic UI Update
+    const tempId = `temp_${Date.now()}`;
+    const tempMsg = {
+      id: tempId,
+      tempId,
+      message: inputValue,
+      userId: user?.uid, // Approximation for local use
+      User: {
+        id: user?.uid,
+        name: user?.displayName || "You",
+        handle: user?.displayName ? user.displayName.toLowerCase().replace(/[^a-z0-9]/g, '') : "you",
+        profilePicture: user?.photoURL
+      },
+      createdAt: new Date().toISOString(),
+      isPending: true
+    };
+    
+    setMessages((prev) => [...prev, tempMsg]);
+
+    socket.emit("send_message", { channelId: channel.id, message: inputValue, tempId });
     setInputValue("");
   };
 
@@ -101,7 +134,7 @@ export default function ChannelChat({ channel }: { channel: any }) {
           const isAi = msg.isAiReply || msg.User?.id === "aarika-bot";
           
           return (
-            <div key={idx} className={`flex gap-3 max-w-[80%] ${isCurrentUser ? "ml-auto flex-row-reverse" : ""}`}>
+            <div key={idx} className={`flex gap-3 max-w-[80%] ${isCurrentUser ? "ml-auto flex-row-reverse" : ""} ${msg.isPending ? "opacity-70" : ""}`}>
               {/* Avatar */}
               <div className="flex-shrink-0">
                 {isAi ? (
