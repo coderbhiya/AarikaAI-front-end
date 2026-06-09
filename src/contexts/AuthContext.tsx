@@ -73,9 +73,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Sync with backend to get latest profile data
         syncProfile();
       } else {
-        setUser(null);
-        localStorage.removeItem("user");
-        localStorage.removeItem("authToken");
+        const authToken = localStorage.getItem("authToken");
+        if (authToken) {
+          // Custom auth user (not firebase). Sync profile to verify token validity.
+          syncProfile();
+        } else {
+          setUser(null);
+          localStorage.removeItem("user");
+          localStorage.removeItem("authToken");
+        }
       }
       setLoading(false);
     });
