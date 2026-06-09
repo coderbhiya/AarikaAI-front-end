@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import BrainLogo from "./BrainLogo";
+import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -43,7 +44,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   badge,
 }) => {
   const navigate = useRouter();
-  const { toggleSidebar } = useAuth();
+  const { toggleSidebar, showSidebar } = useAuth();
   const isMobile = useIsMobile();
 
   const handleClick = () => {
@@ -57,7 +58,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 
   return (
     <div
-      className={`group flex items-center justify-between w-full py-2.5 px-3.5 rounded-xl cursor-pointer transition-all duration-200 ${active
+      className={`group flex items-center ${(!isMobile && !showSidebar) ? "justify-center px-0" : "justify-between px-3.5"} w-full py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${active
         ? "bg-primary/10 text-primary"
         : "text-[#444746] hover:bg-gray-100"
         }`}
@@ -67,12 +68,14 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
         <div className={`transition-colors ${active ? "text-primary" : "text-gray-400 group-hover:text-[#202124]"}`}>
           {icon}
         </div>
-        <span className={`text-[14px] font-medium transition-colors ${active ? "text-primary font-semibold" : "group-hover:text-[#202124]"}`}>
-          {label}
-        </span>
+        {((!isMobile && showSidebar) || isMobile) && (
+          <span className={`text-[14px] font-medium transition-colors whitespace-nowrap ${active ? "text-primary font-semibold" : "group-hover:text-[#202124]"}`}>
+            {label}
+          </span>
+        )}
       </div>
 
-      {badge && (
+      {((!isMobile && showSidebar) || isMobile) && badge && (
         <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
           {badge}
         </span>
@@ -99,7 +102,7 @@ const Sidebar = () => {
   const sidebarClasses = isMobile
     ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"
     } transition-transform duration-300`
-    : `h-screen bg-white border-r border-gray-100 flex flex-col relative z-30 transition-all duration-300 ease-in-out ${showSidebar ? "w-64" : "w-0 overflow-hidden opacity-0"
+    : `h-screen bg-white border-r border-gray-100 flex flex-col relative z-30 transition-all duration-300 ease-in-out ${showSidebar ? "w-64" : "w-[72px]"
     }`;
 
   return (
@@ -118,34 +121,49 @@ const Sidebar = () => {
           }`}
       >
         {/* Header */}
-        <div className="p-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate.push("/chat")}>
-            <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center shadow-sm overflow-hidden">
-              <BrainLogo size={32} />
+        <div className={`p-6 flex items-center ${showSidebar ? "justify-between" : "justify-center px-0"} relative`}>
+          {(!isMobile && !showSidebar) ? (
+            <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center shadow-sm overflow-hidden cursor-pointer" onClick={() => navigate.push("/chat")}>
+              <BrainLogo size={24} />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-[#202124] tracking-tight leading-none mb-1">Aarika.AI</h1>
-              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Strategic Intel</p>
+          ) : (
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate.push("/chat")}>
+              <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center shadow-sm overflow-hidden">
+                <BrainLogo size={32} />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-[#202124] tracking-tight leading-none mb-1">Aarika.AI</h1>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Strategic Intel</p>
+              </div>
             </div>
-          </div>
-          {isMobile && (
+          )}
+          {isMobile ? (
             <button onClick={toggleSidebar} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
               <X size={20} />
+            </button>
+          ) : (
+            <button 
+              onClick={toggleSidebar} 
+              className="absolute -right-3 top-8 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 shadow-sm hover:bg-gray-50 z-50 transition-transform hover:scale-110"
+            >
+              {showSidebar ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
             </button>
           )}
         </div>
 
         {/* Action Button */}
-        <div className="px-4 mb-8">
+        <div className={`px-4 mb-8 ${(!isMobile && !showSidebar) ? "px-2" : ""}`}>
           <button
-            className="w-full flex items-center gap-3 px-5 py-3 rounded-2xl bg-[#F0F4F9] hover:bg-[#D3E3FD] text-[#041E49] transition-all duration-200 mt-2"
+            className={`w-full flex items-center ${(!isMobile && !showSidebar) ? "justify-center p-3" : "gap-3 px-5 py-3"} rounded-2xl bg-[#F0F4F9] hover:bg-[#D3E3FD] text-[#041E49] transition-all duration-200 mt-2`}
             onClick={() => {
               navigate.push("/chat");
               if (isMobile) toggleSidebar();
             }}
           >
-            <PlusCircle size={20} />
-            <span className="text-[14px] font-medium">New Session</span>
+            <PlusCircle size={20} className="flex-shrink-0" />
+            {((!isMobile && showSidebar) || isMobile) && (
+              <span className="text-[14px] font-medium whitespace-nowrap">New Session</span>
+            )}
           </button>
         </div>
 
@@ -218,21 +236,27 @@ const Sidebar = () => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-50 mt-auto">
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 mb-4 transition-all hover:bg-white hover:border-primary/20 cursor-pointer group" onClick={() => navigate.push("/profile")}>
-            <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm overflow-hidden text-primary font-bold">
+        <div className={`p-4 border-t border-gray-50 mt-auto ${(!isMobile && !showSidebar) ? "px-2" : ""}`}>
+          <div className={`flex items-center ${(!isMobile && !showSidebar) ? "justify-center p-2" : "gap-3 p-3"} rounded-2xl bg-gray-50 border border-gray-100 mb-4 transition-all hover:bg-white hover:border-primary/20 cursor-pointer group`} onClick={() => navigate.push("/profile")}>
+            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm overflow-hidden text-primary font-bold">
               {user?.photoURL ? <img src={user.photoURL} alt="" /> : user?.displayName?.[0] || "U"}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-[#202124] truncate group-hover:text-primary transition-colors">{user?.displayName || "Cyber Identity"}</p>
-              <p className="text-[10px] text-gray-400 uppercase tracking-tighter truncate">Premium Access</p>
-            </div>
-            <Settings size={16} className="text-gray-400 group-hover:rotate-45 transition-transform" />
+            {((!isMobile && showSidebar) || isMobile) && (
+              <>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-[#202124] truncate group-hover:text-primary transition-colors">{user?.displayName || "Cyber Identity"}</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-tighter truncate">Premium Access</p>
+                </div>
+                <Settings size={16} className="text-gray-400 group-hover:rotate-45 transition-transform" />
+              </>
+            )}
           </div>
 
-          <button onClick={handleLogout} className="flex items-center gap-3 w-full px-5 py-3 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-medium text-[14px]">
-            <LogOut size={20} />
-            Logout System
+          <button onClick={handleLogout} className={`flex items-center ${(!isMobile && !showSidebar) ? "justify-center" : "gap-3 px-5"} w-full py-3 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-medium text-[14px]`}>
+            <LogOut size={20} className="flex-shrink-0" />
+            {((!isMobile && showSidebar) || isMobile) && (
+              <span className="whitespace-nowrap">Logout System</span>
+            )}
           </button>
         </div>
       </div>
