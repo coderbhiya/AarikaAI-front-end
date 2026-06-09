@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Sidebar from "@/components/Sidebar";
 import api from "@/lib/axios";
 import { MessageCircle, Code, FileText, Users, Hash } from "lucide-react";
 import ChannelChat from "@/components/community/ChannelChat";
@@ -37,11 +36,9 @@ export default function CommunityView() {
   const activeChannel = channels.find((c) => c.id === activeChannelId);
 
   return (
-    <div className="flex h-screen bg-white">
-      <Sidebar />
-      <main className="flex-1 flex overflow-hidden">
-        {/* Channels Sidebar */}
-        <div className="w-64 border-r border-gray-100 flex flex-col bg-[#F9FAFB]">
+    <div className="flex h-full bg-white w-full">
+      {/* Channels Sidebar */}
+      <div className="w-64 border-r border-gray-100 flex flex-col bg-[#F9FAFB]">
           <div className="p-4 border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-800">Community</h2>
           </div>
@@ -76,8 +73,7 @@ export default function CommunityView() {
               Select a channel to start chatting
             </div>
           )}
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
