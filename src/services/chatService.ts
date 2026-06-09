@@ -15,7 +15,7 @@ export const sendChatMessage = async (
 ): Promise<{ reply: string; citations: any[]; artifact?: any }> => {
   const token = localStorage.getItem("authToken");
   
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000"}/chat`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aarikaai.in"}/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
