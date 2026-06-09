@@ -14,6 +14,7 @@ import QuizCard from "./cards/QuizCard";
 import ResumeSyncCard from "./cards/ResumeSyncCard";
 import TimelineCard from "./cards/TimelineCard";
 import BadgeCard from "./cards/BadgeCard";
+import PdfDownloadCard from "./cards/PdfDownloadCard";
 
 interface MessageItemProps {
   message: Message;
@@ -190,6 +191,16 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => 
         <div className="flex flex-col gap-2 w-full max-w-2xl">
           {swotData.cleanText && <Markdown text={swotData.cleanText} />}
           <SWOTCard data={swotData.data} />
+        </div>
+      );
+    }
+
+    const pdfDownloadData = extractJsonData("PDF_DOWNLOAD");
+    if (pdfDownloadData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {pdfDownloadData.cleanText && <Markdown text={pdfDownloadData.cleanText} />}
+          <PdfDownloadCard url={pdfDownloadData.data.url} fileName={pdfDownloadData.data.fileName} />
         </div>
       );
     }
