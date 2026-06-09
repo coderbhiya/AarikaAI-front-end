@@ -10,6 +10,7 @@ export const sendChatMessage = async (
   message: string,
   fileAttachments: FileAttachment[] = [],
   webSearch?: boolean,
+  engine?: string,
   onChunk?: (chunk: any) => void
 ): Promise<{ reply: string; citations: any[]; artifact?: any }> => {
   const token = localStorage.getItem("authToken");
@@ -20,7 +21,7 @@ export const sendChatMessage = async (
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ message, fileAttachments, webSearch }),
+    body: JSON.stringify({ message, fileAttachments, webSearch, engine }),
   });
 
   if (!response.ok) {

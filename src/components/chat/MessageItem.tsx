@@ -78,11 +78,35 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => 
           if (firstBrace !== -1 && lastBrace !== -1) {
             rawData = rawData.substring(firstBrace, lastBrace + 1);
           }
-          const data = JSON.parse(rawData);
+
+          // Attempt direct parse first
+          let data: any;
+          try {
+            data = JSON.parse(rawData);
+          } catch {
+            // LLM JSON repair: fix trailing commas, unterminated strings, missing brackets
+            let repaired = rawData
+              .replace(/,\s*([}\]])/g, "$1")         // trailing commas
+              .replace(/(["'])\s*\n/g, "$1,\n")       // missing commas between lines
+              .replace(/\\n/g, " ");                  // literal \n inside strings
+            
+            // If string is unterminated, try closing it
+            const openQuotes = (repaired.match(/"/g) || []).length;
+            if (openQuotes % 2 !== 0) {
+              repaired += '"';
+            }
+            // Ensure matching braces
+            const openBraces = (repaired.match(/{/g) || []).length;
+            const closeBraces = (repaired.match(/}/g) || []).length;
+            for (let i = 0; i < openBraces - closeBraces; i++) repaired += "}";
+
+            data = JSON.parse(repaired);
+          }
+
           const cleanText = text.replace(regex, "").trim();
           return { data, cleanText };
         } catch (err) {
-          console.error(`Failed to parse ${tagName} data`, err);
+          console.warn(`[MessageItem] Failed to parse ${tagName} JSON, falling back to markdown`);
           return null;
         }
       }

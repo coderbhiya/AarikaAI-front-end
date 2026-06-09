@@ -4,12 +4,13 @@ import React, { useState, useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, User, Sparkles, Zap, Shield, Globe } from "lucide-react";
+import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChats, sendChatMessage, uploadFile, getWelcomeMessage } from "@/services/chatService";
 import { autoFillProfileFromResume } from "@/services/profileService";
+import { detectResume } from "@/utils/resumeDetector";
 import MessageList from "./chat/MessageList";
 import BrainLogo from "./BrainLogo";
 import SuggestionChips from "./chat/SuggestionChips";
@@ -20,7 +21,7 @@ const ChatArea: React.FC = () => {
     const isMobile = useIsMobile();
     const navigate = useRouter();
     const queryClient = useQueryClient();
-    const { toggleSidebar } = useAuth();
+    const { user, toggleSidebar } = useAuth();
     const [isUploading, setIsUploading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -35,22 +36,45 @@ const ChatArea: React.FC = () => {
         queryFn: getChats,
     });
 
+    // Fix 1 & 3: Welcome Message Logic & Memory Leak Fix
+    const hasFetchedWelcome = useRef(false);
     useEffect(() => {
-        // Fetch proactive welcome message once on mount if chat history exists
-        if (!isChatsLoading && messages.length > 0) {
+        let isMounted = true;
+        
+        if (!isChatsLoading && !hasFetchedWelcome.current) {
+            hasFetchedWelcome.current = true;
             getWelcomeMessage().then((msg) => {
-                if (msg) {
-                    queryClient.setQueryData<Message[]>(["chats"], (old) => [...(old || []), msg]);
+                if (msg && isMounted) {
+                    queryClient.setQueryData<Message[]>(["chats"], (old) => {
+                        const existing = old || [];
+                        if (existing.some(m => m.id === msg.id || m.message === msg.message)) return existing;
+                        return [...existing, msg];
+                    });
                 }
-            }).catch(console.error);
+            }).catch((err) => {
+                if (isMounted) console.error("Welcome message fetch failed:", err);
+            });
         }
-    }, [isChatsLoading, messages.length > 0]); // Run once when messages are first loaded
+        
+        return () => {
+            isMounted = false;
+        };
+    }, [isChatsLoading, queryClient]);
+
+    // Fix 5: Intelligent Auto Scroll setup
+    const isUserScrolledUp = useRef(false);
+    const handleScroll = () => {
+        if (!scrollRef.current) return;
+        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+        isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 50;
+    };
 
     const chatMutation = useMutation({
-        mutationFn: async ({ text, files, webSearch }: { text: string; files: FileAttachment[]; webSearch?: boolean }) => {
+        // Fix 1: Add engine parameter
+        mutationFn: async ({ text, files, webSearch, engine }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string }) => {
             setStreamingReply("");
             setSearchProgress("Searching career trends...");
-            return sendChatMessage(text, files, webSearch, (chunk) => {
+            return sendChatMessage(text, files, webSearch, engine, (chunk) => {
                 if (chunk.type === "progress") {
                     setSearchProgress(chunk.message);
                 } else if (chunk.type === "text") {
@@ -63,8 +87,9 @@ const ChatArea: React.FC = () => {
             await queryClient.cancelQueries({ queryKey: ["chats"] });
             const previousChats = queryClient.getQueryData<Message[]>(["chats"]);
 
+            const tempId = `temp-user-${Date.now()}`;
             const newUserMessage: Message = {
-                id: Date.now().toString(),
+                id: tempId,
                 message: text,
                 role: "user",
                 FileAttachments: files.length > 0 ? files : null,
@@ -72,7 +97,7 @@ const ChatArea: React.FC = () => {
             };
 
             queryClient.setQueryData<Message[]>(["chats"], (old) => [...(old || []), newUserMessage]);
-            return { previousChats };
+            return { previousChats, tempId };
         },
         onError: (err, newMessage, context) => {
             queryClient.setQueryData(["chats"], context?.previousChats);
@@ -80,29 +105,70 @@ const ChatArea: React.FC = () => {
             setSearchProgress(null);
             toast.error("Transmission failed. Please retry.");
         },
-        onSuccess: (result) => {
+        onSuccess: (result, variables, context) => {
             const aiMessage: Message = {
-                id: (Date.now() + 1).toString(),
+                id: `temp-ai-${Date.now()}`,
                 message: result.reply,
                 role: "assistant",
                 citations: result.citations,
                 artifact: result.artifact,
                 createdAt: new Date().toISOString(),
             };
-            queryClient.setQueryData<Message[]>(["chats"], (old) => [...(old || []), aiMessage]);
+            
+            queryClient.setQueryData<Message[]>(["chats"], (old) => {
+                const existing = old || [];
+                
+                // Remove the optimistic user message (tempId) and any exact AI message match
+                const filtered = existing.filter(msg => 
+                    msg.id !== context.tempId && 
+                    !(msg.role === "assistant" && msg.message === result.reply)
+                );
+                
+                const finalArray = [...filtered];
+                
+                // If a background fetch resolved during the stream, the real database 
+                // user message will already exist in the cache. We must prevent duplicating it.
+                const realUserMessageExists = filtered.some(msg => 
+                    msg.role === "user" && 
+                    msg.message === variables.text && 
+                    !msg.id.startsWith("temp-")
+                );
+                
+                // Only re-add the temporary user message if the real DB message hasn't arrived yet
+                if (!realUserMessageExists) {
+                    finalArray.push({
+                        id: context.tempId, 
+                        message: variables.text, 
+                        role: "user", 
+                        FileAttachments: variables.files.length > 0 ? variables.files : undefined,
+                        createdAt: new Date().toISOString()
+                    });
+                }
+                
+                finalArray.push(aiMessage);
+                return finalArray;
+            });
+
             if (result.artifact) {
                 setActiveArtifact(result.artifact);
             }
             setStreamingReply(null);
             setSearchProgress(null);
+            
+            // Background fetch to sync real DB IDs
+            queryClient.invalidateQueries({ queryKey: ["chats"] });
         },
     });
 
+    // Fix 5: Intelligent Streaming Auto Scroll
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        if (scrollRef.current && !isUserScrolledUp.current) {
+            scrollRef.current.scrollTo({
+                top: scrollRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
         }
-    }, [messages, chatMutation.isPending]);
+    }, [messages, streamingReply, chatMutation.isPending]);
 
     const handleFileUploads = async (files: File[]): Promise<FileAttachment[]> => {
         if (files.length === 0) return [];
@@ -120,16 +186,15 @@ const ChatArea: React.FC = () => {
         }
     };
 
-    const handleSendMessage = async (text: string, attachedFiles?: File[], webSearch?: boolean) => {
+    const handleSendMessage = async (text: string, attachedFiles?: File[], webSearch?: boolean, engine?: string) => {
         const uploadedFiles = attachedFiles ? await handleFileUploads(attachedFiles) : [];
 
-        // Check for resumes and trigger auto-fill
+        // Fix 3: Improved Resume Detection Logic
         if (uploadedFiles.length > 0) {
-            const resumeFile = uploadedFiles.find(f =>
-                f.originalName.toLowerCase().includes("resume") ||
-                f.originalName.toLowerCase().includes("cv") ||
-                [".pdf", ".doc", ".docx"].includes(f.fileType.toLowerCase())
-            );
+            const resumeFile = uploadedFiles.find(f => {
+                const detection = detectResume(f.originalName, f.fileType);
+                return detection.isResume && detection.confidence >= 60;
+            });
 
             if (resumeFile) {
                 toast.promise(
@@ -157,7 +222,7 @@ const ChatArea: React.FC = () => {
             }
         }
 
-        chatMutation.mutate({ text, files: uploadedFiles, webSearch });
+        chatMutation.mutate({ text, files: uploadedFiles, webSearch, engine });
     };
 
     const isProcessing = chatMutation.isPending || isUploading;
@@ -197,7 +262,7 @@ const ChatArea: React.FC = () => {
                 </header>
 
                 {/* Content Area */}
-                <main ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-3 md:px-6 pt-4 md:pt-6 pb-24 md:pb-20">
+                <main ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-3 md:px-6 pt-4 md:pt-6 pb-24 md:pb-20">
                     <div className="max-w-5xl mx-auto w-full">
                         {isError ? (
                             <div className="flex flex-col justify-center items-center h-[70vh] gap-4 p-8 text-center bg-red-50/50 rounded-3xl border border-red-100 animate-in fade-in zoom-in duration-500">
@@ -221,18 +286,117 @@ const ChatArea: React.FC = () => {
                                 <span className="text-[13px] font-medium text-gray-400 animate-pulse">Establishing Connection...</span>
                             </div>
                         ) : messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center min-h-[75vh] text-center animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
-                                <div className="mb-6 md:mb-8 p-1">
-                                    <BrainLogo size={56} className="md:w-[72px] md:h-[72px] opacity-90 drop-shadow-2xl mx-auto" />
+                            <div className="flex flex-col items-center justify-start min-h-[75vh] px-2 pt-6 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out w-full">
+                                {/* Concentric Logo Rings */}
+                                <div className="relative mb-8 w-32 h-32 flex items-center justify-center mt-4">
+                                    <div className="absolute inset-[-20px] rounded-full border border-gray-200/40 shadow-[0_0_40px_-10px_rgba(0,0,0,0.03)]"></div>
+                                    <div className="absolute inset-[-4px] rounded-full border border-gray-200/60"></div>
+                                    <div className="absolute inset-3 rounded-full border border-gray-200/80 flex items-center justify-center bg-white shadow-sm z-10">
+                                        <BrainLogo size={56} className="opacity-100" />
+                                    </div>
+                                    {/* Decorative scattered dots */}
+                                    <div className="absolute top-0 -left-6 w-1.5 h-1.5 rounded-sm bg-blue-500 rotate-45"></div>
+                                    <div className="absolute -top-4 right-2 w-1.5 h-1.5 rounded-sm bg-red-500 rotate-12"></div>
+                                    <div className="absolute bottom-6 -left-12 w-2 h-2 rounded-full bg-yellow-500"></div>
+                                    <div className="absolute -bottom-8 left-4 w-1.5 h-1.5 rounded-sm bg-blue-400 rotate-45"></div>
+                                    <div className="absolute top-8 -right-10 w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <div className="absolute bottom-2 -right-4 w-1.5 h-1.5 rounded-sm bg-yellow-400 rotate-45"></div>
+                                    <div className="absolute top-1/2 -left-20 w-8 h-8 rounded-full bg-yellow-100/50 blur-xl"></div>
+                                    <div className="absolute top-1/2 -right-20 w-12 h-12 rounded-full bg-blue-100/50 blur-xl"></div>
                                 </div>
-                                <h2 className="text-[26px] sm:text-[32px] md:text-[44px] font-medium text-[#202124] tracking-tight mb-3 md:mb-4 leading-tight px-4">
-                                    Hello, how can I help <span className="gemini-gradient-text">your career today?</span>
+
+                                <h2 className="text-[28px] md:text-[32px] font-bold text-[#1F2937] tracking-tight mb-2 text-center">
+                                    Hi {user?.fullName?.split(' ')[0] || user?.name?.split(' ')[0] || 'User'}! 👋
                                 </h2>
-                                <p className="text-[#444746] text-sm md:text-lg max-w-5xl mx-auto mb-4 leading-relaxed font-normal opacity-90 px-4">
-                                    I am your Career Strategist. Upload your resume to start analysis, or ask me about market trends and skills.
+                                <p className="text-[#6B7280] text-[15px] max-w-sm text-center mb-8 font-medium">
+                                    Your AI Career Companion is ready to help you grow.
                                 </p>
 
-                                <SuggestionChips onSelect={(text) => handleSendMessage(text)} />
+                                <button 
+                                    onClick={() => handleSendMessage("Hi, let's start a new chat!")}
+                                    className="w-full md:w-[80%] max-w-md bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-[20px] py-4 mb-8 text-[16px] font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200/50 transition-all active:scale-95"
+                                >
+                                    <Plus size={20} /> New Chat
+                                </button>
+
+                                {/* Action Cards Grid */}
+                                <div className="grid grid-cols-2 gap-4 w-full md:w-[80%] max-w-md">
+                                    {/* Card 1 */}
+                                    <div 
+                                        onClick={() => handleSendMessage("I need career guidance and a roadmap")}
+                                        className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white mb-3">
+                                            <Compass size={18} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-1.5">Career Guidance</h3>
+                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Get personalized career advice and roadmap</p>
+                                        </div>
+                                        <div className="flex justify-end mt-2">
+                                            <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-50 transition-colors">
+                                                <ArrowRight size={14} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 2 */}
+                                    <div 
+                                        onClick={() => handleSendMessage("Can you review my resume?")}
+                                        className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-[#3B82F6] flex items-center justify-center text-white mb-3">
+                                            <FileText size={18} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-1.5">Resume Review</h3>
+                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Analyze your resume and improve it</p>
+                                        </div>
+                                        <div className="flex justify-end mt-2">
+                                            <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center text-[#3B82F6] group-hover:bg-blue-50 transition-colors">
+                                                <ArrowRight size={14} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 3 */}
+                                    <div 
+                                        onClick={() => handleSendMessage("I need help with coding")}
+                                        className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-[#EF4444] flex items-center justify-center text-white mb-3">
+                                            <Code size={18} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-1.5">Coding Help</h3>
+                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Debug, explain or generate code</p>
+                                        </div>
+                                        <div className="flex justify-end mt-2">
+                                            <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center text-[#EF4444] group-hover:bg-red-50 transition-colors">
+                                                <ArrowRight size={14} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 4 */}
+                                    <div 
+                                        onClick={() => handleSendMessage("Help me prepare for an interview")}
+                                        className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-[#F59E0B] flex items-center justify-center text-white mb-3">
+                                            <Lightbulb size={18} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-1.5">Interview Prep</h3>
+                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Practice mock interviews and get better</p>
+                                        </div>
+                                        <div className="flex justify-end mt-2">
+                                            <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center text-[#F59E0B] group-hover:bg-amber-50 transition-colors">
+                                                <ArrowRight size={14} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         ) : (
                             <MessageList

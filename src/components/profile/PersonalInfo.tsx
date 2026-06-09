@@ -23,6 +23,17 @@ const PersonalInfo = () => {
     resumeUrl: ''
   });
 
+  const mapExperienceToOption = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+    const num = Number(val);
+    if (isNaN(num)) return val;
+    if (num < 1) return "0-1";
+    if (num < 3) return "1-3";
+    if (num < 5) return "3-5";
+    if (num < 10) return "5-10";
+    return "10+";
+  };
+
   useEffect(() => {
     if (user && !isEditing) {
       const profile = user.UserProfile || {};
@@ -33,7 +44,7 @@ const PersonalInfo = () => {
         phone: user.phone || '',
         headline: profile.headline || '',
         bio: profile.bio || '',
-        experienceYears: profile.experienceYears || '',
+        experienceYears: mapExperienceToOption(profile.experienceYears),
         currentRole: profile.currentRole || '',
         targetRole: profile.targetRole || '',
         targetIndustry: profile.targetIndustry || '',
@@ -65,7 +76,7 @@ const PersonalInfo = () => {
             phone: userData.phone || '',
             headline: profileData.headline || '',
             bio: profileData.bio || '',
-            experienceYears: profileData.experienceYears || '',
+            experienceYears: mapExperienceToOption(profileData.experienceYears),
             currentRole: profileData.currentRole || '',
             targetRole: profileData.targetRole || '',
             targetIndustry: profileData.targetIndustry || '',
@@ -86,8 +97,10 @@ const PersonalInfo = () => {
     try {
       const response = await updateProfile(formData);
       if (response.success) {
-        if (response.user) {
-          updateUser(response.user);
+        // Refetch profile to sync context and prevent old data from reverting the UI
+        const profileRes = await getProfile();
+        if (profileRes.success && profileRes.user) {
+          updateUser(profileRes.user);
         }
         setIsEditing(false);
       }

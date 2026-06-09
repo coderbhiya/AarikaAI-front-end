@@ -11,7 +11,7 @@ interface ResumeAnalysisCardProps {
     insights: Insight[];
 }
 
-const ResumeAnalysisCard: React.FC<ResumeAnalysisCardProps> = ({ score, insights }) => {
+const ResumeAnalysisCard: React.FC<ResumeAnalysisCardProps> = ({ score = 0, insights = [] }) => {
     return (
         <div className="premium-card p-5 w-full max-w-sm mt-4 animate-in fade-in zoom-in-95 duration-500 delay-300">
             <div className="flex items-center justify-between mb-6">
