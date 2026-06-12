@@ -22,7 +22,7 @@ interface ProfileSyncModalProps {
         newValue: any;
       }>;
       addedFields: Array<{
-        field: "skills" | "experiences" | "projects" | "certifications";
+        field: "skills" | "experiences" | "projects" | "certifications" | "educations";
         value: any;
         index?: number;
       }>;
@@ -50,6 +50,7 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
   const [selectedExperiences, setSelectedExperiences] = useState<number[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
   const [selectedCertifications, setSelectedCertifications] = useState<number[]>([]);
+  const [selectedEducations, setSelectedEducations] = useState<number[]>([]);
   const [conflictResolutions, setConflictResolutions] = useState<Record<string, "keep" | "update" | "merge">>({});
 
   // Initialize selections when snapshot changes or modal opens
@@ -88,6 +89,12 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
         .map((af) => af.index as number);
       setSelectedCertifications(initialCerts);
 
+      // 5b. Added Educations (Default: all checked)
+      const initialEdus = diff.addedFields
+        .filter((af) => af.field === "educations" && af.index !== undefined)
+        .map((af) => af.index as number);
+      setSelectedEducations(initialEdus);
+
       // 6. Conflict Resolutions (Default: 'update')
       const initialConflicts: Record<string, "keep" | "update" | "merge"> = {};
       diff.conflicts.forEach((c) => {
@@ -118,6 +125,7 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
         experiences: selectedExperiences,
         projects: selectedProjects,
         certifications: selectedCertifications,
+        educations: selectedEducations,
       };
 
       const response = await approveResumeChanges({
@@ -154,6 +162,9 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
       const allCerts = diff.addedFields
         .filter((af) => af.field === "certifications" && af.index !== undefined)
         .map((af) => af.index as number);
+      const allEdus = diff.addedFields
+        .filter((af) => af.field === "educations" && af.index !== undefined)
+        .map((af) => af.index as number);
 
       const approvedFields = {
         headline: true,
@@ -165,6 +176,7 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
         experiences: allExps,
         projects: allProjs,
         certifications: allCerts,
+        educations: allEdus,
       };
 
       const syncConflicts: Record<string, "keep" | "update" | "merge"> = {};
@@ -214,6 +226,7 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
   const addedExpsList = diff.addedFields.filter((af) => af.field === "experiences");
   const addedProjsList = diff.addedFields.filter((af) => af.field === "projects");
   const addedCertsList = diff.addedFields.filter((af) => af.field === "certifications");
+  const addedEdusList = diff.addedFields.filter((af) => af.field === "educations");
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose(false)}>
@@ -547,6 +560,58 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Section 7: Educations */}
+              {addedEdusList.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-slate-400" />
+                    New Education ({addedEdusList.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {addedEdusList.map((edu) => {
+                      const idx = edu.index as number;
+                      const isChecked = selectedEducations.includes(idx);
+                      const data = edu.value;
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+                            isChecked
+                              ? "border-blue-100 dark:border-blue-900/30 bg-blue-50/10 dark:bg-blue-950/5"
+                              : "border-slate-100 dark:border-slate-850 bg-slate-50/30 dark:bg-slate-950/20"
+                          }`}
+                        >
+                          <Checkbox
+                            id={`edu-${idx}`}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              setSelectedEducations((prev) =>
+                                checked ? [...prev, idx] : prev.filter((i) => i !== idx)
+                              );
+                            }}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <span className="text-sm font-bold text-slate-950 dark:text-white block">
+                              {data.degree || "Degree"}
+                            </span>
+                            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                              {data.institution && <span>{data.institution}</span>}
+                              {data.year && (
+                                <>
+                                  <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                  <span>{data.year}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -572,7 +637,7 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
             )}
             <button
               onClick={handleUpdateApproved}
-              disabled={isLoading || (hasChanges && !Object.values(selectedUpdatedFields).some(Boolean) && selectedSkills.length === 0 && selectedExperiences.length === 0 && selectedProjects.length === 0 && selectedCertifications.length === 0)}
+              disabled={isLoading || (hasChanges && !Object.values(selectedUpdatedFields).some(Boolean) && selectedSkills.length === 0 && selectedExperiences.length === 0 && selectedProjects.length === 0 && selectedCertifications.length === 0 && selectedEducations.length === 0)}
               className="px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
             >
               {isLoading ? (

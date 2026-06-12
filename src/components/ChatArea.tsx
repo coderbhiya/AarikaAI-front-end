@@ -232,7 +232,8 @@ const ChatArea: React.FC = () => {
             }
         }
 
-        chatMutation.mutate({ text, files: uploadedFiles, webSearch, engine });
+        const finalText = (!text.trim() && uploadedFiles.length > 0) ? "I have attached a document." : text;
+        chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine });
     };
 
     const isProcessing = chatMutation.isPending || isUploading;
