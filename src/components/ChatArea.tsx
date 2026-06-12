@@ -8,7 +8,7 @@ import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, Fi
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getChats, sendChatMessage, uploadFile, getWelcomeMessage } from "@/services/chatService";
+import { getChats, sendChatMessage, uploadFile, getWelcomeMessage, truncateChat } from "@/services/chatService";
 import { autoFillProfileFromResume } from "@/services/profileService";
 import { detectResume } from "@/utils/resumeDetector";
 import MessageList from "./chat/MessageList";
@@ -63,6 +63,7 @@ const ChatArea: React.FC = () => {
 
     // Fix 5: Intelligent Auto Scroll setup
     const isUserScrolledUp = useRef(false);
+    const abortControllerRef = useRef<AbortController | null>(null);
     const handleScroll = () => {
         if (!scrollRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -74,14 +75,23 @@ const ChatArea: React.FC = () => {
         mutationFn: async ({ text, files, webSearch, engine }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string }) => {
             setStreamingReply("");
             setSearchProgress("Searching career trends...");
-            return sendChatMessage(text, files, webSearch, engine, (chunk) => {
-                if (chunk.type === "progress") {
-                    setSearchProgress(chunk.message);
-                } else if (chunk.type === "text") {
-                    setSearchProgress(null);
-                    setStreamingReply((prev) => (prev || "") + chunk.content);
+            const abortController = new AbortController();
+            abortControllerRef.current = abortController;
+            try {
+                return await sendChatMessage(text, files, webSearch, engine, (chunk) => {
+                    if (chunk.type === "progress") {
+                        setSearchProgress(chunk.message);
+                    } else if (chunk.type === "text") {
+                        setSearchProgress(null);
+                        setStreamingReply((prev) => (prev || "") + chunk.content);
+                    }
+                }, abortController.signal);
+            } catch (error: any) {
+                if (error.message === "AbortError" || error.name === "AbortError") {
+                    return { reply: streamingReply || "", citations: [] }; // Return partial reply
                 }
-            });
+                throw error;
+            }
         },
         onMutate: async ({ text, files, webSearch }) => {
             await queryClient.cancelQueries({ queryKey: ["chats"] });
@@ -406,6 +416,24 @@ const ChatArea: React.FC = () => {
                                         : messages
                                 }
                                 onSendMessage={handleSendMessage}
+                                onEditMessage={async (messageId: string | number, newText: string) => {
+                                    try {
+                                        const numId = Number(messageId);
+                                        if (isNaN(numId)) return; // Don't allow editing temp messages
+                                        
+                                        queryClient.setQueryData<Message[]>(["chats"], (old) => {
+                                            const existing = old || [];
+                                            const idx = existing.findIndex(m => String(m.id) === String(messageId));
+                                            if (idx === -1) return existing;
+                                            return existing.slice(0, idx); // remove this message and all after
+                                        });
+
+                                        await truncateChat(numId);
+                                        handleSendMessage(newText);
+                                    } catch (err) {
+                                        toast.error("Failed to edit message");
+                                    }
+                                }}
                             />
                         )}
 
@@ -439,9 +467,9 @@ const ChatArea: React.FC = () => {
                 </main>
 
                 {/* Footer / Input Area */}
-                <footer className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
+                <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-2 sm:pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
                     <div className="max-w-5xl mx-auto">
-                        <ChatInput onSendMessage={handleSendMessage} isLoading={isProcessing} />
+                        <ChatInput onSendMessage={handleSendMessage} onStopGenerate={() => abortControllerRef.current?.abort()} isLoading={isProcessing} />
                     </div>
                 </footer>
 
@@ -479,7 +507,7 @@ const ChatArea: React.FC = () => {
                             &times;
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-200">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 scrollbar-thin scrollbar-thumb-gray-200">
                         <pre className="text-xs bg-gray-50 p-4 rounded-xl border border-gray-100 overflow-x-auto">
                             {JSON.stringify(activeArtifact.data, null, 2)}
                         </pre>

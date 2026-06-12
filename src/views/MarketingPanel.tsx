@@ -26,7 +26,7 @@ export default function MarketingPanel() {
     try {
       // Use the admin token here
       const token = localStorage.getItem("adminToken");
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3002";
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const res = await fetch(`${baseUrl}/api/marketing/email`, {
         method: "POST",
         headers: {
@@ -66,7 +66,7 @@ export default function MarketingPanel() {
     setIsSendingWa(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3002";
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const res = await fetch(`${baseUrl}/api/marketing/whatsapp`, {
         method: "POST",
         headers: {

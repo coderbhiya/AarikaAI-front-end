@@ -33,7 +33,7 @@ export default function MarketingPage() {
     setIsSendingEmail(true);
     try {
       const token = localStorage.getItem("token");
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3002";
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const res = await fetch(`${baseUrl}/api/marketing/email`, {
         method: "POST",
         headers: {
@@ -73,7 +73,7 @@ export default function MarketingPage() {
     setIsSendingWa(true);
     try {
       const token = localStorage.getItem("token");
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3002";
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const res = await fetch(`${baseUrl}/api/marketing/whatsapp`, {
         method: "POST",
         headers: {

@@ -6,7 +6,7 @@ import { Send, Hash, Bot } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aarikaai.in";
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export default function ChannelChat({ channel }: { channel: any }) {
   const { user } = useAuth();

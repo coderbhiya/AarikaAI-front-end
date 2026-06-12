@@ -16,6 +16,7 @@ interface ChatInputProps {
   isLoading?: boolean;
   fileInputShow?: boolean;
   disablePaste?: boolean;
+  onStopGenerate?: () => void;
 }
 
 const engines = [
@@ -32,6 +33,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   isLoading = false,
   fileInputShow = true,
   disablePaste = false,
+  onStopGenerate,
 }) => {
   const [message, setMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -115,12 +117,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
       )}
 
       {/* Main Input Container */}
-      <div className={`relative transition-all duration-500 overflow-hidden ${isLoading ? "opacity-70 pointer-events-none" : "opacity-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] focus-within:shadow-[0_8px_32px_rgba(0,0,0,0.1)]"} rounded-[28px]`}>
+      <div className={`relative transition-all duration-500 p-[1.5px] rounded-2xl sm:rounded-[28px] bg-[linear-gradient(to_right,#4285F4,#EA4335,#FBBC05,#34A853)] ${isLoading ? "opacity-90 shadow-[0_4px_24px_rgba(0,0,0,0.06)]" : "opacity-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] focus-within:shadow-[0_8px_32px_rgba(0,0,0,0.1)]"}`}>
         <form
           onSubmit={handleSubmit}
-          className="relative flex flex-col w-full bg-[#F0F4F9] border-none rounded-[28px] group transition-all duration-300"
+          className="relative flex flex-col w-full bg-[#F0F4F9] border-none rounded-[14.5px] sm:rounded-[26.5px] group transition-all duration-300"
         >
-          <div className="flex flex-col w-full px-4 pt-3 pb-2">
+          <div className="flex flex-col w-full px-3 sm:px-4 pt-3 pb-2">
             <textarea
               ref={inputRef}
               value={message}
@@ -134,7 +136,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 }
               }}
               placeholder={isLoading ? "Generating strategy..." : "Ask Aarika anything..."}
-              className="w-full bg-transparent text-[#202124] focus:outline-none resize-none text-[16px] md:text-[16px] placeholder-[#444746]/60 font-normal min-h-[44px] max-h-[200px] scrollbar-none leading-relaxed"
+              className={`w-full bg-transparent text-[#202124] focus:outline-none resize-none text-sm placeholder-[#444746]/60 font-normal min-h-[40px] max-h-[200px] scrollbar-none leading-relaxed ${isLoading ? "cursor-not-allowed" : ""}`}
               rows={1}
               disabled={isLoading}
             />
@@ -146,7 +148,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   <button
                     type="button"
                     onClick={handleImageClick}
-                    className="p-2 rounded-full text-[#444746] hover:bg-white transition-colors shrink-0 flex items-center justify-center border border-transparent active:scale-95"
+                    className={`p-2 rounded-full text-[#444746] transition-colors shrink-0 flex items-center justify-center border border-transparent ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-white active:scale-95"}`}
                     disabled={isLoading}
                     title="Upload resume or files"
                   >
@@ -161,12 +163,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   className={`flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 rounded-full text-[11px] md:text-xs font-semibold border transition-all duration-300 shrink-0 ${
                     webSearchActive
                       ? "bg-primary/10 border-primary/20 text-primary shadow-sm"
-                      : "bg-transparent border-gray-300/60 text-[#444746] hover:bg-white"
-                  }`}
+                      : "bg-transparent border-gray-300/60 text-[#444746]"
+                  } ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-white"}`}
                   disabled={isLoading}
                   title="Search the web for real-time information"
                 >
-                  <Globe size={13} strokeWidth={2.5} className={webSearchActive ? "animate-pulse" : ""} />
+                  <Globe size={13} strokeWidth={2.5} className={webSearchActive && !isLoading ? "animate-pulse" : ""} />
                   <span className="hidden sm:inline">Search Web</span>
                   <span className="sm:hidden">Web</span>
                   <span className={`w-1.5 h-1.5 rounded-full ml-0.5 ${webSearchActive ? "bg-primary" : "bg-gray-400"}`} />
@@ -174,8 +176,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5 md:gap-2">
-                <Select value={selectedEngine} onValueChange={setSelectedEngine}>
-                  <SelectTrigger className="h-[28px] px-2 md:px-3 text-[10px] md:text-[11px] bg-white/60 border-gray-200/60 rounded-full w-[100px] sm:w-[110px] md:w-[130px] font-semibold text-gray-700 shadow-sm hover:bg-white transition-colors focus:ring-0 focus:ring-offset-0 shrink-0">
+                <Select value={selectedEngine} onValueChange={setSelectedEngine} disabled={isLoading}>
+                  <SelectTrigger className={`h-[28px] px-2 md:px-3 text-[10px] md:text-[11px] bg-white/60 border-gray-200/60 rounded-full w-[100px] sm:w-[110px] md:w-[130px] font-semibold text-gray-700 shadow-sm transition-colors focus:ring-0 focus:ring-offset-0 shrink-0 ${isLoading ? "opacity-50" : "hover:bg-white"}`}>
                     <div className="flex items-center gap-1 md:gap-1.5 truncate">
                       <Cpu size={12} className="text-primary/80 shrink-0" />
                       <SelectValue placeholder="Engine" />
@@ -190,7 +192,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   </SelectContent>
                 </Select>
 
-                {!message.trim() && !selectedFiles.length && !isMobile && (
+                {!message.trim() && !selectedFiles.length && !isMobile && !isLoading && (
                   <button
                     type="button"
                     className="p-2 rounded-full text-[#444746] hover:bg-white transition-colors flex items-center justify-center"
@@ -200,17 +202,28 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   </button>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={!(message.trim() || selectedFiles.length > 0) || isLoading}
-                  className={`p-2 rounded-full transition-all duration-300 flex items-center justify-center ${
-                    (message.trim() || selectedFiles.length > 0) && !isLoading
-                      ? "bg-primary text-white shadow-md shadow-primary/20 hover:scale-105 active:scale-95"
-                      : "text-gray-300 pointer-events-none bg-transparent"
-                  }`}
-                >
-                  <ArrowRight size={18} strokeWidth={2.5} />
-                </button>
+                {isLoading ? (
+                  <button
+                    type="button"
+                    onClick={onStopGenerate}
+                    className="p-2 rounded-full transition-all duration-300 flex items-center justify-center bg-gray-800 text-white shadow-md hover:bg-gray-900 active:scale-95"
+                    title="Stop Generating"
+                  >
+                    <div className="w-3.5 h-3.5 bg-white rounded-sm"></div>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!(message.trim() || selectedFiles.length > 0) || isLoading}
+                    className={`p-2 rounded-full transition-all duration-300 flex items-center justify-center ${
+                      (message.trim() || selectedFiles.length > 0) && !isLoading
+                        ? "bg-primary text-white shadow-md shadow-primary/20 hover:scale-105 active:scale-95"
+                        : "text-gray-300 pointer-events-none bg-transparent"
+                    }`}
+                  >
+                    <ArrowRight size={18} strokeWidth={2.5} />
+                  </button>
+                )}
               </div>
             </div>
           </div>

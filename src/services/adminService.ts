@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aarikaai.in";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Dedicated axios instance for Admin requests
 const adminAxios = axios.create({

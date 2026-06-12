@@ -117,12 +117,12 @@
   }
 
   .message-bubble-user {
-    @apply bg-white border border-gray-100 text-[#202124] p-3 md:p-4 rounded-[18px] md:rounded-[20px] rounded-tr-[4px] shadow-sm max-w-[92%] md:max-w-[80%] ml-auto text-[14px] md:text-[15px];
+    @apply bg-[#F0F4F9] text-[#202124] px-4 py-2 rounded-2xl rounded-tr-none max-w-[100%] md:max-w-[80%] ml-auto text-[14px] md:text-[15px] break-words;
     transition: var(--transition-smooth);
   }
 
   .message-bubble-ai {
-    @apply bg-transparent text-[#202124] p-3 md:p-4 max-w-[100%] md:max-w-[90%] mr-auto text-[14px] md:text-[15px];
+    @apply bg-transparent text-[#202124] p-3 md:p-4 max-w-[100%] md:max-w-[90%] mr-auto text-[14px] md:text-[15px] break-words;
     transition: var(--transition-smooth);
   }
 

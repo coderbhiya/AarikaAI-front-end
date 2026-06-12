@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Message } from "@/types";
-import { Copy, Share, Download, FileText, ImageIcon, File as FileIcon, Globe, ExternalLink } from "lucide-react";
+import { Copy, Share, Download, FileText, ImageIcon, File as FileIcon, Globe, ExternalLink, Pencil, Check, X as XIcon } from "lucide-react";
 import Markdown from "@/components/common/Markdown";
 import { toast } from "sonner";
 import BrainLogo from "../BrainLogo";
@@ -19,6 +19,7 @@ import PdfDownloadCard from "./cards/PdfDownloadCard";
 interface MessageItemProps {
   message: Message;
   onSendMessage?: (text: string) => void;
+  onEditMessage?: (messageId: string | number, newText: string) => void;
 }
 
 const formatFileSize = (bytes: number) => {
@@ -36,11 +37,58 @@ const getFileIcon = (fileType: string) => {
   return <FileIcon size={16} className="text-gray-400" />;
 };
 
-const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEditMessage }) => {
   const isUser = message.role === "user";
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(message.message);
+
+  const handleSaveEdit = () => {
+    if (editText.trim() !== message.message && onEditMessage && message.id) {
+      onEditMessage(message.id, editText);
+    }
+    setIsEditing(false);
+  };
 
   const renderContent = () => {
     const text = message.message;
+
+    if (isUser && isEditing) {
+      return (
+        <div className="flex flex-col gap-3 w-full">
+          <textarea
+            value={editText}
+            onChange={(e) => {
+              setEditText(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onFocus={(e) => {
+              const val = e.target.value;
+              e.target.value = '';
+              e.target.value = val;
+              e.target.style.height = 'auto';
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            className="w-full bg-[#F0F4F9] text-[#202124] p-4 rounded-2xl focus:outline-none focus:bg-white focus:ring-1 focus:ring-gray-300 text-[15px] resize-none overflow-hidden transition-all duration-300 min-h-[60px]"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2 mt-1">
+            <button
+              onClick={() => setIsEditing(false)}
+              className="px-4 py-2 rounded-full text-sm font-semibold bg-transparent text-gray-500 hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              className="px-4 py-2 rounded-full text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              Save & Submit
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     // Quiz Card Logic
     const quizTagRegex = /\[QUIZ_CARD\]([\s\S]*?)\[\/QUIZ_CARD\]/i;
@@ -264,19 +312,20 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => 
     <div
       className={`group animate-in fade-in slide-in-from-bottom-3 duration-700 ease-out mb-10 last:mb-0`}
     >
-      <div className={`flex gap-4 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-        {/* Avatar Section */}
+      <div className={`flex flex-col gap-1 sm:gap-2 w-full`}>
+        {/* Avatar Section for AI */}
         {!isUser && (
-          <div className="shrink-0 mt-1">
-            <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm">
-              <BrainLogo size={18} />
-            </div>
+          <div className="flex items-center gap-2 mb-1 px-1 sm:px-0">
+             <div className="w-6 h-6 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm shrink-0">
+               <BrainLogo size={14} />
+             </div>
+             <span className="font-semibold text-[14px] text-gray-800">AarikaAI</span>
           </div>
         )}
 
         {/* Content Section */}
-        <div className={`flex-1 min-w-0 flex flex-col ${isUser ? "items-end" : "items-start"}`}>
-          <div className={`${isUser ? "message-bubble-user" : "message-bubble-ai"}`}>
+        <div className={`w-full flex flex-col min-w-0 ${isUser && !isEditing ? "items-end" : "items-start"}`}>
+          <div className={`${isUser && !isEditing ? "message-bubble-user" : (!isUser ? "message-bubble-ai w-full px-1 sm:px-0" : "w-full")}`}>
             {renderContent()}
           </div>
 
@@ -301,14 +350,14 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => 
                       href={cite.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-primary/5 text-gray-700 hover:text-primary border border-gray-100 hover:border-primary/20 shadow-sm transition-all duration-300 active:scale-95 group/cite"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-primary/5 text-gray-700 hover:text-primary border border-gray-100 hover:border-primary/20 shadow-sm transition-all duration-300 active:scale-95 group/cite max-w-full"
                     >
-                      <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-gray-100 text-[10px] font-bold text-gray-500 group-hover/cite:bg-primary/10 group-hover/cite:text-primary transition-colors">
+                      <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-gray-100 text-[10px] font-bold text-gray-500 group-hover/cite:bg-primary/10 group-hover/cite:text-primary transition-colors shrink-0">
                         {index + 1}
                       </span>
-                      <span className="truncate max-w-[160px]">{cite.title}</span>
-                      <span className="text-[10px] text-gray-400 font-normal group-hover/cite:text-primary/60">({hostname})</span>
-                      <ExternalLink size={10} className="text-gray-300 group-hover/cite:text-primary transition-colors" />
+                      <span className="truncate max-w-[140px] shrink-0">{cite.title}</span>
+                      <span className="text-[10px] text-gray-400 font-normal group-hover/cite:text-primary/60 truncate min-w-[30px]">({hostname})</span>
+                      <ExternalLink size={10} className="text-gray-300 group-hover/cite:text-primary transition-colors shrink-0" />
                     </a>
                   );
                 })}
@@ -343,7 +392,22 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage }) => 
           )}
 
           {/* Actions */}
-          {!isUser && (
+          {isUser ? (
+            <div className="flex items-center gap-2 mt-2 px-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+               {!isEditing && message.id !== "streaming" && (
+                  <button
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                    onClick={() => {
+                      setEditText(message.message);
+                      setIsEditing(true);
+                    }}
+                    title="Edit message"
+                  >
+                    <Pencil size={14} />
+                  </button>
+               )}
+            </div>
+          ) : (
             <div className="flex items-center gap-3 mt-4 px-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
               <button
                 className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"

@@ -11,65 +11,82 @@ export const sendChatMessage = async (
   fileAttachments: FileAttachment[] = [],
   webSearch?: boolean,
   engine?: string,
-  onChunk?: (chunk: any) => void
+  onChunk?: (chunk: any) => void,
+  signal?: AbortSignal
 ): Promise<{ reply: string; citations: any[]; artifact?: any }> => {
   const token = localStorage.getItem("authToken");
   
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.aarikaai.in"}/chat`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ message, fileAttachments, webSearch, engine }),
+    signal,
   });
 
   if (!response.ok) {
+    if (response.status === 499) {
+      throw new Error("AbortError");
+    }
     throw new Error("Failed to send message");
   }
 
   const reader = response.body?.getReader();
   const decoder = new TextDecoder();
   let finalReply = "";
+  let accumulatedReply = "";
   let finalCitations: any[] = [];
   let finalArtifact: any = null;
   let buffer = "";
 
   if (reader) {
-    let done = false;
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value) {
-        buffer += decoder.decode(value, { stream: true });
-        let boundary = buffer.indexOf("\n\n");
-        while (boundary !== -1) {
-          const block = buffer.slice(0, boundary).trim();
-          buffer = buffer.slice(boundary + 2);
+    try {
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          let boundary = buffer.indexOf("\n\n");
+          while (boundary !== -1) {
+            const block = buffer.slice(0, boundary).trim();
+            buffer = buffer.slice(boundary + 2);
 
-          if (block.startsWith("data: ")) {
-            const dataStr = block.replace("data: ", "").trim();
-            try {
-              const data = JSON.parse(dataStr);
-              if (data.type === "done") {
-                finalReply = data.reply;
-                finalCitations = data.citations || [];
-                finalArtifact = data.artifact || null;
-              } else if (onChunk) {
-                onChunk(data);
+            if (block.startsWith("data: ")) {
+              const dataStr = block.replace("data: ", "").trim();
+              try {
+                const data = JSON.parse(dataStr);
+                if (data.type === "done") {
+                  finalReply = data.reply;
+                  finalCitations = data.citations || [];
+                  finalArtifact = data.artifact || null;
+                } else if (data.type === "text") {
+                  accumulatedReply += data.content;
+                  if (onChunk) onChunk(data);
+                } else if (onChunk) {
+                  onChunk(data);
+                }
+              } catch (e) {
+                console.error("Failed to parse block:", block, e);
               }
-            } catch (e) {
-              console.error("Failed to parse block:", block, e);
             }
-          }
 
-          boundary = buffer.indexOf("\n\n");
+            boundary = buffer.indexOf("\n\n");
+          }
         }
       }
+    } catch (e: any) {
+      if (e.name === "AbortError" || e.message === "AbortError") {
+        console.log("Stream aborted manually");
+        return { reply: accumulatedReply, citations: finalCitations, artifact: finalArtifact };
+      }
+      throw e;
     }
   }
 
-  return { reply: finalReply, citations: finalCitations, artifact: finalArtifact };
+  return { reply: finalReply || accumulatedReply, citations: finalCitations, artifact: finalArtifact };
 };
 
 export const uploadFile = async (file: File): Promise<FileAttachment> => {
@@ -86,4 +103,8 @@ export const uploadFile = async (file: File): Promise<FileAttachment> => {
 export const getWelcomeMessage = async (): Promise<Message | null> => {
   const response = await axiosInstance.get("/chat/welcome");
   return response.data.message || null;
+};
+
+export const truncateChat = async (messageId: number): Promise<void> => {
+  await axiosInstance.delete(`/chat/truncate/${messageId}`);
 };
