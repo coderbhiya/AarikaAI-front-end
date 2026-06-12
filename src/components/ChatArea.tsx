@@ -238,7 +238,7 @@ const ChatArea: React.FC = () => {
     const isProcessing = chatMutation.isPending || isUploading;
 
     return (
-        <div className="flex w-full h-full">
+        <div className="flex-1 flex w-full h-full overflow-hidden">
             {/* Left/Main Chat Area */}
             <div className={`flex flex-col h-full bg-[#F8F9FA] relative overflow-hidden transition-all duration-300 ${activeArtifact ? (isMobile ? 'w-full hidden' : 'w-1/2 border-r border-gray-200') : 'w-full'}`}>
                 {/* Header */}
