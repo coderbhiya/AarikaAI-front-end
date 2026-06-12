@@ -467,7 +467,7 @@ const ChatArea: React.FC = () => {
                 </main>
 
                 {/* Footer / Input Area */}
-                <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-2 sm:pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
+                <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-0 sm:pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
                     <div className="max-w-5xl mx-auto">
                         <ChatInput onSendMessage={handleSendMessage} onStopGenerate={() => abortControllerRef.current?.abort()} isLoading={isProcessing} />
                     </div>
