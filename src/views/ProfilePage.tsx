@@ -12,12 +12,14 @@ import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { ProfileSyncModal } from "@/components/profile/ProfileSyncModal";
+import CareerJourneyTab from "@/components/profile/CareerJourneyTab";
 
 const ProfilePage = () => {
   const { user, toggleSidebar, syncProfile } = useAuth();
   const navigate = useRouter();
   const isMobile = useIsMobile();
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'journey'>('profile');
 
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[#F0F2F5] relative overflow-hidden">
@@ -132,33 +134,55 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Content Sections */}
-              <div className="space-y-4">
-                {/* Personal Info Card */}
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                  <PersonalInfo />
-                </div>
-
-                {/* Experience Card */}
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                  <Experience />
-                </div>
-
-                {/* Education Card */}
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                  <Education />
-                </div>
-
-                {/* Projects Card */}
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                  <Projects />
-                </div>
-
-                {/* Skills Card */}
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                  <Skills />
-                </div>
+              {/* Profile Tabs */}
+              <div className="bg-white border border-gray-200 rounded-xl px-4 flex items-center gap-6 shadow-sm overflow-x-auto scrollbar-none">
+                <button
+                  className={`py-4 text-[15px] font-semibold transition-colors border-b-2 whitespace-nowrap ${activeTab === 'profile' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'}`}
+                  onClick={() => setActiveTab('profile')}
+                >
+                  Profile Details
+                </button>
+                <button
+                  className={`py-4 text-[15px] font-semibold transition-colors border-b-2 whitespace-nowrap ${activeTab === 'journey' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'}`}
+                  onClick={() => setActiveTab('journey')}
+                >
+                  Career Journey
+                </button>
               </div>
+
+              {/* Content Sections */}
+              {activeTab === 'profile' ? (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Personal Info Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <PersonalInfo />
+                  </div>
+
+                  {/* Experience Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <Experience />
+                  </div>
+
+                  {/* Education Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <Education />
+                  </div>
+
+                  {/* Projects Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <Projects />
+                  </div>
+
+                  {/* Skills Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <Skills />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <CareerJourneyTab />
+                </div>
+              )}
 
             </div>
           </div>

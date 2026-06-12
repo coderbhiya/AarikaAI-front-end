@@ -214,6 +214,22 @@ const Jobs = () => {
     }
   };
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncJobs = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await axiosInstance.post("/jobs/sync");
+      alert(res.data.message || "Jobs synced successfully!");
+      fetchJobs(1);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to sync jobs.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Recent';
     const date = new Date(dateString);
@@ -293,6 +309,14 @@ const Jobs = () => {
         </div>
 
         <div className="flex items-center gap-4 ml-4">
+          <button
+            onClick={handleSyncJobs}
+            disabled={isSyncing}
+            className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-50 text-green-700 font-bold text-[13px] hover:bg-green-100 transition-colors disabled:opacity-50"
+          >
+            {isSyncing ? <Loader2 size={16} className="animate-spin" /> : <Briefcase size={16} />}
+            {isSyncing ? "Syncing API..." : "Sync Remote Jobs"}
+          </button>
           <div className="hidden lg:flex flex-col items-end mr-2">
             <span className="text-[11px] font-bold text-primary uppercase tracking-widest">Premium Core</span>
             <span className="text-[13px] font-bold text-[#202124]">Aarika Pro</span>
