@@ -240,8 +240,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
       </div>
 
       {/* Footer Info */}
-      <div className="mt-3 text-center hidden md:block">
-        <p className="text-[11px] text-[#444746]/60 font-normal tracking-tight">
+      <div className="mt-2 md:mt-3 px-2 text-center">
+        <p className="text-[10px] md:text-[11px] text-[#444746]/60 font-normal tracking-tight">
           AarikaAI may display inaccurate info, so double-check its responses. <span className="underline cursor-pointer">Your privacy & AarikaAI Apps</span>
         </p>
       </div>

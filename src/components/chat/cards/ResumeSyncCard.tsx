@@ -15,7 +15,13 @@ const ResumeSyncCard: React.FC<ResumeSyncCardProps> = ({ diff, snapshot }) => {
         toast.success("Profile Updated! Your new skills and experiences are now active.");
     };
 
-    const addedSkills = diff?.addedFields?.filter((f: any) => f.field === "skills")?.[0]?.value || [];
+    const rawSkills = diff?.addedFields?.find((f: any) => f.field === "skills")?.value;
+    let addedSkills: any[] = [];
+    if (Array.isArray(rawSkills)) {
+        addedSkills = rawSkills.map(s => typeof s === 'string' ? { name: s } : s);
+    } else if (typeof rawSkills === 'string') {
+        addedSkills = rawSkills.split(',').map(s => ({ name: s.trim() }));
+    }
 
     return (
         <div className="premium-card p-5 w-full max-w-sm mt-4 animate-in fade-in zoom-in-95 duration-500 delay-100 border border-blue-100 bg-blue-50/30">

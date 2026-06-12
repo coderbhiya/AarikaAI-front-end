@@ -322,15 +322,8 @@ const ChatArea: React.FC = () => {
                                     Your AI Career Companion is ready to help you grow.
                                 </p>
 
-                                <button 
-                                    onClick={() => handleSendMessage("Hi, let's start a new chat!")}
-                                    className="w-full md:w-[80%] max-w-md bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-[20px] py-4 mb-8 text-[16px] font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200/50 transition-all active:scale-95"
-                                >
-                                    <Plus size={20} /> New Chat
-                                </button>
-
                                 {/* Action Cards Grid */}
-                                <div className="grid grid-cols-2 gap-4 w-full md:w-[80%] max-w-md">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-2">
                                     {/* Card 1 */}
                                     <div 
                                         onClick={() => handleSendMessage("I need career guidance and a roadmap")}
@@ -467,7 +460,7 @@ const ChatArea: React.FC = () => {
                 </main>
 
                 {/* Footer / Input Area */}
-                <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-0 sm:pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
+                <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-3 sm:pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
                     <div className="max-w-5xl mx-auto">
                         <ChatInput onSendMessage={handleSendMessage} onStopGenerate={() => abortControllerRef.current?.abort()} isLoading={isProcessing} />
                     </div>
