@@ -66,9 +66,10 @@ export const detectResume = (filename: string, fileType: string): ResumeDetectio
   }
 
   // Fallback: If it's a PDF/DOCX but has no relevant keywords
+  // Many people name their resumes just with their name (e.g., "John_Doe.pdf" or "somendra_node.pdf")
   return {
-    isResume: false,
-    confidence: 20,
-    reason: "Valid extension but no resume-related keywords found in filename."
+    isResume: true,
+    confidence: 60, // Meets the >= 60 threshold in ChatArea
+    reason: "Valid extension and no negative keywords found, assuming it might be a resume."
   };
 };
