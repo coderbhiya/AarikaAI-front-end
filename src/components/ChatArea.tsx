@@ -141,7 +141,7 @@ const ChatArea: React.FC = () => {
                 const realUserMessageExists = filtered.some(msg => 
                     msg.role === "user" && 
                     msg.message === variables.text && 
-                    !msg.id.startsWith("temp-")
+                    !String(msg.id).startsWith("temp-")
                 );
                 
                 // Only re-add the temporary user message if the real DB message hasn't arrived yet
