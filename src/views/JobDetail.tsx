@@ -10,6 +10,7 @@ import {
   MapPin,
   Briefcase,
   DollarSign,
+  IndianRupee,
   ExternalLink,
   ArrowLeft,
   Loader2,
@@ -180,7 +181,12 @@ const JobDetail = () => {
                       <Clock size={14} className="text-gray-400" /> {job.employmentType || "Full-time"}
                     </div>
                     <div className="flex items-center gap-1.5 px-4 py-2 bg-[#202124] text-white rounded-full text-[13px] font-medium">
-                      <DollarSign size={14} className="text-primary" /> {job.jobSalary || "$140k - $180k"}
+                      {job.jobSalary?.includes("₹") ? (
+                        <IndianRupee size={14} className="text-primary" />
+                      ) : (
+                        <DollarSign size={14} className="text-primary" />
+                      )}
+                      {" "}{job.jobSalary || "$140k - $180k"}
                     </div>
                   </div>
                 </div>

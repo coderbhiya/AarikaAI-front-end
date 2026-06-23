@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import {
   ArrowLeft, Search, MapPin, Briefcase, Filter, Menu, User, Bookmark, Building2,
-  Loader2, Trophy, Globe, Clock, Zap, Shield, DollarSign, CheckCircle2
+  Loader2, Trophy, Globe, Clock, Zap, Shield, DollarSign, CheckCircle2, IndianRupee
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -565,7 +565,15 @@ const Jobs = () => {
                         {[
                           { label: "Tier", value: selectedJob.experience || "Senior", icon: <Trophy size={14} /> },
                           { label: "Environment", value: selectedJob.employmentType || "Remote", icon: <Globe size={14} /> },
-                          { label: "Compensation", value: selectedJob.jobSalary || "$120k+", icon: <DollarSign size={14} /> },
+                          {
+                            label: "Compensation",
+                            value: selectedJob.jobSalary || "$120k+",
+                            icon: selectedJob.jobSalary?.includes("₹") ? (
+                              <IndianRupee size={14} />
+                            ) : (
+                              <DollarSign size={14} />
+                            )
+                          },
                           { label: "Stability", value: "Permanent", icon: <Clock size={14} /> }
                         ].map((item, index) => (
                           <div key={index} className="flex flex-col gap-1 p-3 bg-gray-50/50 rounded-xl border border-gray-50">
