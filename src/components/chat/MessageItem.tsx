@@ -17,6 +17,16 @@ import BadgeCard from "./cards/BadgeCard";
 import PdfDownloadCard from "./cards/PdfDownloadCard";
 import CourseCard from "./cards/CourseCard";
 
+interface CourseCardProps {
+  title: string;
+  platform: string;
+  url: string;
+  language: string;
+  isFree: boolean;
+  author?: string;
+  thumbnail?: string;
+}
+
 interface MessageItemProps {
   message: Message;
   onSendMessage?: (text: string) => void;
@@ -184,14 +194,43 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       );
     }
 
-    const courseData = extractJsonData("COURSE_CARD");
-    if (courseData) {
-      return (
-        <div className="flex flex-col gap-2 w-full max-w-2xl">
-          {courseData.cleanText && <Markdown text={courseData.cleanText} />}
-          <CourseCard {...courseData.data} />
-        </div>
-      );
+    // --- MULTI COURSE CARD PARSING ---
+    const courseCardRegex = /\[COURSE_CARD\]([\s\S]*?)(?:\[\/COURSE_CARD\]|$)/gi;
+    const courseMatches = [...text.matchAll(courseCardRegex)];
+    if (courseMatches.length > 0) {
+      const parsedCourses: CourseCardProps[] = [];
+      for (const match of courseMatches) {
+        try {
+          let rawData = match[1].trim().replace(/```json|```/g, "").trim();
+          // Try to isolate JSON object
+          const firstBrace = rawData.indexOf("{");
+          const lastBrace = rawData.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            rawData = rawData.substring(firstBrace, lastBrace + 1);
+          }
+          // If it's actually an array, parse each element
+          if (rawData.startsWith("[")) {
+            const arr = JSON.parse(rawData);
+            if (Array.isArray(arr)) parsedCourses.push(...arr);
+          } else {
+            parsedCourses.push(JSON.parse(rawData));
+          }
+        } catch (err) {
+          console.warn("[MessageItem] Failed to parse one COURSE_CARD block", err);
+        }
+      }
+
+      if (parsedCourses.length > 0) {
+        const cleanText = text.replace(courseCardRegex, "").trim();
+        return (
+          <div className="flex flex-col gap-2 w-full max-w-2xl">
+            {cleanText && <Markdown text={cleanText} />}
+            {parsedCourses.map((course, idx) => (
+              <CourseCard key={idx} {...course} />
+            ))}
+          </div>
+        );
+      }
     }
 
     const skillGapData = extractJsonData("SKILL_GAP_CARD");
