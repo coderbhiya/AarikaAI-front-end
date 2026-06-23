@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from "next/navigation";
 import axiosInstance from '@/lib/axios';
+import ReactMarkdown from "react-markdown";
 import {
   Building2,
   MapPin,
@@ -39,7 +40,7 @@ const JobDetail = () => {
   const fetchJobDetail = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/jobs/${id}`);
+      const response = await axiosInstance.get(`/jobs/company-listings/${id}`);
       setJob(response.data.job);
       setError(null);
     } catch (err) {
@@ -58,12 +59,10 @@ const JobDetail = () => {
     if (!job?.link) return;
     setApplying(true);
     try {
-      await axiosInstance.post(`/jobs/${id}/apply`);
-    } catch (err) {
-      console.error('Error tracking application:', err);
+      // Open the ATS apply link directly
+      window.open(job.link, '_blank', 'noopener,noreferrer');
     } finally {
       setApplying(false);
-      window.open(job.link, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -181,7 +180,7 @@ const JobDetail = () => {
                 <section>
                   <h3 className="text-[17px] font-semibold text-[#202124] mb-6">Mission Summary</h3>
                   <div className="text-[#444746] leading-relaxed text-[16px] opacity-90 prose whitespace-pre-wrap">
-                    {job.description}
+                    <ReactMarkdown>{job.description}</ReactMarkdown>
                   </div>
                 </section>
 
@@ -189,7 +188,7 @@ const JobDetail = () => {
                   <section>
                     <h3 className="text-[17px] font-semibold text-[#202124] mb-6">Credential Matrix</h3>
                     <div className="text-[#444746] leading-relaxed text-[15px] p-8 bg-gray-50 rounded-[24px] border border-gray-100 whitespace-pre-wrap">
-                      {job.requirements}
+                      <ReactMarkdown>{job.requirements}</ReactMarkdown>
                     </div>
                   </section>
                 )}

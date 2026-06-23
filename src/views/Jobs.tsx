@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import axiosInstance from "@/lib/axios";
+import ReactMarkdown from "react-markdown";
 import {
-  ArrowLeft, Search, MapPin, Briefcase, X, ChevronRight,
-  Filter, Menu, User, Bookmark, ExternalLink, Building2,
-  DollarSign, Loader2, Trophy, Globe, Clock, CheckCircle2, Zap, Shield
+  ArrowLeft, Search, MapPin, Briefcase, Filter, Menu, User, Bookmark, Building2,
+  Loader2, Trophy, Globe, Clock, Zap, Shield, DollarSign
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -55,7 +55,7 @@ const Jobs = () => {
       const pageToFetch = overridePage || pagination.page;
       const { limit } = pagination;
 
-      const response = await axiosInstance.get("/jobs/opportunities", {
+      const response = await axiosInstance.get("/jobs/company-listings", {
         params: {
           page: pageToFetch,
           limit,
@@ -67,11 +67,7 @@ const Jobs = () => {
 
       const fetchedJobs = response.data.jobs;
       setJobs(fetchedJobs);
-      if (response.data.eligibility !== undefined) {
-        setEligibility(response.data.eligibility);
-      } else {
-        setEligibility({ canApply: true, message: "", lowProficiencySkills: [], notAttemptedSkills: [] });
-      }
+      setEligibility({ canApply: true, message: "", lowProficiencySkills: [], notAttemptedSkills: [] });
       setPagination((prev) => ({
         ...prev,
         page: pageToFetch,
@@ -88,7 +84,7 @@ const Jobs = () => {
 
       // Default selection: first job if on desktop
       if (!isMobile && fetchedJobs.length > 0) {
-        fetchJobDetail(fetchedJobs[0].id, fetchedJobs[0].opportunityMetrics);
+        fetchJobDetail(fetchedJobs[0].id);
       }
 
       setError(null);
@@ -141,15 +137,12 @@ const Jobs = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchJobDetail = async (id: string, metrics?: any) => {
+  const fetchJobDetail = async (id: string) => {
     if (!id) return;
     try {
       setIsDetailLoading(true);
-      const response = await axiosInstance.get(`/jobs/${id}`);
-      setSelectedJob({
-        ...response.data.job,
-        opportunityMetrics: metrics
-      });
+      const response = await axiosInstance.get(`/jobs/company-listings/${id}`);
+      setSelectedJob(response.data.job);
     } catch (err) {
       console.error('Error fetching job details:', err);
     } finally {
@@ -208,27 +201,12 @@ const Jobs = () => {
 
   const handleJobClick = (job: any) => {
     if (isMobile) {
-      navigate.push(`/job/detail/?id=${job.id}`);
+      navigate.push(`/job/detail/?id=${job.id}&source=company`);
     } else {
-      fetchJobDetail(job.id, job.opportunityMetrics);
+      fetchJobDetail(job.id);
     }
   };
 
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const handleSyncJobs = async () => {
-    try {
-      setIsSyncing(true);
-      const res = await axiosInstance.post("/jobs/sync");
-      alert(res.data.message || "Jobs synced successfully!");
-      fetchJobs(1);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to sync jobs.");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Recent';
@@ -309,14 +287,6 @@ const Jobs = () => {
         </div>
 
         <div className="flex items-center gap-4 ml-4">
-          <button
-            onClick={handleSyncJobs}
-            disabled={isSyncing}
-            className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-50 text-green-700 font-bold text-[13px] hover:bg-green-100 transition-colors disabled:opacity-50"
-          >
-            {isSyncing ? <Loader2 size={16} className="animate-spin" /> : <Briefcase size={16} />}
-            {isSyncing ? "Syncing API..." : "Sync Remote Jobs"}
-          </button>
           <div className="hidden lg:flex flex-col items-end mr-2">
             <span className="text-[11px] font-bold text-primary uppercase tracking-widest">Premium Core</span>
             <span className="text-[13px] font-bold text-[#202124]">Aarika Pro</span>
@@ -390,18 +360,12 @@ const Jobs = () => {
 
                         <div className="flex items-center gap-2 mt-3 text-[11px] font-bold">
                           <span className="text-emerald-600 px-1.5 py-0.5 bg-emerald-50 rounded">
-                            {job.opportunityMetrics?.opportunityScore != null ? `${job.opportunityMetrics.opportunityScore}% AI Match` : `${job.matchPercentage ?? 0}% Neural Match`}
+                            {job.employmentType || 'Full-time'}
                           </span>
-                          {job.opportunityMetrics?.missingSkills && job.opportunityMetrics.missingSkills.length > 0 && (
+                          {job.department && (
                             <>
                               <span className="text-gray-400">•</span>
-                              <span className="text-red-500">{job.opportunityMetrics.missingSkills.length} Gaps</span>
-                            </>
-                          )}
-                          {job.opportunityMetrics?.careerImpact && (
-                            <>
-                              <span className="text-gray-400">•</span>
-                              <span className="text-blue-500 truncate max-w-[120px]">{job.opportunityMetrics.careerImpact}</span>
+                              <span className="text-blue-500 truncate max-w-[120px]">{job.department}</span>
                             </>
                           )}
                           <span className="text-gray-400">•</span>
@@ -518,11 +482,9 @@ const Jobs = () => {
                       <div className="flex items-center gap-3">
                         <Trophy size={16} className="text-emerald-600" />
                         <div>
-                          <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider leading-none mb-0.5">Neural Match</p>
+                          <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider leading-none mb-0.5">Employment Type</p>
                           <p className="text-[14px] font-bold text-emerald-700 leading-none">
-                            {selectedJob.opportunityMetrics?.opportunityScore != null
-                              ? `${selectedJob.opportunityMetrics.opportunityScore}% ${selectedJob.opportunityMetrics.moveType?.split(" ")[0] || 'AI'}`
-                              : `${selectedJob.matchPercentage ?? 0}% Strategic`}
+                            {selectedJob.employmentType || 'Full-time'}
                           </p>
                         </div>
                       </div>
@@ -540,7 +502,7 @@ const Jobs = () => {
                     </div>
                     <div className="text-[#3c4043] leading-relaxed text-[15px] font-medium opacity-90">
                       <div className="prose prose-sm max-w-none prose-slate whitespace-pre-line break-words">
-                        {selectedJob.description}
+                        <ReactMarkdown>{selectedJob.description}</ReactMarkdown>
                       </div>
                     </div>
                   </section>
@@ -554,7 +516,7 @@ const Jobs = () => {
                       </div>
                       <div className="text-[#3c4043] leading-relaxed text-[14px] font-medium opacity-80">
                         <div className="prose prose-sm max-w-none prose-slate whitespace-pre-line break-words">
-                          {selectedJob.requirements}
+                          <ReactMarkdown>{selectedJob.requirements}</ReactMarkdown>
                         </div>
                       </div>
                     </section>
