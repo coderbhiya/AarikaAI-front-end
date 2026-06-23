@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from "next/navigation";
 import axiosInstance from '@/lib/axios';
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 import {
   Building2,
   MapPin,
@@ -36,6 +37,7 @@ const JobDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
 
   const fetchJobDetail = async () => {
     try {
@@ -43,6 +45,14 @@ const JobDetail = () => {
       const response = await axiosInstance.get(`/jobs/company-listings/${id}`);
       setJob(response.data.job);
       setError(null);
+
+      // Check if user has already applied
+      try {
+        const statusRes = await axiosInstance.get(`/jobs/company-listings/${id}/apply-status`);
+        if (statusRes.data.hasApplied) setHasApplied(true);
+      } catch {
+        // silent — not critical
+      }
     } catch (err) {
       console.error('Error fetching job details:', err);
       setError('Failed to synchronize job coordinates.');
@@ -56,11 +66,20 @@ const JobDetail = () => {
   }, [id]);
 
   const handleApply = async () => {
-    if (!job?.link) return;
+    if (hasApplied || applying) return;
     setApplying(true);
     try {
-      // Open the ATS apply link directly
-      window.open(job.link, '_blank', 'noopener,noreferrer');
+      await axiosInstance.post(`/company/jobs/${id}/apply-aarika`);
+      setHasApplied(true);
+      toast.success("Applied successfully!");
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 409) {
+        // Already applied on server
+        setHasApplied(true);
+      } else {
+        toast.error(err?.response?.data?.message || "Failed to submit application. Please try again.");
+      }
     } finally {
       setApplying(false);
     }
@@ -167,14 +186,21 @@ const JobDetail = () => {
                 </div>
               </div>
 
-              <button
-                onClick={handleApply}
-                disabled={applying || !job.link}
-                className="w-full py-4 bg-primary text-white font-semibold text-[16px] rounded-[20px] transition-all hover:bg-blue-600 active:scale-[0.98] shadow-lg shadow-primary/20 flex items-center justify-center gap-2 mb-12"
-              >
-                {applying ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} fill="currentColor" />}
-                Launch Application
-              </button>
+              {hasApplied ? (
+                <div className="w-full py-4 bg-emerald-500/10 border border-emerald-400 text-emerald-600 font-semibold text-[16px] rounded-[20px] flex items-center justify-center gap-2 mb-12">
+                  <CheckCircle2 size={18} className="text-emerald-500" />
+                  Applied
+                </div>
+              ) : (
+                <button
+                  onClick={handleApply}
+                  disabled={applying}
+                  className="w-full py-4 bg-primary text-white font-semibold text-[16px] rounded-[20px] transition-all hover:bg-blue-600 active:scale-[0.98] shadow-lg shadow-primary/20 flex items-center justify-center gap-2 mb-12 disabled:opacity-70"
+                >
+                  {applying ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} fill="currentColor" />}
+                  Launch Application
+                </button>
+              )}
 
               <div className="space-y-12">
                 <section>

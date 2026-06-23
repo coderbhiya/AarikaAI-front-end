@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import axiosInstance from "@/lib/axios";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 import {
   ArrowLeft, Search, MapPin, Briefcase, Filter, Menu, User, Bookmark, Building2,
-  Loader2, Trophy, Globe, Clock, Zap, Shield, DollarSign
+  Loader2, Trophy, Globe, Clock, Zap, Shield, DollarSign, CheckCircle2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -137,16 +138,45 @@ const Jobs = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [applying, setApplying] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+
   const fetchJobDetail = async (id: string) => {
     if (!id) return;
     try {
       setIsDetailLoading(true);
+      setHasApplied(false);
       const response = await axiosInstance.get(`/jobs/company-listings/${id}`);
       setSelectedJob(response.data.job);
+      try {
+        const statusRes = await axiosInstance.get(`/jobs/company-listings/${id}/apply-status`);
+        if (statusRes.data.hasApplied) setHasApplied(true);
+      } catch {
+        // silent — not critical
+      }
     } catch (err) {
       console.error('Error fetching job details:', err);
     } finally {
       setIsDetailLoading(false);
+    }
+  };
+
+  const handleApply = async () => {
+    if (!selectedJob || hasApplied || applying) return;
+    setApplying(true);
+    try {
+      await axiosInstance.post(`/company/jobs/${selectedJob.id}/apply-aarika`);
+      setHasApplied(true);
+      toast.success("Applied successfully!");
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 409) {
+        setHasApplied(true);
+      } else {
+        toast.error(err?.response?.data?.message || "Failed to submit application. Please try again.");
+      }
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -443,12 +473,17 @@ const Jobs = () => {
 
                         <div className="w-full">
                           <div className="flex flex-wrap items-center gap-3 pt-3 w-full">
-                            {eligibility?.canApply ? (
+                            {hasApplied ? (
+                              <div className="px-6 py-2 bg-emerald-500/10 border border-emerald-400 text-emerald-600 font-bold text-[14px] rounded-full flex items-center justify-center gap-2 whitespace-nowrap">
+                                <CheckCircle2 size={14} className="text-emerald-500" /> Applied
+                              </div>
+                            ) : eligibility?.canApply ? (
                               <button
-                                onClick={() => window.open(selectedJob.link, '_blank')}
-                                className="px-6 py-2 bg-primary text-white font-bold text-[14px] rounded-full hover:bg-blue-600 shadow-md shadow-primary/10 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                                onClick={handleApply}
+                                disabled={applying}
+                                className="px-6 py-2 bg-primary text-white font-bold text-[14px] rounded-full hover:bg-blue-600 shadow-md shadow-primary/10 transition-all flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-70"
                               >
-                                <Zap size={14} fill="currentColor" /> Apply
+                                {applying ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} fill="currentColor" />} Apply
                               </button>
                             ) : (
                               <button
