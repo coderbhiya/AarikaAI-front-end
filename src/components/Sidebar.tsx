@@ -8,10 +8,10 @@ import {
   LogOut,
   X,
   Bell,
-  Star,
   Settings,
   PlusCircle,
   Clock,
+  BookOpen,
   Sparkles,
   Zap,
   Globe,
@@ -181,6 +181,12 @@ const Sidebar = () => {
               icon={<Users size={20} />}
               label="Community"
               active={pathname === "/community"}
+            />
+            <SidebarItem
+              to="/dashboard/learning"
+              icon={<BookOpen size={20} />}
+              label="My Learning"
+              active={pathname === "/dashboard/learning"}
             />
             <SidebarItem
               to="/jobs"

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -17,7 +17,11 @@ import SuggestionChips from "./chat/SuggestionChips";
 import { Message, FileAttachment } from "@/types";
 import { ProfileSyncModal } from "./profile/ProfileSyncModal";
 
-const ChatArea: React.FC = () => {
+interface ChatAreaProps {
+    embeddedContext?: string;
+}
+
+const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const isMobile = useIsMobile();
     const navigate = useRouter();
     const queryClient = useQueryClient();
@@ -28,8 +32,20 @@ const ChatArea: React.FC = () => {
     const [pendingSnapshotForModal, setPendingSnapshotForModal] = useState<any>(null);
     const [activeArtifact, setActiveArtifact] = useState<any>(null);
 
+    const searchParams = useSearchParams();
+
     const [streamingReply, setStreamingReply] = useState<string | null>(null);
     const [searchProgress, setSearchProgress] = useState<string | null>(null);
+
+    // Auto-send query param message if exists
+    useEffect(() => {
+        const msg = searchParams.get("msg");
+        if (msg) {
+            handleSendMessage(msg);
+            // Remove msg from url to prevent double-sending on refresh
+            navigate.replace("/");
+        }
+    }, [searchParams]);
 
     const { data: messages = [], isLoading: isChatsLoading, isError, error } = useQuery({
         queryKey: ["chats"],
@@ -232,7 +248,13 @@ const ChatArea: React.FC = () => {
             }
         }
 
-        const finalText = (!text.trim() && uploadedFiles.length > 0) ? "I have attached a document." : text;
+        let finalText = (!text.trim() && uploadedFiles.length > 0) ? "I have attached a document." : text;
+        
+        // Inject embedded context if present and this is the first message in the session
+        if (embeddedContext && messages.length <= 1) {
+            finalText = `[Context: ${embeddedContext}]\n${finalText}`;
+        }
+        
         chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine });
     };
 

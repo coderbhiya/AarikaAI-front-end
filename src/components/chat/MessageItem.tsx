@@ -15,6 +15,7 @@ import ResumeSyncCard from "./cards/ResumeSyncCard";
 import TimelineCard from "./cards/TimelineCard";
 import BadgeCard from "./cards/BadgeCard";
 import PdfDownloadCard from "./cards/PdfDownloadCard";
+import CourseCard from "./cards/CourseCard";
 
 interface MessageItemProps {
   message: Message;
@@ -179,6 +180,16 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         <div className="flex flex-col gap-2 w-full max-w-3xl">
           {roadmapData.cleanText && <Markdown text={roadmapData.cleanText} />}
           <RoadmapCard title={roadmapData.data.title} steps={roadmapData.data.steps} />
+        </div>
+      );
+    }
+
+    const courseData = extractJsonData("COURSE_CARD");
+    if (courseData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {courseData.cleanText && <Markdown text={courseData.cleanText} />}
+          <CourseCard {...courseData.data} />
         </div>
       );
     }

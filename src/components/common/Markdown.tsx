@@ -2,6 +2,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import RoadmapViewer from "../chat/cards/RoadmapViewer";
 
 const Markdown = ({ text }) => {
     
@@ -46,6 +47,11 @@ const Markdown = ({ text }) => {
                 code: ({ node, className, children, ...props }) => {
                     const match = /language-(\w+)/.exec(className || "");
                     const isInline = !match;
+                    
+                    if (match && match[1] === "mermaid") {
+                        return <RoadmapViewer chart={String(children).replace(/\n$/, "")} />;
+                    }
+
                     return !isInline ? (
                         <div className="relative group/code my-6">
                             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover/code:opacity-100 transition-opacity">

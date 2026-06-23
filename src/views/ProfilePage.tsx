@@ -7,6 +7,7 @@ import Skills from "@/components/profile/Skills";
 import Experience from "@/components/profile/Experience";
 import Education from "@/components/profile/Education";
 import Projects from "@/components/profile/Projects";
+import Courses from "@/components/profile/Courses";
 import { Briefcase, Award, CheckCircle2, Download, ExternalLink, MapPin, Globe, Camera, Menu, User, Sparkles, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -176,6 +177,11 @@ const ProfilePage = () => {
                   {/* Skills Card */}
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                     <Skills />
+                  </div>
+
+                  {/* Courses Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <Courses />
                   </div>
                 </div>
               ) : (
