@@ -14,9 +14,9 @@ export default function Courses() {
 
   const fetchCourses = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${apiUrl}/api/profile/courses`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002';
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${apiUrl}/profile/courses`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -32,9 +32,9 @@ export default function Courses() {
 
   const updateProgress = async (id: number, progressPercentage: number) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${apiUrl}/api/profile/courses/${id}/progress`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002';
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${apiUrl}/profile/courses/${id}/progress`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -75,8 +75,8 @@ export default function Courses() {
           {courses.map(course => (
             <div key={course.id} className="p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-primary/30 transition-all flex flex-col">
               <div className="flex gap-3 mb-4">
-                <div className={`p-2.5 rounded-xl flex items-center justify-center shrink-0 ${course.platform.toLowerCase().includes('youtube') ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>
-                  {course.platform.toLowerCase().includes('youtube') ? <PlayCircle size={20} /> : <BookOpen size={20} />}
+                <div className={`p-2.5 rounded-xl flex items-center justify-center shrink-0 ${(course.platform || "").toLowerCase().includes('youtube') ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>
+                  {(course.platform || "").toLowerCase().includes('youtube') ? <PlayCircle size={20} /> : <BookOpen size={20} />}
                 </div>
                 <div>
                   <h3 className="font-bold text-[14px] text-gray-900 line-clamp-2">{course.title}</h3>

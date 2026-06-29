@@ -21,6 +21,7 @@ export interface FileAttachment {
   fileType: string;
   fileSize: number;
   mimeType: string;
+  summary?: string;
   createdAt: string;
   updatedAt: string;
 }

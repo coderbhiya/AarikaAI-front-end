@@ -25,6 +25,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import BrainLogo from "./BrainLogo";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { getEnabledFeatures } from "@/services/settingsService";
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -90,6 +91,33 @@ const Sidebar = () => {
   const navigate = useRouter();
   const pathname = usePathname();
 
+  const [features, setFeatures] = React.useState({
+    chatEnabled: true,
+    jobRecommendationsEnabled: true,
+    profileAnalysisEnabled: true,
+    resumeBuilderEnabled: true,
+    learningModuleEnabled: true,
+    communityModuleEnabled: true
+  });
+
+  React.useEffect(() => {
+    let active = true;
+    const fetchFeatures = async () => {
+      try {
+        const flags = await getEnabledFeatures();
+        if (active) {
+          setFeatures(flags);
+        }
+      } catch (err) {
+        console.error("Failed to load feature flags:", err);
+      }
+    };
+    fetchFeatures();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -99,11 +127,16 @@ const Sidebar = () => {
     }
   };
 
+  const isLearningWorkspace = pathname?.startsWith("/learning");
+
   const sidebarClasses = isMobile
     ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"
     } transition-transform duration-300`
-    : `h-screen bg-white border-r border-gray-100 flex flex-col relative z-30 transition-all duration-300 ease-in-out ${showSidebar ? "w-64" : "w-[72px]"
-    }`;
+    : `h-screen bg-white border-r border-gray-100 flex flex-col relative z-30 transition-all duration-300 ease-in-out ${
+        isLearningWorkspace 
+          ? (showSidebar ? "w-64" : "w-0 border-r-0 overflow-hidden") 
+          : (showSidebar ? "w-64" : "w-[72px]")
+      }`;
 
   return (
     <div className={sidebarClasses}>
@@ -123,13 +156,13 @@ const Sidebar = () => {
         {/* Header */}
         <div className={`p-6 flex items-center ${showSidebar ? "justify-between" : "justify-center px-0"} relative`}>
           {(!isMobile && !showSidebar) ? (
-            <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center shadow-sm overflow-hidden cursor-pointer" onClick={() => navigate.push("/chat")}>
-              <BrainLogo size={24} />
+            <div className="w-10 h-10 flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => navigate.push("/chat")}>
+              <BrainLogo size={40} />
             </div>
           ) : (
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate.push("/chat")}>
-              <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center shadow-sm overflow-hidden">
-                <BrainLogo size={32} />
+              <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+                <BrainLogo size={48} />
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-[#202124] tracking-tight leading-none mb-1">Aarika.AI</h1>
@@ -137,16 +170,9 @@ const Sidebar = () => {
               </div>
             </div>
           )}
-          {isMobile ? (
+          {isMobile && (
             <button onClick={toggleSidebar} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
               <X size={20} />
-            </button>
-          ) : (
-            <button 
-              onClick={toggleSidebar} 
-              className="absolute -right-3 top-8 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 shadow-sm hover:bg-gray-50 z-50 transition-transform hover:scale-110"
-            >
-              {showSidebar ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
             </button>
           )}
         </div>
@@ -176,24 +202,30 @@ const Sidebar = () => {
               label="Intelligence Chat"
               active={pathname === "/chat"}
             />
-            <SidebarItem
-              to="/community"
-              icon={<Users size={20} />}
-              label="Community"
-              active={pathname === "/community"}
-            />
-            <SidebarItem
-              to="/dashboard/learning"
-              icon={<BookOpen size={20} />}
-              label="My Learning"
-              active={pathname === "/dashboard/learning"}
-            />
-            <SidebarItem
-              to="/jobs"
-              icon={<Briefcase size={20} />}
-              label="Mission Hunt"
-              active={pathname === "/jobs"}
-            />
+            {features.communityModuleEnabled && (
+              <SidebarItem
+                to="/community"
+                icon={<Users size={20} />}
+                label="Community"
+                active={pathname === "/community"}
+              />
+            )}
+            {features.learningModuleEnabled && (
+              <SidebarItem
+                to="/dashboard/learning"
+                icon={<BookOpen size={20} />}
+                label="My Learning"
+                active={pathname === "/dashboard/learning"}
+              />
+            )}
+            {features.jobRecommendationsEnabled && (
+              <SidebarItem
+                to="/jobs"
+                icon={<Briefcase size={20} />}
+                label="Mission Hunt"
+                active={pathname === "/jobs"}
+              />
+            )}
             <SidebarItem
               to="/notifications"
               icon={<Bell size={20} />}

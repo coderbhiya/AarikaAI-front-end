@@ -1,8 +1,10 @@
 import axiosInstance from "@/lib/axios";
 import { Message, FileAttachment } from "@/types";
 
-export const getChats = async (): Promise<Message[]> => {
-  const response = await axiosInstance.get("/chat");
+export const getChats = async (threadId?: string): Promise<Message[]> => {
+  const response = await axiosInstance.get("/chat", {
+    params: threadId ? { threadId } : {}
+  });
   return response.data.chats;
 };
 
@@ -12,7 +14,10 @@ export const sendChatMessage = async (
   webSearch?: boolean,
   engine?: string,
   onChunk?: (chunk: any) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  threadId?: string,
+  activeVideoId?: string,
+  isPersonalized?: boolean
 ): Promise<{ reply: string; citations: any[]; artifact?: any }> => {
   const token = localStorage.getItem("authToken");
   
@@ -22,7 +27,7 @@ export const sendChatMessage = async (
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ message, fileAttachments, webSearch, engine }),
+    body: JSON.stringify({ message, fileAttachments, webSearch, engine, threadId, activeVideoId, isPersonalized }),
     signal,
   });
 
@@ -86,7 +91,9 @@ export const sendChatMessage = async (
     }
   }
 
-  return { reply: finalReply || accumulatedReply, citations: finalCitations, artifact: finalArtifact };
+  // Bug #1 fix: prefer accumulatedReply (built chunk-by-chunk) over finalReply from the `done`
+  // event, which may be truncated or an empty string if the backend omits it.
+  return { reply: accumulatedReply || finalReply, citations: finalCitations, artifact: finalArtifact };
 };
 
 export const uploadFile = async (file: File): Promise<FileAttachment> => {
@@ -100,8 +107,10 @@ export const uploadFile = async (file: File): Promise<FileAttachment> => {
   return response.data.file;
 };
 
-export const getWelcomeMessage = async (): Promise<Message | null> => {
-  const response = await axiosInstance.get("/chat/welcome");
+export const getWelcomeMessage = async (threadId?: string): Promise<Message | null> => {
+  const response = await axiosInstance.get("/chat/welcome", {
+    params: threadId ? { threadId } : {}
+  });
   return response.data.message || null;
 };
 

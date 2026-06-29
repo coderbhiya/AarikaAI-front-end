@@ -173,7 +173,7 @@ export const OTPVerification: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-white overflow-hidden selection:bg-primary/20">
+    <div className="flex h-[100dvh] w-full bg-white overflow-hidden selection:bg-primary/20">
       {!isMobile && (
         <div className="hidden lg:flex lg:w-1/2 bg-[#f8faff] relative overflow-hidden items-center justify-center border-r border-slate-100 p-12">
           <div className="absolute top-[-15%] right-[-15%] w-[80%] h-[80%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />
@@ -215,8 +215,9 @@ export const OTPVerification: React.FC = () => {
         </div>
       )}
 
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-start p-8 relative overflow-y-auto scrollbar-none">
-        <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
+      <div className="w-full lg:w-1/2 h-full overflow-y-auto scrollbar-none">
+        <div className="min-h-full w-full flex flex-col items-center justify-between p-8 relative">
+          <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
           <button
             onClick={() => navigate.back()}
             className="inline-flex items-center gap-2.5 text-slate-400 hover:text-slate-900 transition-all duration-500 mb-4 group"

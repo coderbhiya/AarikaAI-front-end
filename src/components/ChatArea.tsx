@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb } from "lucide-react";
+import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,278 @@ import BrainLogo from "./BrainLogo";
 import SuggestionChips from "./chat/SuggestionChips";
 import { Message, FileAttachment } from "@/types";
 import { ProfileSyncModal } from "./profile/ProfileSyncModal";
+
+// Bug #7 fix: sanitize AI-generated SVG to prevent XSS via <script>, onload, foreignObject, etc.
+const sanitizeSvg = (svgMarkup: string): string => {
+    if (typeof window === "undefined" || !svgMarkup) return "";
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgMarkup, "image/svg+xml");
+        if (doc.querySelector("parsererror")) return "";
+        const dangerousTags = ["script", "foreignObject", "use", "animate"];
+        const dangerousAttrs = ["onload", "onerror", "onclick", "onmouseover", "onfocus", "onblur", "onkeydown"];
+        dangerousTags.forEach((tag) => doc.querySelectorAll(tag).forEach((el) => el.remove()));
+        doc.querySelectorAll("*").forEach((el) => {
+            dangerousAttrs.forEach((attr) => el.removeAttribute(attr));
+            const href = el.getAttribute("href") || el.getAttribute("xlink:href") || "";
+            if (href.toLowerCase().startsWith("javascript:")) el.removeAttribute("href");
+        });
+        return new XMLSerializer().serializeToString(doc.documentElement);
+    } catch {
+        return "";
+    }
+};
+
+const renderArtifactPreview = (artifact: any) => {
+    if (!artifact || !artifact.data) return null;
+
+    const { type, data } = artifact;
+
+    switch (type) {
+        case "html_preview": {
+            const htmlContent = data.html || "";
+            const cssContent = data.css || "";
+            const jsContent = data.js || "";
+            const srcDoc = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <style>
+                        body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #ffffff; color: #1a1a1a; line-height: 1.5; }
+                        ${cssContent}
+                    </style>
+                </head>
+                <body>
+                    ${htmlContent}
+                    <script>${jsContent}</script>
+                </body>
+                </html>
+            `;
+            return (
+                <div className="w-full h-full min-h-[450px] border border-gray-150 rounded-2xl overflow-hidden bg-white shadow-sm flex flex-col">
+                    <div className="bg-slate-100 px-4 py-2 border-b border-gray-200 flex items-center justify-between text-xs text-slate-500 font-semibold select-none">
+                        <span>Web Simulation</span>
+                        <div className="flex gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+                        </div>
+                    </div>
+                    <iframe
+                        srcDoc={srcDoc}
+                        title={artifact.title || "HTML Preview"}
+                        className="flex-1 w-full border-none bg-white"
+                        sandbox="allow-scripts"
+                    />
+                </div>
+            );
+        }
+
+        case "svg_render": {
+            // Bug #7 fix: sanitize before injecting into DOM
+            const svgMarkup = sanitizeSvg(data.svg || "");
+            return (
+                <div className="flex flex-col items-center justify-center p-8 bg-white border border-gray-100 rounded-2xl w-full min-h-[350px] shadow-sm overflow-auto">
+                    <div 
+                        className="max-w-full max-h-[400px] flex items-center justify-center svg-preview-container"
+                        dangerouslySetInnerHTML={{ __html: svgMarkup }}
+                    />
+                </div>
+            );
+        }
+
+        case "code_snippet": {
+            return (
+                <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-slate-50 px-4 py-2 border-b border-gray-100 flex items-center justify-between text-xs text-slate-500 font-semibold select-none">
+                        <span className="font-mono text-[11px]">{data.filename || "code_file"}</span>
+                        <span className="uppercase text-[10px] tracking-wider">{data.language || "code"}</span>
+                    </div>
+                    <pre className="text-xs bg-slate-900 text-slate-100 p-5 overflow-x-auto font-mono leading-relaxed">
+                        <code>{data.code}</code>
+                    </pre>
+                </div>
+            );
+        }
+
+        case "career_roadmap": {
+            const milestones = data.milestones || [];
+            return (
+                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div>
+                        <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">Target Objective</h4>
+                        <h3 className="text-lg font-bold text-slate-800 mt-1">{data.goal || "Career Roadmap Target"}</h3>
+                        {data.timeline && (
+                            <span className="inline-block mt-2 px-2.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full">
+                                Timeline: {data.timeline}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="relative border-l-2 border-slate-100 pl-6 ml-3 space-y-8 mt-4">
+                        {milestones.map((milestone: any, index: number) => (
+                            <div key={index} className="relative">
+                                {/* Timeline Bullet node */}
+                                <div className="absolute -left-[33px] top-1.5 w-4 h-4 rounded-full border-2 border-primary bg-white flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                        <h4 className="text-sm font-bold text-slate-800">
+                                            Step {index + 1}: {milestone.title}
+                                        </h4>
+                                        {milestone.duration && (
+                                            <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                                {milestone.duration}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {milestone.skills && milestone.skills.length > 0 && (
+                                        <div className="flex items-center gap-1 flex-wrap pt-1">
+                                            {milestone.skills.map((skill: string, sIndex: number) => (
+                                                <span key={sIndex} className="text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                                                    {skill}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {milestone.steps && milestone.steps.length > 0 && (
+                                        <ul className="mt-2.5 space-y-1.5 pl-1.5 text-xs text-slate-600 font-medium font-medium">
+                                            {milestone.steps.map((step: string, stepIndex: number) => (
+                                                <li key={stepIndex} className="flex items-start gap-2">
+                                                    <span className="text-primary mt-0.5">✓</span>
+                                                    <span>{step}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        case "resume_analysis": {
+            const strengths = data.strengths || [];
+            const weaknesses = data.weaknesses || [];
+            const atsRisks = data.atsRisks || [];
+            const score = data.score || 70;
+
+            return (
+                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-6">
+                    {/* Score section */}
+                    <div className="flex items-center gap-4 border-b border-gray-50 pb-5">
+                        <div className="relative w-16 h-16 rounded-full border-4 border-primary/10 flex items-center justify-center font-bold text-primary text-lg">
+                            {score}%
+                            <div className="absolute inset-[-4px] rounded-full border-4 border-primary border-t-transparent animate-spin-slow opacity-30" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-slate-800 text-sm">Resume ATS Assessment</h3>
+                            <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                                {score >= 80 ? "Highly competitive profile structure" : score >= 60 ? "Requires incremental improvements" : "Critical structural updates required"}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {strengths.length > 0 && (
+                            <div className="space-y-1.5">
+                                <h4 className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    Core Strengths
+                                </h4>
+                                <ul className="space-y-1.5 pl-3 border-l border-emerald-100 text-xs text-slate-600 font-medium">
+                                    {strengths.map((str: string, index: number) => (
+                                        <li key={index}>{str}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {weaknesses.length > 0 && (
+                            <div className="space-y-1.5">
+                                <h4 className="text-[11px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                    Areas of Improvement
+                                </h4>
+                                <ul className="space-y-1.5 pl-3 border-l border-amber-100 text-xs text-slate-600 font-medium">
+                                    {weaknesses.map((weak: string, index: number) => (
+                                        <li key={index}>{weak}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {atsRisks.length > 0 && (
+                            <div className="space-y-1.5">
+                                <h4 className="text-[11px] font-bold text-red-600 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    ATS Parsing Risks
+                                </h4>
+                                <ul className="space-y-1.5 pl-3 border-l border-red-100 text-xs text-slate-600 font-medium">
+                                    {atsRisks.map((risk: string, index: number) => (
+                                        <li key={index}>{risk}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        case "interview_prep": {
+            const questions = data.questions || [];
+            return (
+                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div>
+                        <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">Prep Session</h4>
+                        <h3 className="text-lg font-bold text-slate-800 mt-1">Mock Interview Q&A Cards</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Click questions to expand and study model answers.</p>
+                    </div>
+
+                    <div className="space-y-3">
+                        {questions.map((q: any, index: number) => (
+                            <details key={index} className="group border border-slate-100 rounded-xl bg-slate-50/50 p-4 transition-all duration-300 open:bg-white open:shadow-sm">
+                                <summary className="flex items-center justify-between font-bold text-xs text-slate-800 cursor-pointer list-none select-none">
+                                    <span className="pr-4 leading-relaxed">Q{index + 1}: {q.question}</span>
+                                    <span className="text-gray-400 group-open:rotate-180 transition-transform duration-300">▼</span>
+                                </summary>
+                                <div className="mt-3 text-xs text-slate-600 font-medium border-t border-slate-100 pt-3 leading-relaxed space-y-2">
+                                    <p className="font-semibold text-slate-700">Recommended Response:</p>
+                                    <p className="bg-slate-50 p-3 rounded-lg text-slate-600">{q.answer}</p>
+                                    {q.tips && (
+                                        <p className="text-[11px] text-primary italic mt-2">
+                                            💡 Pro Tip: {q.tips}
+                                        </p>
+                                    )}
+                                </div>
+                            </details>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        default: {
+            return (
+                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase mb-4">Structured Data View</h3>
+                    <pre className="text-xs bg-gray-50 p-4 rounded-xl border border-gray-100 overflow-x-auto leading-relaxed font-mono">
+                        {JSON.stringify(data, null, 2)}
+                    </pre>
+                </div>
+            );
+        }
+    }
+};
 
 interface ChatAreaProps {
     embeddedContext?: string;
@@ -31,26 +303,28 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
     const [pendingSnapshotForModal, setPendingSnapshotForModal] = useState<any>(null);
     const [activeArtifact, setActiveArtifact] = useState<any>(null);
+    const [workspaceTab, setWorkspaceTab] = useState<"preview" | "code">("preview");
+    const [isPersonalized, setIsPersonalized] = useState<boolean>(true);
 
     const searchParams = useSearchParams();
 
     const [streamingReply, setStreamingReply] = useState<string | null>(null);
     const [searchProgress, setSearchProgress] = useState<string | null>(null);
 
-    // Auto-send query param message if exists
-    useEffect(() => {
-        const msg = searchParams.get("msg");
-        if (msg) {
-            handleSendMessage(msg);
-            // Remove msg from url to prevent double-sending on refresh
-            navigate.replace("/");
-        }
-    }, [searchParams]);
-
     const { data: messages = [], isLoading: isChatsLoading, isError, error } = useQuery({
         queryKey: ["chats"],
-        queryFn: getChats,
+        queryFn: () => getChats(),
     });
+
+    // Auto-send query param message if exists — Bug #3 fix: wait until chat history is loaded
+    // so messages.length is accurate and embeddedContext is only injected when appropriate.
+    useEffect(() => {
+        const msg = searchParams.get("msg");
+        if (msg && !isChatsLoading) {
+            handleSendMessage(msg);
+            navigate.replace("/");
+        }
+    }, [searchParams, isChatsLoading]);
 
     // Fix 1 & 3: Welcome Message Logic & Memory Leak Fix
     const hasFetchedWelcome = useRef(false);
@@ -77,9 +351,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         };
     }, [isChatsLoading, queryClient]);
 
-    // Fix 5: Intelligent Auto Scroll setup
+    // Intelligent Auto Scroll setup
     const isUserScrolledUp = useRef(false);
     const abortControllerRef = useRef<AbortController | null>(null);
+    // Bug #5 fix: track context injection with a stable ref instead of messages.length
+    const hasInjectedContext = useRef(false);
     const handleScroll = () => {
         if (!scrollRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -87,27 +363,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     };
 
     const chatMutation = useMutation({
-        // Fix 1: Add engine parameter
-        mutationFn: async ({ text, files, webSearch, engine }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string }) => {
+        mutationFn: async ({ text, files, webSearch, engine, isPersonalized }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string; isPersonalized?: boolean }) => {
             setStreamingReply("");
             setSearchProgress("Searching career trends...");
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
-            try {
-                return await sendChatMessage(text, files, webSearch, engine, (chunk) => {
-                    if (chunk.type === "progress") {
-                        setSearchProgress(chunk.message);
-                    } else if (chunk.type === "text") {
-                        setSearchProgress(null);
-                        setStreamingReply((prev) => (prev || "") + chunk.content);
-                    }
-                }, abortController.signal);
-            } catch (error: any) {
-                if (error.message === "AbortError" || error.name === "AbortError") {
-                    return { reply: streamingReply || "", citations: [] }; // Return partial reply
+            // Bug #2 + #4 fix: chatService.ts already catches AbortError internally and returns
+            // the accumulated partial reply — no try/catch needed here. The previous catch used
+            // the stale `streamingReply` closure value (always ""), which silently discarded
+            // all streamed content when the user stopped generation.
+            return await sendChatMessage(text, files, webSearch, engine, (chunk) => {
+                if (chunk.type === "progress") {
+                    setSearchProgress(chunk.message);
+                } else if (chunk.type === "text") {
+                    setSearchProgress(null);
+                    setStreamingReply((prev) => (prev || "") + chunk.content);
                 }
-                throw error;
-            }
+            }, abortController.signal, undefined, undefined, isPersonalized);
         },
         onMutate: async ({ text, files, webSearch }) => {
             await queryClient.cancelQueries({ queryKey: ["chats"] });
@@ -133,7 +405,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         },
         onSuccess: (result, variables, context) => {
             const aiMessage: Message = {
-                id: `temp-ai-${Date.now()}`,
+                // Bug #8 fix: use crypto.randomUUID() to prevent Date.now() key collisions
+                id: `temp-ai-${crypto.randomUUID()}`,
                 message: result.reply,
                 role: "assistant",
                 citations: result.citations,
@@ -228,7 +501,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                         const res = await autoFillProfileFromResume(resumeFile.filePath, resumeFile.originalName);
                         if (res.success && res.diff && (res.diff.updatedFields?.length > 0 || res.diff.addedFields?.length > 0 || res.diff.conflicts?.length > 0)) {
                             const aiMessage: Message = {
-                                id: Date.now().toString(),
+                                // Bug #8 fix: crypto.randomUUID() avoids Date.now() collision with AI reply temp ID
+                                id: crypto.randomUUID(),
                                 message: `[RESUME_SYNC_CARD]${JSON.stringify({ diff: res.diff, snapshot: res.snapshot })}[/RESUME_SYNC_CARD]`,
                                 role: "assistant",
                                 createdAt: new Date().toISOString(),
@@ -250,12 +524,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
         let finalText = (!text.trim() && uploadedFiles.length > 0) ? "I have attached a document." : text;
         
-        // Inject embedded context if present and this is the first message in the session
-        if (embeddedContext && messages.length <= 1) {
+        // Bug #5 fix: use a stable ref instead of messages.length, which is unreliable after
+        // re-mounts because the welcome message inflates the count before the first user message.
+        if (embeddedContext && !hasInjectedContext.current) {
+            hasInjectedContext.current = true;
             finalText = `[Context: ${embeddedContext}]\n${finalText}`;
         }
         
-        chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine });
+        chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine, isPersonalized });
     };
 
     const isProcessing = chatMutation.isPending || isUploading;
@@ -282,6 +558,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Personalized Mode Toggle */}
+                        <div className="flex items-center gap-2 mr-2 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-xl shadow-sm select-none">
+                            <span className="text-[10px] font-bold text-gray-500 hidden sm:inline uppercase tracking-wider">
+                                {isPersonalized ? "Personalized Mode" : "Generic Mode"}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setIsPersonalized(!isPersonalized)}
+                                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    isPersonalized ? "bg-primary" : "bg-gray-300"
+                                }`}
+                                title="Toggle between Personalized mode and Generic academic mode"
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        isPersonalized ? "translate-x-4" : "translate-x-0"
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
                         {!isMobile && (
                             <div className="flex items-center gap-1.5 mr-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -503,30 +800,83 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
             {/* Right/Workspace Area */}
             {activeArtifact && (
-                <div className={`flex flex-col h-full bg-white relative overflow-hidden transition-all duration-300 ${isMobile ? 'w-full absolute inset-0 z-50' : 'w-1/2'}`}>
+                <div className={`flex flex-col h-full bg-white relative overflow-hidden border-l border-gray-200 transition-all duration-300 ${isMobile ? 'w-full absolute inset-0 z-50' : 'w-1/2'}`}>
+                    {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-[#f9fafb]">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shadow-sm">
                                 <Sparkles size={16} />
                             </div>
                             <div>
-                                <h3 className="text-[15px] font-bold text-[#202124]">{activeArtifact.title || "Career Artifact"}</h3>
-                                <p className="text-[11px] text-gray-500 font-medium uppercase tracking-tight">
+                                <h3 className="text-[14px] font-bold text-[#202124] truncate max-w-[150px] sm:max-w-[250px]">{activeArtifact.title || "Career Artifact"}</h3>
+                                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
                                     {activeArtifact.type?.replace("_", " ")} • v{activeArtifact.version || 1}
                                 </p>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setActiveArtifact(null)}
-                            className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                            &times;
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {/* Tab Switcher */}
+                            <div className="bg-gray-100/80 p-0.5 rounded-lg flex items-center shadow-inner">
+                                <button
+                                    onClick={() => setWorkspaceTab("preview")}
+                                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
+                                        workspaceTab === "preview"
+                                            ? "bg-white text-gray-900 shadow-sm"
+                                            : "text-gray-500 hover:text-gray-800"
+                                    }`}
+                                >
+                                    Preview
+                                </button>
+                                <button
+                                    onClick={() => setWorkspaceTab("code")}
+                                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
+                                        workspaceTab === "code"
+                                            ? "bg-white text-gray-900 shadow-sm"
+                                            : "text-gray-500 hover:text-gray-800"
+                                    }`}
+                                >
+                                    Code
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={() => setActiveArtifact(null)}
+                                className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-full transition-colors active:scale-95"
+                                title="Close Workspace"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 scrollbar-thin scrollbar-thumb-gray-200">
-                        <pre className="text-xs bg-gray-50 p-4 rounded-xl border border-gray-100 overflow-x-auto">
-                            {JSON.stringify(activeArtifact.data, null, 2)}
-                        </pre>
+
+                    {/* Content Body */}
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-slate-50/55">
+                        {workspaceTab === "preview" ? (
+                            renderArtifactPreview(activeArtifact)
+                        ) : (
+                            <div className="relative group">
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(
+                                            typeof activeArtifact.data === "string"
+                                                ? activeArtifact.data
+                                                : activeArtifact.data?.code || JSON.stringify(activeArtifact.data, null, 2)
+                                        );
+                                        toast.success("Artifact copied to clipboard!");
+                                    }}
+                                    className="absolute right-3 top-3 px-2 py-1 bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-bold rounded-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    Copy Code
+                                </button>
+                                <pre className="text-xs bg-slate-900 text-slate-100 p-5 rounded-2xl border border-slate-800 overflow-x-auto font-mono leading-relaxed shadow-sm">
+                                    <code>
+                                        {typeof activeArtifact.data === "string"
+                                            ? activeArtifact.data
+                                            : activeArtifact.data?.code || JSON.stringify(activeArtifact.data, null, 2)}
+                                    </code>
+                                </pre>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

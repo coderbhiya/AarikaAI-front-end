@@ -183,7 +183,7 @@ export const LoginPage: React.FC = () => {
 
 
   return (
-    <div className="flex min-h-screen w-full bg-white overflow-hidden selection:bg-primary/20">
+    <div className="flex h-[100dvh] w-full bg-white overflow-hidden selection:bg-primary/20">
       {/* Visual Side (Desktop) */}
       {!isMobile && (
         <div className="hidden lg:flex lg:w-1/2 bg-[#f8faff] relative overflow-hidden items-center justify-center border-r border-slate-100">
@@ -227,8 +227,9 @@ export const LoginPage: React.FC = () => {
       )}
 
       {/* Auth Side */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-start p-8 relative overflow-y-auto scrollbar-none">
-        <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
+      <div className="w-full lg:w-1/2 h-full overflow-y-auto scrollbar-none">
+        <div className="min-h-full w-full flex flex-col items-center justify-between p-8 relative">
+          <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
           <div className="flex items-center gap-3.5 mb-6 group cursor-pointer">
             <BrainLogo size={42} className="rounded-lg shadow-md" />
             <div className="flex flex-col">
@@ -322,9 +323,10 @@ export const LoginPage: React.FC = () => {
               <Link href="/register" className="text-primary font-bold hover:underline ml-1 transition-all">Sign Up</Link>
             </p>
           </div>
+          </div>
         </div>
 
-        <div className="mt-auto pb-6 text-center opacity-40">
+        <div className="pb-6 text-center opacity-40">
           <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-400">Secure AES-256 Encryption • AarikaAI Cloud</p>
         </div>
       </div>

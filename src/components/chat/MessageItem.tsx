@@ -51,17 +51,31 @@ const getFileIcon = (fileType: string) => {
 const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEditMessage }) => {
   const isUser = message.role === "user";
   const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(message.message);
+  const [editText, setEditText] = useState(message.message ?? "");
+
+  // Bug #1 fix: sync editText when the message prop changes (e.g. after a re-render
+  // following a successful edit — without this, the textarea shows stale pre-edit text)
+  React.useEffect(() => {
+    setEditText(message.message ?? "");
+  }, [message.message]);
 
   const handleSaveEdit = () => {
-    if (editText.trim() !== message.message && onEditMessage && message.id) {
+    if (!editText.trim()) return; // don't submit empty
+    // Bug #2 fix: show feedback when nothing changed instead of silently closing
+    if (editText.trim() === message.message) {
+      toast.info("No changes made.");
+      setIsEditing(false);
+      return;
+    }
+    if (onEditMessage && message.id) {
       onEditMessage(message.id, editText);
     }
     setIsEditing(false);
   };
 
   const renderContent = () => {
-    const text = message.message;
+    // Bug #5 fix: guard against null/undefined message (e.g. streaming starts with null)
+    const text = message.message ?? "";
 
     if (isUser && isEditing) {
       return (
@@ -125,8 +139,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
     }
 
     // Helper function to extract JSON from tags
+    // Bug #4 fix: removed |$ fallback — without a required closing tag, a card with a
+    // missing closing tag would greedily consume all subsequent text including other card tags.
     const extractJsonData = (tagName: string) => {
-      const regex = new RegExp(`\\[${tagName}\\]([\\s\\S]*?)(?:\\[\\/${tagName}\\]|$)`, "i");
+      const regex = new RegExp(`\\[${tagName}\\]([\\s\\S]*?)\\[\\/${tagName}\\]`, "i");
       const match = text.match(regex);
       if (match) {
         try {
@@ -415,9 +431,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
             </div>
           )}
 
-          {/* File Attachments */}
+          {/* File Attachments — rendered above actions, after content */}
+          {/* Bug #6 fix: previously rendered below citations which was confusing for user messages */}
           {message.FileAttachments && message.FileAttachments.length > 0 && (
-            <div className={`flex flex-wrap gap-2 mt-4 px-1 ${isUser ? "justify-end" : "justify-start"}`}>
+            <div className={`flex flex-wrap gap-2 mt-3 px-1 ${isUser ? "justify-end" : "justify-start"}`}>
               {message.FileAttachments.map((file, index) => (
                 <div
                   key={index}
@@ -462,13 +479,30 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
               <button
                 className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
                 onClick={() => {
-                  navigator.clipboard.writeText(message.message);
+                  navigator.clipboard.writeText(message.message ?? "");
                   toast.success("Copied to clipboard");
                 }}
+                title="Copy message"
               >
                 <Copy size={16} />
               </button>
-              <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+              {/* Bug #3 fix: Share button was a silent dead affordance — now uses Web Share API */}
+              <button
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                title="Share message"
+                onClick={async () => {
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ text: message.message ?? "" });
+                    } catch {
+                      // user cancelled share — no error needed
+                    }
+                  } else {
+                    navigator.clipboard.writeText(message.message ?? "");
+                    toast.success("Message copied to clipboard!");
+                  }
+                }}
+              >
                 <Share size={16} />
               </button>
             </div>

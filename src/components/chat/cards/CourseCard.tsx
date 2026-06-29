@@ -17,15 +17,15 @@ export default function CourseCard({ title, platform, url, language, isFree, aut
   const [isSaving, setIsSaving] = useState(false);
   const [courseId, setCourseId] = useState<number | null>(null);
 
-  const isYouTube = platform.toLowerCase().includes("youtube");
+  const isYouTube = (platform || "").toLowerCase().includes("youtube");
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const token = localStorage.getItem('token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3002';
+      const token = localStorage.getItem('authToken');
       
-      const res = await fetch(`${apiUrl}/api/profile/courses`, {
+      const res = await fetch(`${apiUrl}/profile/courses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,9 +54,9 @@ export default function CourseCard({ title, platform, url, language, isFree, aut
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-3">
           {thumbnail ? (
-            <img src={thumbnail} alt={title} className="w-12 h-12 rounded-xl object-cover" />
+            <img src={thumbnail} alt={title} className="w-12 h-12 rounded-[10px] object-cover" />
           ) : (
-            <div className={`p-2.5 rounded-xl flex items-center justify-center ${isYouTube ? 'bg-red-50 text-red-500' : 'bg-primary/10 text-primary'}`}>
+            <div className={`p-2.5 rounded-[10px] flex items-center justify-center ${isYouTube ? 'bg-red-50 text-red-500' : 'bg-primary/10 text-primary'}`}>
               {isYouTube ? <PlayCircle size={24} /> : <BookOpen size={24} />}
             </div>
           )}

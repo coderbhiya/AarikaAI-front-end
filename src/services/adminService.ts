@@ -121,3 +121,13 @@ export const deleteJob = async (id: string | number) => {
   const response = await adminAxios.delete(`/jobs/${id}`);
   return response.data;
 };
+
+export const getSystemSettings = async () => {
+  const response = await adminAxios.get("/settings");
+  return response.data.settings;
+};
+
+export const updateSystemSettings = async (settings: any) => {
+  const response = await adminAxios.put("/settings", { settings });
+  return response.data;
+};

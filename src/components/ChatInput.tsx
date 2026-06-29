@@ -195,8 +195,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 {!message.trim() && !selectedFiles.length && !isMobile && !isLoading && (
                   <button
                     type="button"
+                    // Bug #6 fix: was a silent dead affordance with no handler
+                    onClick={() => toast.info("Voice input coming soon!")}
                     className="p-2 rounded-full text-[#444746] hover:bg-white transition-colors flex items-center justify-center"
                     disabled={isLoading}
+                    title="Voice input (coming soon)"
                   >
                     <Mic size={18} strokeWidth={2} />
                   </button>

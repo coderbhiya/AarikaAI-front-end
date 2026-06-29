@@ -32,7 +32,7 @@ export default function MarketingPage() {
     
     setIsSendingEmail(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authToken");
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const res = await fetch(`${baseUrl}/api/marketing/email`, {
         method: "POST",
@@ -72,7 +72,7 @@ export default function MarketingPage() {
 
     setIsSendingWa(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authToken");
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const res = await fetch(`${baseUrl}/api/marketing/whatsapp`, {
         method: "POST",

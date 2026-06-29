@@ -28,7 +28,9 @@ import {
   TrendingUp,
   UserPlus,
   Briefcase,
-  Server
+  Server,
+  BookOpen,
+  MessageSquare
 } from "lucide-react";
 import {
   adminLogin,
@@ -44,7 +46,9 @@ import {
   activatePrompt,
   getJobs as getAdminJobs,
   updateJobStatus,
-  deleteJob
+  deleteJob,
+  getSystemSettings,
+  updateSystemSettings
 } from "@/services/adminService";
 import ArchitectureGuide from "./ArchitectureGuide";
 
@@ -63,7 +67,7 @@ export default function AdminPanel() {
   const [department, setDepartment] = useState("");
 
   // Dashboard & Navigation State
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings">("dashboard");
   const [stats, setStats] = useState<any>(null);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
 
@@ -98,6 +102,11 @@ export default function AdminPanel() {
   const [jobPage, setJobPage] = useState(1);
   const [jobTotalPages, setJobTotalPages] = useState(1);
   const [isJobsLoading, setIsJobsLoading] = useState(false);
+
+  // Settings Tab State
+  const [systemSettings, setSystemSettings] = useState<any>(null);
+  const [isSettingsLoading, setIsSettingsLoading] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Check auth on mount
   useEffect(() => {
@@ -171,7 +180,35 @@ export default function AdminPanel() {
     if (activeTab === "users") fetchUsers();
     if (activeTab === "prompts") fetchPrompts();
     if (activeTab === "jobs") fetchJobs();
+    if (activeTab === "settings") fetchSystemSettings();
   }, [isAuthenticated, activeTab, userPage, userFilterStatus, jobPage, jobFilterStatus]);
+
+  // Fetch system settings
+  const fetchSystemSettings = async () => {
+    setIsSettingsLoading(true);
+    try {
+      const data = await getSystemSettings();
+      setSystemSettings(data);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to fetch system settings");
+    } finally {
+      setIsSettingsLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!systemSettings) return;
+    setIsSavingSettings(true);
+    try {
+      await updateSystemSettings(systemSettings);
+      toast.success("System settings updated successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update settings");
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   // Search debouncing
   useEffect(() => {
@@ -579,6 +616,18 @@ export default function AdminPanel() {
               <Server size={16} />
               <span>Architecture Guide</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab("settings")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === "settings"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+              }`}
+            >
+              <Settings size={16} />
+              <span>System Settings</span>
+            </button>
           </nav>
         </div>
 
@@ -619,6 +668,8 @@ export default function AdminPanel() {
                 ? "System Prompts"
                 : activeTab === "architecture"
                 ? "Architecture Guide"
+                : activeTab === "settings"
+                ? "System Settings"
                 : "Job Listings"}
             </span>
           </div>
@@ -1372,6 +1423,263 @@ export default function AdminPanel() {
           {/* TAB 5: ARCHITECTURE GUIDE */}
           {activeTab === "architecture" && (
             <ArchitectureGuide />
+          )}
+
+          {/* TAB 6: SYSTEM SETTINGS */}
+          {activeTab === "settings" && (
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300 pb-12">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800">System Configuration</h2>
+                  <p className="text-sm text-slate-500">Configure global platform modules, core feature access levels, and security constraints.</p>
+                </div>
+              </div>
+
+              {isSettingsLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl shadow-sm">
+                  <RefreshCw className="h-8 w-8 text-slate-400 animate-spin mb-3" />
+                  <p className="text-sm font-medium text-slate-500">Loading system settings...</p>
+                </div>
+              ) : !systemSettings ? (
+                <div className="text-center py-20 bg-white border border-slate-200 rounded-xl shadow-sm text-slate-500">
+                  Failed to load settings. Click reload to try again.
+                </div>
+              ) : (
+                <form onSubmit={handleSaveSettings} className="space-y-6">
+                  {/* Card 1: Features Control */}
+                  <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Module Control Switches</h3>
+                      <p className="text-xs text-slate-500">Enable or disable core frontend features and sidebar navigation entry points globally.</p>
+                    </div>
+
+                    <div className="divide-y divide-slate-100 px-6">
+                      {/* Job Recommendations Toggle */}
+                      <div className="py-4 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                            <Briefcase size={16} className="text-slate-500" />
+                            Mission Hunt (Job Module)
+                          </h4>
+                          <p className="text-xs text-slate-500 max-w-xl">
+                            Displays job vacancies list, match criteria, and search features to candidates.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSystemSettings((prev: any) => ({
+                              ...prev,
+                              features: {
+                                ...prev.features,
+                                jobRecommendationsEnabled: !prev.features.jobRecommendationsEnabled,
+                              },
+                            }))
+                          }
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            systemSettings.features?.jobRecommendationsEnabled ? "bg-blue-600" : "bg-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              systemSettings.features?.jobRecommendationsEnabled ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Learning Module Toggle */}
+                      <div className="py-4 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                            <BookOpen size={16} className="text-slate-500" />
+                            My Learning Module
+                          </h4>
+                          <p className="text-xs text-slate-500 max-w-xl">
+                            Provides syllabus guides, roadmaps, and course recommendations for government exams.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSystemSettings((prev: any) => ({
+                              ...prev,
+                              features: {
+                                ...prev.features,
+                                learningModuleEnabled: !prev.features.learningModuleEnabled,
+                              },
+                            }))
+                          }
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            systemSettings.features?.learningModuleEnabled ? "bg-blue-600" : "bg-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              systemSettings.features?.learningModuleEnabled ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Community Module Toggle */}
+                      <div className="py-4 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                            <Users size={16} className="text-slate-500" />
+                            Community Discussion Module
+                          </h4>
+                          <p className="text-xs text-slate-500 max-w-xl">
+                            Allows users to post questions, view forums, and interact with peers.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSystemSettings((prev: any) => ({
+                              ...prev,
+                              features: {
+                                ...prev.features,
+                                communityModuleEnabled: !prev.features.communityModuleEnabled,
+                              },
+                            }))
+                          }
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            systemSettings.features?.communityModuleEnabled ? "bg-blue-600" : "bg-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              systemSettings.features?.communityModuleEnabled ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Chat Toggle */}
+                      <div className="py-4 flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                            <MessageSquare size={16} className="text-slate-500" />
+                            Intelligence Chat Assistant
+                          </h4>
+                          <p className="text-xs text-slate-500 max-w-xl">
+                            The core chatbot screen assisting users with planning, government exam info, and resume checks.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSystemSettings((prev: any) => ({
+                              ...prev,
+                              features: {
+                                ...prev.features,
+                                chatEnabled: !prev.features.chatEnabled,
+                              },
+                            }))
+                          }
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            systemSettings.features?.chatEnabled ? "bg-blue-600" : "bg-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              systemSettings.features?.chatEnabled ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: General Settings */}
+                  <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">General Configurations</h3>
+                      <p className="text-xs text-slate-500">Configure global metadata and platform access modes.</p>
+                    </div>
+
+                    <div className="px-6 py-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Site Title</label>
+                          <input
+                            type="text"
+                            value={systemSettings.general?.siteName || ""}
+                            onChange={(e) =>
+                              setSystemSettings((prev: any) => ({
+                                ...prev,
+                                general: { ...prev.general, siteName: e.target.value },
+                              }))
+                            }
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Site Description</label>
+                          <input
+                            type="text"
+                            value={systemSettings.general?.siteDescription || ""}
+                            onChange={(e) =>
+                              setSystemSettings((prev: any) => ({
+                                ...prev,
+                                general: { ...prev.general, siteDescription: e.target.value },
+                              }))
+                            }
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="space-y-0.5">
+                          <h4 className="text-sm font-semibold text-slate-800">Maintenance Mode</h4>
+                          <p className="text-xs text-slate-500">Block public access to the platform and show a maintenance page.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSystemSettings((prev: any) => ({
+                              ...prev,
+                              general: { ...prev.general, maintenanceMode: !prev.general.maintenanceMode },
+                            }))
+                          }
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            systemSettings.general?.maintenanceMode ? "bg-red-600" : "bg-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              systemSettings.general?.maintenanceMode ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={fetchSystemSettings}
+                      disabled={isSavingSettings}
+                      className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-sm font-semibold text-slate-600 transition-colors disabled:opacity-50"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingSettings}
+                      className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isSavingSettings && <RefreshCw size={14} className="animate-spin" />}
+                      {isSavingSettings ? "Saving Settings..." : "Save System Settings"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
         </div>
       </main>
