@@ -74,7 +74,14 @@ const Notification = () => {
         }
     };
 
-    const deleteNotification = (id: string) => {
+    // Bug #16 fix: persist the dismissal to the DB so notifications don't reappear on refresh
+    const deleteNotification = async (id: string) => {
+        try {
+            await axiosInstance.delete(`/notifications/${id}`);
+        } catch (err) {
+            console.error("Failed to delete notification from server", err);
+            // Still remove from local state even if API fails for UX smoothness
+        }
         setNotifications(prev => prev.filter(n => n.id !== id));
         toast.success("Notification dismissed");
     };

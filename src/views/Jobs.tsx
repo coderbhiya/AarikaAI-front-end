@@ -83,8 +83,9 @@ const Jobs = () => {
         });
       }
 
-      // Default selection: first job if on desktop
-      if (!isMobile && fetchedJobs.length > 0) {
+      // Bug #12 fix: only auto-select first job when no job is already selected.
+      // Previously, every fetchJobs call (including page changes) would override the user's selection.
+      if (!isMobile && fetchedJobs.length > 0 && !selectedJob) {
         fetchJobDetail(fetchedJobs[0].id);
       }
 

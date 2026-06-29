@@ -29,8 +29,15 @@ export const detectResume = (filename: string, fileType: string): ResumeDetectio
   // Keywords that might indicate a resume or profile but require more context
   const mediumConfidenceKeywords = ["profile", "portfolio"];
   
-  // Negative keywords that strongly indicate it's NOT a resume
-  const negativeKeywords = ["invoice", "offer", "letter", "report", "receipt", "contract", "summary", "bill"];
+  // Bug #21 fix: Expanded negative keywords — job descriptions, research papers, and
+  // common business documents that are NOT resumes but were previously triggering autofill
+  const negativeKeywords = [
+    "invoice", "offer", "letter", "report", "receipt", "contract", "summary", "bill",
+    "jd", "job_description", "job-description", "jobdescription", "job description",
+    "research", "paper", "thesis", "assignment", "notes", "lecture", "syllabus",
+    "proposal", "agreement", "certificate", "marksheet", "transcript_academic",
+    "payslip", "salary_slip", "aadhaar", "aadhar", "pan_card", "id_proof"
+  ];
 
   // Check for negative keywords first
   for (const keyword of negativeKeywords) {
@@ -65,11 +72,14 @@ export const detectResume = (filename: string, fileType: string): ResumeDetectio
     }
   }
 
-  // Fallback: If it's a PDF/DOCX but has no relevant keywords
-  // Many people name their resumes just with their name (e.g., "John_Doe.pdf" or "somendra_node.pdf")
+  // Bug #21 fix: Fallback confidence lowered from 60 → 45 (below the >= 60 threshold in ChatArea).
+  // Previously, ANY pdf/docx with no negative keywords was treated as a resume at confidence=60,
+  // causing job descriptions and research papers to trigger profile overwrite.
+  // Users who upload a truly unnamed resume can still be prompted via the chat UI to confirm.
   return {
-    isResume: true,
-    confidence: 60, // Meets the >= 60 threshold in ChatArea
-    reason: "Valid extension and no negative keywords found, assuming it might be a resume."
+    isResume: false,
+    confidence: 45,
+    reason: "Valid extension but no resume-specific keywords found. Not treating as resume automatically."
   };
 };
+

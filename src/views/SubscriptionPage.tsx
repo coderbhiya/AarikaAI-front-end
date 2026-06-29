@@ -55,22 +55,35 @@ const SubscriptionPage = () => {
   const [netbankingUserId, setNetbankingUserId] = useState("");
   const [netbankingPassword, setNetbankingPassword] = useState("");
   const [countdown, setCountdown] = useState(0);
+  // Bug #14 fix: store absolute deadline timestamp instead of only a decrement counter
+  // so backgrounded tabs don't cause premature OTP expiry
+  const [otpDeadline, setOtpDeadline] = useState<number>(0);
   const [activeOrderId, setActiveOrderId] = useState("");
   const [amountPaid, setAmountPaid] = useState(0);
   const [simulatorError, setSimulatorError] = useState("");
 
+  // Bug #14 fix: Use Date.now()-based deadline to measure remaining seconds.
+  // setTimeout is throttled by browsers when tab is backgrounded, so a simple countdown
+  // decrement can cause premature OTP expiry. We compute remaining from the actual deadline.
   React.useEffect(() => {
-    let timer: any;
-    if (showSimulator && countdown > 0 && (simulatorStage === "bank_otp" || simulatorStage === "upi_pending")) {
-      timer = setTimeout(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-    } else if (countdown === 0 && simulatorStage === "bank_otp") {
-      setSimulatorStage("failure");
-      setSimulatorError("OTP expired. Please try again.");
-    }
-    return () => clearTimeout(timer);
-  }, [countdown, showSimulator, simulatorStage]);
+    if (!showSimulator || otpDeadline === 0) return;
+    if (simulatorStage !== "bank_otp" && simulatorStage !== "upi_pending") return;
+
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((otpDeadline - Date.now()) / 1000));
+      setCountdown(remaining);
+      if (remaining === 0) {
+        if (simulatorStage === "bank_otp") {
+          setSimulatorStage("failure");
+          setSimulatorError("OTP expired. Please try again.");
+        }
+      }
+    };
+
+    tick(); // immediate first tick
+    const timer = setInterval(tick, 500); // poll at 500ms for accuracy
+    return () => clearInterval(timer);
+  }, [otpDeadline, showSimulator, simulatorStage]);
 
   const handleSimulatedSuccess = async (mockPaymentId: string) => {
     try {
@@ -245,10 +258,13 @@ const SubscriptionPage = () => {
       setTimeout(() => {
         if (paymentMethod === "card") {
           setSimulatorStage("bank_otp");
-          setCountdown(300); // 5 minutes
+          // Bug #14 fix: set absolute deadline instead of just counter
+          setOtpDeadline(Date.now() + 300 * 1000); // 5 minutes
+          setCountdown(300);
         } else if (paymentMethod === "upi") {
           setSimulatorStage("upi_pending");
-          setCountdown(180); // 3 minutes
+          setOtpDeadline(Date.now() + 180 * 1000); // 3 minutes
+          setCountdown(180);
         } else if (paymentMethod === "netbanking") {
           setSimulatorStage("netbanking_login");
         }
@@ -853,7 +869,7 @@ const SubscriptionPage = () => {
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-gray-400 font-medium">Time Remaining: <span className="font-bold text-gray-600">{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, "0")}</span></span>
                         <button 
-                          onClick={() => setCountdown(300)}
+                          onClick={() => { setOtpDeadline(Date.now() + 300 * 1000); setCountdown(300); }}
                           className="text-primary hover:underline font-bold"
                         >
                           Resend OTP
@@ -1040,9 +1056,11 @@ const SubscriptionPage = () => {
                         setTimeout(() => {
                           if (paymentMethod === "card") {
                             setSimulatorStage("bank_otp");
+                            setOtpDeadline(Date.now() + 300 * 1000);
                             setCountdown(300);
                           } else if (paymentMethod === "upi") {
                             setSimulatorStage("upi_pending");
+                            setOtpDeadline(Date.now() + 180 * 1000);
                             setCountdown(180);
                           } else if (paymentMethod === "netbanking") {
                             setSimulatorStage("netbanking_login");
