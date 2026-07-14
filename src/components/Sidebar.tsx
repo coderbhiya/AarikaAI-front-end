@@ -555,7 +555,12 @@ const Sidebar = () => {
                 )}
               </div>
             </PopoverTrigger>
-            <PopoverContent side="top" align={(!isMobile && !showSidebar) ? "center" : "start"} className="w-56 p-2 rounded-xl shadow-lg border-gray-100 mb-2">
+            <PopoverContent 
+              side="top" 
+              align={(!isMobile && !showSidebar) ? "center" : "start"} 
+              className="p-2 rounded-xl shadow-lg border-gray-100 mb-2"
+              style={{ width: "var(--radix-popover-trigger-width)" }}
+            >
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => { navigate.push("/profile"); if(isMobile) toggleSidebar(); }}

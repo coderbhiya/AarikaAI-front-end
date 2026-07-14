@@ -687,60 +687,80 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 </p>
 
                                 {/* Action Cards Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full max-w-4xl px-4 md:px-2">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-4 md:px-2">
                                     {/* Card 1: Doubt Solving */}
                                     <div 
                                         onClick={() => handleSendMessage("I have a doubt, can you help me solve it?")}
-                                        className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-gray-100 flex flex-col items-start justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                        className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-purple-50/80 to-white hover:shadow-[0_8px_24px_rgba(168,85,247,0.1)] border border-purple-100/50 hover:border-purple-200 hover:-translate-y-1"
                                     >
-                                        <div className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-3 rounded-full bg-purple-500 flex items-center justify-center text-white shrink-0">
-                                            <Lightbulb size={16} className="md:w-[18px] md:h-[18px]" />
+                                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
+                                                <Sparkles size={14} className="text-purple-500" />
+                                            </div>
                                         </div>
-                                        <div className="flex-1 text-left w-full">
-                                            <h3 className="font-bold text-gray-900 text-[13px] md:text-[14px] leading-tight mb-1">Doubt Solving</h3>
-                                            <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Get help with your questions</p>
+                                        <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-purple-50 flex items-center justify-center text-purple-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                            <Lightbulb size={20} className="md:w-[22px] md:h-[22px]" />
+                                        </div>
+                                        <div className="flex-1 text-left w-full mt-auto">
+                                            <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Doubt Solving</h3>
+                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Instant help with your academic questions</p>
                                         </div>
                                     </div>
 
                                     {/* Card 2: Exam Preparation */}
                                     <div 
                                         onClick={() => handleSendMessage("Help me prepare for my upcoming exams")}
-                                        className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-gray-100 flex flex-col items-start justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                        className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-rose-50/80 to-white hover:shadow-[0_8px_24px_rgba(244,63,94,0.1)] border border-rose-100/50 hover:border-rose-200 hover:-translate-y-1"
                                     >
-                                        <div className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-3 rounded-full bg-[#EF4444] flex items-center justify-center text-white shrink-0">
-                                            <FileText size={16} className="md:w-[18px] md:h-[18px]" />
+                                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
+                                                <Sparkles size={14} className="text-rose-500" />
+                                            </div>
                                         </div>
-                                        <div className="flex-1 text-left w-full">
-                                            <h3 className="font-bold text-gray-900 text-[13px] md:text-[14px] leading-tight mb-1">Exam Prep</h3>
-                                            <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Get structured study plans</p>
+                                        <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-rose-50 flex items-center justify-center text-rose-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                            <FileText size={20} className="md:w-[22px] md:h-[22px]" />
+                                        </div>
+                                        <div className="flex-1 text-left w-full mt-auto">
+                                            <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Exam Prep</h3>
+                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Structured plans & mock tests</p>
                                         </div>
                                     </div>
 
                                     {/* Card 3: Resume Building */}
                                     <div 
                                         onClick={() => handleSendMessage("Can you help me build and review my resume?")}
-                                        className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-gray-100 flex flex-col items-start justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                        className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-blue-50/80 to-white hover:shadow-[0_8px_24px_rgba(59,130,246,0.1)] border border-blue-100/50 hover:border-blue-200 hover:-translate-y-1"
                                     >
-                                        <div className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-3 rounded-full bg-[#3B82F6] flex items-center justify-center text-white shrink-0">
-                                            <Code size={16} className="md:w-[18px] md:h-[18px]" />
+                                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
+                                                <Sparkles size={14} className="text-blue-500" />
+                                            </div>
                                         </div>
-                                        <div className="flex-1 text-left w-full">
-                                            <h3 className="font-bold text-gray-900 text-[13px] md:text-[14px] leading-tight mb-1">Resume Build</h3>
-                                            <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Analyze & improve resume</p>
+                                        <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-blue-50 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                            <Code size={20} className="md:w-[22px] md:h-[22px]" />
+                                        </div>
+                                        <div className="flex-1 text-left w-full mt-auto">
+                                            <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Resume Build</h3>
+                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">ATS-friendly resume analysis</p>
                                         </div>
                                     </div>
 
                                     {/* Card 4: Career Guidance */}
                                     <div 
                                         onClick={() => handleSendMessage("I need career guidance and a roadmap")}
-                                        className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-gray-100 flex flex-col items-start justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                        className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-emerald-50/80 to-white hover:shadow-[0_8px_24px_rgba(16,185,129,0.1)] border border-emerald-100/50 hover:border-emerald-200 hover:-translate-y-1"
                                     >
-                                        <div className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-3 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
-                                            <Compass size={16} className="md:w-[18px] md:h-[18px]" />
+                                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
+                                                <Sparkles size={14} className="text-emerald-500" />
+                                            </div>
                                         </div>
-                                        <div className="flex-1 text-left w-full">
-                                            <h3 className="font-bold text-gray-900 text-[13px] md:text-[14px] leading-tight mb-1">Career Guide</h3>
-                                            <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Map out your career path</p>
+                                        <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-emerald-50 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                            <Compass size={20} className="md:w-[22px] md:h-[22px]" />
+                                        </div>
+                                        <div className="flex-1 text-left w-full mt-auto">
+                                            <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Career Guide</h3>
+                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Map out your dream career path</p>
                                         </div>
                                     </div>
                                 </div>
