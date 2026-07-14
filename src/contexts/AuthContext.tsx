@@ -70,13 +70,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(transformedUser);
         localStorage.setItem("user", JSON.stringify(transformedUser));
 
-        // Sync with backend to get latest profile data
-        syncProfile();
+        // BUG-11 fix: await syncProfile so that the full backend profile (including
+        // UserProfile, credits, etc.) is loaded before setLoading(false) runs and
+        // protected routes are rendered.
+        await syncProfile();
       } else {
         const authToken = localStorage.getItem("authToken");
         if (authToken) {
           // Custom auth user (not firebase). Sync profile to verify token validity.
-          syncProfile();
+          await syncProfile();
         } else {
           setUser(null);
           localStorage.removeItem("user");
@@ -112,8 +114,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         updateUser(enrichedUser);
       }
-    } catch (err) {
-      console.error("Profile synchronization failed:", err);
+    } catch (err: any) {
+      // Use console.warn instead of console.error to prevent Next.js from throwing a full-screen error overlay in dev mode when the backend is simply down.
+      console.warn("Profile synchronization failed (Backend might be unreachable):", err.message);
     }
   };
 
@@ -123,6 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (authToken) {
       setToken(authToken);
       localStorage.setItem("authToken", authToken);
+      document.cookie = `authToken=${authToken}; path=/; max-age=604800`; // 7 days
       syncProfile();
     }
   };
@@ -133,13 +137,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       localStorage.removeItem("user");
       localStorage.removeItem("authToken");
+      document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;
     }
   };
 
-  const [token, setToken] = useState<string | null>(null);
+  // BUG-02 fix: initialize token synchronously from localStorage so that
+  // isAuthenticated is correct on the very first render and protected routes
+  // do not flash the login screen before the useEffect runs.
+  const [token, setToken] = useState<string | null>(
+    typeof window !== 'undefined' ? localStorage.getItem("authToken") : null
+  );
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

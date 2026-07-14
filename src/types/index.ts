@@ -30,6 +30,8 @@ export interface Message {
   id: string;
   message: string;
   role: "user" | "assistant";
+  responseType?: "TEXT_RESPONSE" | "WIDGET_RESPONSE" | "ACTION_RESPONSE";
+  enginePayload?: any;
   FileAttachments?: FileAttachment[] | null;
   citations?: any[] | null;
   artifact?: any;

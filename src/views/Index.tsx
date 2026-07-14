@@ -10,14 +10,16 @@ const Index = () => {
   const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
-    // Show modal if user hasn't shared on LinkedIn yet AND their account was created recently
+    const isRecentSignup = localStorage.getItem("isNewSignup") === "true";
+
+    if (isRecentSignup) {
+      localStorage.removeItem("isNewSignup"); // Clear flag so it doesn't show again on reload
+    }
+
     if (user && user.hasSharedOnLinkedIn === false) {
       const isNewUser = user.createdAt ? new Date(user.createdAt).getTime() > Date.now() - 5 * 60 * 1000 : false;
-      const isRecentSignup = localStorage.getItem("isNewSignup") === "true";
-      
-      if (isNewUser || isRecentSignup) {
+      if (isNewUser) {
         setShowShareModal(true);
-        localStorage.removeItem("isNewSignup"); // Clear flag so it doesn't show again
       }
     }
   }, [user]);

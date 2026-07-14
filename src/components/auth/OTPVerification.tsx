@@ -289,6 +289,7 @@ export const OTPVerification: React.FC = () => {
             </div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Aarika.AI Security Core</p>
           </div>
+          </div>
         </div>
       </div>
     </div>

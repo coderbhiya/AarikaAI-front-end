@@ -88,7 +88,7 @@ export const LoginPage: React.FC = () => {
         }, 500);
       }
     } catch (error: any) {
-      console.error("Email login error:", error);
+      console.warn("Email login error (Backend might be unreachable):", error.message);
       const serverMessage = error?.response?.data?.message;
       let message = serverMessage || "Invalid email or password";
 
@@ -127,12 +127,17 @@ export const LoginPage: React.FC = () => {
         }, 500);
       }
     } catch (error: any) {
+      // Clear half-logged-in state in Firebase if backend validation fails
+      try {
+        await auth.signOut();
+      } catch (e) {}
+
       toast({
         title: "Login Failed",
-        description: error.message || "Google link failed to establish",
+        description: error.message || "Backend validation failed or server is unreachable.",
         variant: "destructive",
       });
-      console.error("Google sign in error:", error);
+      console.warn("Google sign in error (Backend might be unreachable):", error.message);
     } finally {
       setIsLoading(prev => ({ ...prev, google: false }));
     }
@@ -151,7 +156,7 @@ export const LoginPage: React.FC = () => {
         setTimeout(() => { navigate.replace("/chat"); }, 500);
       }
     } catch (error: any) {
-      console.error("LinkedIn login error:", error);
+      console.warn("LinkedIn login error (Backend might be unreachable):", error.message);
       toast({ title: "Login Failed", description: "LinkedIn authentication failed", variant: "destructive" });
     } finally {
       setIsLoading(prev => ({ ...prev, linkedin: false }));

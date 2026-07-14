@@ -16,6 +16,7 @@ import TimelineCard from "./cards/TimelineCard";
 import BadgeCard from "./cards/BadgeCard";
 import PdfDownloadCard from "./cards/PdfDownloadCard";
 import CourseCard from "./cards/CourseCard";
+import ExamSimulatorCard from "./cards/ExamSimulatorCard";
 
 interface CourseCardProps {
   title: string;
@@ -73,9 +74,27 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
     setIsEditing(false);
   };
 
+  let rawText = message.message ?? "";
+  let thoughtProcess: string | null = null;
+  
+  // Parse <thinking> tags (both complete and streaming/unterminated)
+  const thinkingTagRegex = /<thinking>([\s\S]*?)<\/thinking>/i;
+  const thinkingMatch = rawText.match(thinkingTagRegex);
+
+  if (thinkingMatch) {
+    thoughtProcess = thinkingMatch[1].trim();
+    rawText = rawText.replace(thinkingTagRegex, "").trim();
+  } else {
+    const openThinkingRegex = /<thinking>([\s\S]*)/i;
+    const openThinkingMatch = rawText.match(openThinkingRegex);
+    if (openThinkingMatch) {
+      thoughtProcess = openThinkingMatch[1].trim();
+      rawText = rawText.replace(openThinkingRegex, "").trim();
+    }
+  }
+
   const renderContent = () => {
-    // Bug #5 fix: guard against null/undefined message (e.g. streaming starts with null)
-    const text = message.message ?? "";
+    const text = rawText;
 
     if (isUser && isEditing) {
       return (
@@ -115,7 +134,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       );
     }
 
-    // Quiz Card Logic
+    // Quiz Card Logic (Legacy fallback)
     const quizTagRegex = /\[QUIZ_CARD\]([\s\S]*?)\[\/QUIZ_CARD\]/i;
     const quizMatch = text.match(quizTagRegex);
 
@@ -206,6 +225,16 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         <div className="flex flex-col gap-2 w-full max-w-3xl">
           {roadmapData.cleanText && <Markdown text={roadmapData.cleanText} />}
           <RoadmapCard title={roadmapData.data.title} steps={roadmapData.data.steps} />
+        </div>
+      );
+    }
+
+    const examData = extractJsonData("EXAM_BLUEPRINT_CARD");
+    if (examData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {examData.cleanText && <Markdown text={examData.cleanText} />}
+          <ExamSimulatorCard blueprint={examData.data} />
         </div>
       );
     }
@@ -391,6 +420,19 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
 
         {/* Content Section */}
         <div className={`w-full flex flex-col min-w-0 ${isUser && !isEditing ? "items-end" : "items-start"}`}>
+          {!isUser && thoughtProcess && (
+             <details className="mb-3 max-w-2xl w-full group/think border border-slate-200 rounded-xl bg-slate-50/80 overflow-hidden shadow-sm">
+               <summary className="px-4 py-2.5 text-xs font-bold text-slate-600 cursor-pointer select-none flex items-center gap-2 hover:bg-slate-100 transition-colors list-none">
+                 <BrainLogo size={14} className="opacity-70 grayscale" />
+                 Thought Process
+                 <span className="ml-auto text-[10px] text-slate-400 group-open/think:rotate-180 transition-transform duration-300">▼</span>
+               </summary>
+               <div className="p-4 pt-3 text-[13px] text-slate-600 font-medium leading-relaxed border-t border-slate-100 bg-white">
+                 <Markdown text={thoughtProcess} />
+               </div>
+             </details>
+          )}
+
           <div className={`${isUser && !isEditing ? "message-bubble-user" : (!isUser ? "message-bubble-ai w-full px-1 sm:px-0" : "w-full")}`}>
             {renderContent()}
           </div>

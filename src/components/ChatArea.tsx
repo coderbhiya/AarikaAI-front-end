@@ -8,14 +8,14 @@ import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, Fi
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getChats, sendChatMessage, uploadFile, getWelcomeMessage, truncateChat } from "@/services/chatService";
+import { getChats, uploadFile, getWelcomeMessage, truncateChat } from "@/services/chatService";
 import { autoFillProfileFromResume } from "@/services/profileService";
 import { detectResume } from "@/utils/resumeDetector";
 import MessageList from "./chat/MessageList";
 import BrainLogo from "./BrainLogo";
-import SuggestionChips from "./chat/SuggestionChips";
 import { Message, FileAttachment } from "@/types";
 import { ProfileSyncModal } from "./profile/ProfileSyncModal";
+import { sendChatMessage } from "@/services/chatService";
 
 // Bug #7 fix: sanitize AI-generated SVG to prevent XSS via <script>, onload, foreignObject, etc.
 const sanitizeSvg = (svgMarkup: string): string => {
@@ -297,7 +297,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const isMobile = useIsMobile();
     const navigate = useRouter();
     const queryClient = useQueryClient();
-    const { user, toggleSidebar } = useAuth();
+    const { user, toggleSidebar, syncProfile } = useAuth();
     const [isUploading, setIsUploading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -307,13 +307,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const [isPersonalized, setIsPersonalized] = useState<boolean>(true);
 
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     const [streamingReply, setStreamingReply] = useState<string | null>(null);
     const [searchProgress, setSearchProgress] = useState<string | null>(null);
 
+    // Derive a stable, consistent cache key for this thread.
+    // When threadId is in the URL we use it; otherwise we use the literal
+    // string "default" so that all hooks (query, onMutate, onSuccess, etc.)
+    // reference the same bucket and there is no key split.
+    const activeThreadKey = searchParams.get("threadId") || "default";
+
     const { data: messages = [], isLoading: isChatsLoading, isError, error } = useQuery({
-        queryKey: ["chats"],
-        queryFn: () => getChats(),
+        queryKey: ["chats", activeThreadKey],
+        queryFn: async () => {
+            // Pass the real UUID if present; pass nothing when there is no thread
+            // so the backend's `threadId || null` query matches null-stored messages.
+            const tid = searchParams.get("threadId") || undefined;
+            return await getChats(tid);
+        },
     });
 
     // Auto-send query param message if exists — Bug #3 fix: wait until chat history is loaded
@@ -322,7 +334,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         const msg = searchParams.get("msg");
         if (msg && !isChatsLoading) {
             handleSendMessage(msg);
-            navigate.replace("/");
+            const newParams = new URLSearchParams(searchParams.toString());
+            newParams.delete("msg");
+            router.replace(`${window.location.pathname}?${newParams.toString()}`);
         }
     }, [searchParams, isChatsLoading]);
 
@@ -335,7 +349,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             hasFetchedWelcome.current = true;
             getWelcomeMessage().then((msg) => {
                 if (msg && isMounted) {
-                    queryClient.setQueryData<Message[]>(["chats"], (old) => {
+                    queryClient.setQueryData<Message[]>(["chats", activeThreadKey], (old) => {
                         const existing = old || [];
                         if (existing.some(m => m.id === msg.id || m.message === msg.message)) return existing;
                         return [...existing, msg];
@@ -363,15 +377,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     };
 
     const chatMutation = useMutation({
-        mutationFn: async ({ text, files, webSearch, engine, isPersonalized }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string; isPersonalized?: boolean }) => {
+        mutationFn: async ({ text, files, webSearch, engine, isPersonalized, threadId }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string; isPersonalized?: boolean; threadId?: string }) => {
             setStreamingReply("");
             setSearchProgress("Searching career trends...");
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
-            // Bug #2 + #4 fix: chatService.ts already catches AbortError internally and returns
-            // the accumulated partial reply — no try/catch needed here. The previous catch used
-            // the stale `streamingReply` closure value (always ""), which silently discarded
-            // all streamed content when the user stopped generation.
+            
+            // BUG-03 fix: forward the active threadId so the backend appends
+            // the message to the correct thread instead of creating a new UUID thread.
             return await sendChatMessage(text, files, webSearch, engine, (chunk) => {
                 if (chunk.type === "progress") {
                     setSearchProgress(chunk.message);
@@ -379,11 +392,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     setSearchProgress(null);
                     setStreamingReply((prev) => (prev || "") + chunk.content);
                 }
-            }, abortController.signal, undefined, undefined, isPersonalized);
+            }, abortController.signal, threadId, undefined, isPersonalized);
         },
-        onMutate: async ({ text, files, webSearch }) => {
-            await queryClient.cancelQueries({ queryKey: ["chats"] });
-            const previousChats = queryClient.getQueryData<Message[]>(["chats"]);
+        onMutate: async ({ text, files }) => {
+            await queryClient.cancelQueries({ queryKey: ["chats", activeThreadKey] });
+            const previousChats = queryClient.getQueryData<Message[]>(["chats", activeThreadKey]);
 
             const tempId = `temp-user-${Date.now()}`;
             const newUserMessage: Message = {
@@ -394,27 +407,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 createdAt: new Date().toISOString(),
             };
 
-            queryClient.setQueryData<Message[]>(["chats"], (old) => [...(old || []), newUserMessage]);
+            queryClient.setQueryData<Message[]>(["chats", activeThreadKey], (old) => [...(old || []), newUserMessage]);
             return { previousChats, tempId };
         },
         onError: (err, newMessage, context) => {
-            queryClient.setQueryData(["chats"], context?.previousChats);
+            queryClient.setQueryData(["chats", activeThreadKey], context?.previousChats);
             setStreamingReply(null);
             setSearchProgress(null);
             toast.error("Transmission failed. Please retry.");
         },
         onSuccess: (result, variables, context) => {
             const aiMessage: Message = {
-                // Bug #8 fix: use crypto.randomUUID() to prevent Date.now() key collisions
-                id: `temp-ai-${crypto.randomUUID()}`,
-                message: result.reply,
+                id: `temp-ai-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                message: result.reply || "",
                 role: "assistant",
                 citations: result.citations,
                 artifact: result.artifact,
                 createdAt: new Date().toISOString(),
             };
             
-            queryClient.setQueryData<Message[]>(["chats"], (old) => {
+            queryClient.setQueryData<Message[]>(["chats", activeThreadKey], (old) => {
                 const existing = old || [];
                 
                 // Remove the optimistic user message (tempId) and any exact AI message match
@@ -425,15 +437,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 
                 const finalArray = [...filtered];
                 
-                // If a background fetch resolved during the stream, the real database 
-                // user message will already exist in the cache. We must prevent duplicating it.
                 const realUserMessageExists = filtered.some(msg => 
                     msg.role === "user" && 
                     msg.message === variables.text && 
                     !String(msg.id).startsWith("temp-")
                 );
                 
-                // Only re-add the temporary user message if the real DB message hasn't arrived yet
                 if (!realUserMessageExists) {
                     finalArray.push({
                         id: context.tempId, 
@@ -454,8 +463,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             setStreamingReply(null);
             setSearchProgress(null);
             
-            // Background fetch to sync real DB IDs
-            queryClient.invalidateQueries({ queryKey: ["chats"] });
+            // Delay invalidation so the optimistic AI reply renders first before
+            // the background refetch overwrites the cache.
+            setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ["chats", activeThreadKey] });
+                // Refresh sidebar conversation list so new threads appear immediately
+                queryClient.invalidateQueries({ queryKey: ["conversations"] });
+            }, 1500);
         },
     });
 
@@ -486,6 +500,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     };
 
     const handleSendMessage = async (text: string, attachedFiles?: File[], webSearch?: boolean, engine?: string) => {
+        let currentThreadId = searchParams.get("threadId");
+        if (!currentThreadId || currentThreadId === "default") {
+            currentThreadId = typeof crypto !== 'undefined' && crypto.randomUUID 
+                ? crypto.randomUUID() 
+                : `chat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            
+            // Seed the new thread's cache bucket with whatever is in the current bucket
+            // (e.g. the welcome message) so messages don't flash away during navigation.
+            // Use activeThreadKey to read from the correct pre-navigate bucket.
+            const oldMessages = queryClient.getQueryData<Message[]>(["chats", activeThreadKey]) || [];
+            queryClient.setQueryData<Message[]>(["chats", currentThreadId], oldMessages);
+            
+            navigate.replace(`/chat?threadId=${currentThreadId}`);
+        }
+
         const uploadedFiles = attachedFiles ? await handleFileUploads(attachedFiles) : [];
 
         // Fix 3: Improved Resume Detection Logic
@@ -496,29 +525,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             });
 
             if (resumeFile) {
-                toast.promise(
-                    (async () => {
+                // BUG-15 fix: use a standalone async call instead of toast.promise so
+                // we can show different toasts for success vs "no changes" vs error
+                // without the success toast always firing when the promise resolves.
+                (async () => {
+                    const toastId = toast.loading("Parsing resume to update profile...");
+                    try {
                         const res = await autoFillProfileFromResume(resumeFile.filePath, resumeFile.originalName);
                         if (res.success && res.diff && (res.diff.updatedFields?.length > 0 || res.diff.addedFields?.length > 0 || res.diff.conflicts?.length > 0)) {
                             const aiMessage: Message = {
-                                // Bug #8 fix: crypto.randomUUID() avoids Date.now() collision with AI reply temp ID
-                                id: crypto.randomUUID(),
+                                // Bug #8 fix: Math.random() avoids Date.now() collision with AI reply temp ID
+                                id: `temp-resume-${Date.now()}-${Math.random().toString(36).substring(7)}`,
                                 message: `[RESUME_SYNC_CARD]${JSON.stringify({ diff: res.diff, snapshot: res.snapshot })}[/RESUME_SYNC_CARD]`,
                                 role: "assistant",
                                 createdAt: new Date().toISOString(),
                             };
-                            queryClient.setQueryData<Message[]>(["chats"], (old) => [...(old || []), aiMessage]);
+                            queryClient.setQueryData<Message[]>(["chats", currentThreadId!], (old) => [...(old || []), aiMessage]);
+                            toast.success("Resume parsed! Review differences to update your profile.", { id: toastId });
                         } else {
-                            toast.info("No profile updates detected in the uploaded resume.");
+                            toast.info("No profile updates detected in the uploaded resume.", { id: toastId });
                         }
-                        return res;
-                    })(),
-                    {
-                        loading: "Parsing resume to update profile...",
-                        success: "Resume parsed successfully! Review differences to update your profile.",
-                        error: "Could not auto-fill profile."
+                    } catch {
+                        toast.error("Could not auto-fill profile.", { id: toastId });
                     }
-                );
+                })();
             }
         }
 
@@ -531,7 +561,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             finalText = `[Context: ${embeddedContext}]\n${finalText}`;
         }
         
-        chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine, isPersonalized });
+        chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine, isPersonalized, threadId: currentThreadId ?? undefined });
     };
 
     const isProcessing = chatMutation.isPending || isUploading;
@@ -591,6 +621,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     </div>
                 </header>
 
+
+
                 {/* Content Area */}
                 <main ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-3 md:px-6 pt-4 md:pt-6 pb-24 md:pb-20">
                     <div className="max-w-5xl mx-auto w-full">
@@ -643,80 +675,60 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 </p>
 
                                 {/* Action Cards Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-2">
-                                    {/* Card 1 */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 w-full max-w-4xl px-4 md:px-2">
+                                    {/* Card 1: Doubt Solving */}
+                                    <div 
+                                        onClick={() => handleSendMessage("I have a doubt, can you help me solve it?")}
+                                        className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-gray-100 flex flex-col items-start justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                    >
+                                        <div className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-3 rounded-full bg-purple-500 flex items-center justify-center text-white shrink-0">
+                                            <Lightbulb size={16} className="md:w-[18px] md:h-[18px]" />
+                                        </div>
+                                        <div className="flex-1 text-left w-full">
+                                            <h3 className="font-bold text-gray-900 text-[13px] md:text-[14px] leading-tight mb-1">Doubt Solving</h3>
+                                            <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Get help with your questions</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 2: Exam Preparation */}
+                                    <div 
+                                        onClick={() => handleSendMessage("Help me prepare for my upcoming exams")}
+                                        className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-gray-100 flex flex-col items-start justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                    >
+                                        <div className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-3 rounded-full bg-[#EF4444] flex items-center justify-center text-white shrink-0">
+                                            <FileText size={16} className="md:w-[18px] md:h-[18px]" />
+                                        </div>
+                                        <div className="flex-1 text-left w-full">
+                                            <h3 className="font-bold text-gray-900 text-[13px] md:text-[14px] leading-tight mb-1">Exam Prep</h3>
+                                            <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Get structured study plans</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 3: Resume Building */}
+                                    <div 
+                                        onClick={() => handleSendMessage("Can you help me build and review my resume?")}
+                                        className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-gray-100 flex flex-col items-start justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                    >
+                                        <div className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-3 rounded-full bg-[#3B82F6] flex items-center justify-center text-white shrink-0">
+                                            <Code size={16} className="md:w-[18px] md:h-[18px]" />
+                                        </div>
+                                        <div className="flex-1 text-left w-full">
+                                            <h3 className="font-bold text-gray-900 text-[13px] md:text-[14px] leading-tight mb-1">Resume Build</h3>
+                                            <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Analyze & improve resume</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 4: Career Guidance */}
                                     <div 
                                         onClick={() => handleSendMessage("I need career guidance and a roadmap")}
-                                        className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
+                                        className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-gray-100 flex flex-col items-start justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white mb-3">
-                                            <Compass size={18} />
+                                        <div className="w-8 h-8 md:w-10 md:h-10 mb-2 md:mb-3 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
+                                            <Compass size={16} className="md:w-[18px] md:h-[18px]" />
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-1.5">Career Guidance</h3>
-                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Get personalized career advice and roadmap</p>
-                                        </div>
-                                        <div className="flex justify-end mt-2">
-                                            <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-50 transition-colors">
-                                                <ArrowRight size={14} />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Card 2 */}
-                                    <div 
-                                        onClick={() => handleSendMessage("Can you review my resume?")}
-                                        className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-[#3B82F6] flex items-center justify-center text-white mb-3">
-                                            <FileText size={18} />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-1.5">Resume Review</h3>
-                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Analyze your resume and improve it</p>
-                                        </div>
-                                        <div className="flex justify-end mt-2">
-                                            <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center text-[#3B82F6] group-hover:bg-blue-50 transition-colors">
-                                                <ArrowRight size={14} />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Card 3 */}
-                                    <div 
-                                        onClick={() => handleSendMessage("I need help with coding")}
-                                        className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-[#EF4444] flex items-center justify-center text-white mb-3">
-                                            <Code size={18} />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-1.5">Coding Help</h3>
-                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Debug, explain or generate code</p>
-                                        </div>
-                                        <div className="flex justify-end mt-2">
-                                            <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center text-[#EF4444] group-hover:bg-red-50 transition-colors">
-                                                <ArrowRight size={14} />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Card 4 */}
-                                    <div 
-                                        onClick={() => handleSendMessage("Help me prepare for an interview")}
-                                        className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between aspect-square cursor-pointer hover:shadow-md transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-[#F59E0B] flex items-center justify-center text-white mb-3">
-                                            <Lightbulb size={18} />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-1.5">Interview Prep</h3>
-                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Practice mock interviews and get better</p>
-                                        </div>
-                                        <div className="flex justify-end mt-2">
-                                            <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center text-[#F59E0B] group-hover:bg-amber-50 transition-colors">
-                                                <ArrowRight size={14} />
-                                            </div>
+                                        <div className="flex-1 text-left w-full">
+                                            <h3 className="font-bold text-gray-900 text-[13px] md:text-[14px] leading-tight mb-1">Career Guide</h3>
+                                            <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 leading-snug font-medium">Map out your career path</p>
                                         </div>
                                     </div>
                                 </div>
@@ -732,9 +744,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 onEditMessage={async (messageId: string | number, newText: string) => {
                                     try {
                                         const numId = Number(messageId);
-                                        if (isNaN(numId)) return; // Don't allow editing temp messages
+                                        // BUG-13 fix: temp-ID messages ("temp-user-*", "temp-ai-*")
+                                        // are not yet persisted — show a clear toast instead of
+                                        // silently swallowing the action.
+                                        if (isNaN(numId)) {
+                                            toast.error("Message is still being saved. Please wait a moment and try again.");
+                                            return;
+                                        }
                                         
-                                        queryClient.setQueryData<Message[]>(["chats"], (old) => {
+                                        queryClient.setQueryData<Message[]>(["chats", searchParams.get("threadId") ?? "default"], (old) => {
                                             const existing = old || [];
                                             const idx = existing.findIndex(m => String(m.id) === String(messageId));
                                             if (idx === -1) return existing;
@@ -788,9 +806,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                 <ProfileSyncModal
                     isOpen={isSyncModalOpen}
-                    onClose={(updated) => {
+                    onClose={async (updated) => {
                         setIsSyncModalOpen(false);
                         if (updated) {
+                            // BUG-05 fix: syncProfile() refreshes the AuthContext user state
+                            // (including UserProfile) so the profile header/banner reflects
+                            // the newly approved resume data without a full page reload.
+                            await syncProfile();
                             queryClient.invalidateQueries({ queryKey: ["profile"] });
                         }
                     }}

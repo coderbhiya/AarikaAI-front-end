@@ -27,3 +27,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Scratch scripts
+update_simulator.js
