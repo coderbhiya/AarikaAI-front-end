@@ -422,7 +422,6 @@ const Sidebar = () => {
             {features.jobRecommendationsEnabled && (
               <SidebarItem to="/jobs" icon={<Briefcase size={18} />} label="Mission Hunt" active={pathname === "/jobs"} />
             )}
-            <SidebarItem to="/notifications" icon={<Bell size={18} />} label="Notification Hub" active={pathname === "/notifications"} />
             <SidebarItem to="/subscription" icon={<Sparkles size={18} />} label="Upgrade Plan" active={pathname === "/subscription"} badge="Pro" />
             {(user?.role === "admin" || user?.role === "super_admin") && (
               <SidebarItem to="/admin/marketing" icon={<Megaphone size={18} />} label="Marketing" active={pathname === "/admin/marketing"} />

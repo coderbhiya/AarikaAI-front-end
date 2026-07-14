@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChats, uploadFile, getWelcomeMessage, truncateChat } from "@/services/chatService";
 import { autoFillProfileFromResume } from "@/services/profileService";
 import { detectResume } from "@/utils/resumeDetector";
+import { NotificationBell } from "./notifications/NotificationBell";
 import MessageList from "./chat/MessageList";
 import BrainLogo from "./BrainLogo";
 import { Message, FileAttachment } from "@/types";
@@ -589,9 +590,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                     <div className="flex items-center gap-2">
                         {/* Personalized Mode Toggle */}
-                        <div className="flex items-center gap-2 mr-2 bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-xl shadow-sm select-none">
-                            <span className="text-[10px] font-bold text-gray-500 hidden sm:inline uppercase tracking-wider">
-                                {isPersonalized ? "Personalized Mode" : "Generic Mode"}
+                        <div className="flex items-center gap-1.5 sm:gap-2 mr-1 sm:mr-2 bg-gray-50 border border-gray-100 px-2 sm:px-2.5 py-1 rounded-xl shadow-sm select-none">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                {isPersonalized ? (
+                                    <>
+                                        <Sparkles size={10} className="text-primary sm:hidden" />
+                                        <span>Personalized<span className="hidden sm:inline"> Mode</span></span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Globe size={10} className="text-gray-400 sm:hidden" />
+                                        <span>Generic<span className="hidden sm:inline"> Mode</span></span>
+                                    </>
+                                )}
                             </span>
                             <button
                                 type="button"
@@ -615,8 +626,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 <span className="text-[11px] font-medium text-gray-400">System Live</span>
                             </div>
                         )}
-                        <button className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all overflow-hidden shadow-sm" onClick={() => navigate.push("/profile")}>
-                            <User size={16} />
+                        <NotificationBell />
+                        <button className="hidden sm:flex w-9 h-9 rounded-full bg-primary/10 border border-primary/20 items-center justify-center text-primary hover:bg-primary hover:text-white transition-all overflow-hidden shadow-sm" onClick={() => navigate.push("/profile")}>
+                            <User size={18} />
                         </button>
                     </div>
                 </header>
