@@ -30,6 +30,7 @@ import BrainLogo from "./BrainLogo";
 import { getEnabledFeatures } from "@/services/settingsService";
 import { getConversations, searchConversations, updateConversation, Conversation } from "@/services/conversationService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -422,7 +423,6 @@ const Sidebar = () => {
             {features.jobRecommendationsEnabled && (
               <SidebarItem to="/jobs" icon={<Briefcase size={18} />} label="Mission Hunt" active={pathname === "/jobs"} />
             )}
-            <SidebarItem to="/subscription" icon={<Sparkles size={18} />} label="Upgrade Plan" active={pathname === "/subscription"} badge="Pro" />
             {(user?.role === "admin" || user?.role === "super_admin") && (
               <SidebarItem to="/admin/marketing" icon={<Megaphone size={18} />} label="Marketing" active={pathname === "/admin/marketing"} />
             )}
@@ -538,31 +538,53 @@ const Sidebar = () => {
 
         {/* ── Footer: User + Logout ── */}
         <div className={`p-3 border-t border-gray-50 mt-auto flex-shrink-0 ${(!isMobile && !showSidebar) ? "px-2" : ""}`}>
-          <div
-            className={`flex items-center ${(!isMobile && !showSidebar) ? "justify-center p-2" : "gap-3 p-3"} rounded-xl bg-gray-50 border border-gray-100 mb-2 transition-all hover:bg-white hover:border-primary/20 cursor-pointer group`}
-            onClick={() => navigate.push("/profile")}
-          >
-            <div className="w-8 h-8 flex-shrink-0 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm overflow-hidden text-primary font-bold text-sm">
-              {user?.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : user?.displayName?.[0] || "U"}
-            </div>
-            {((!isMobile && showSidebar) || isMobile) && (
-              <>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold text-[#202124] truncate group-hover:text-primary transition-colors">{user?.displayName || "User"}</p>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-tighter truncate">Premium Access</p>
+          <Popover>
+            <PopoverTrigger asChild>
+              <div className={`flex items-center ${(!isMobile && !showSidebar) ? "justify-center p-2" : "gap-3 p-3"} rounded-xl bg-gray-50 border border-gray-100 transition-all hover:bg-white hover:border-primary/20 cursor-pointer group`}>
+                <div className="w-8 h-8 flex-shrink-0 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm overflow-hidden text-primary font-bold text-sm">
+                  {user?.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : user?.displayName?.[0] || "U"}
                 </div>
-                <Settings size={14} className="text-gray-400 group-hover:rotate-45 transition-transform flex-shrink-0" />
-              </>
-            )}
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className={`flex items-center ${(!isMobile && !showSidebar) ? "justify-center" : "gap-3 px-4"} w-full py-2.5 rounded-xl text-red-500 hover:bg-red-50 transition-all font-medium text-[13px]`}
-          >
-            <LogOut size={16} className="flex-shrink-0" />
-            {((!isMobile && showSidebar) || isMobile) && <span className="whitespace-nowrap">Logout System</span>}
-          </button>
+                {((!isMobile && showSidebar) || isMobile) && (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-[#202124] truncate group-hover:text-primary transition-colors">{user?.displayName || "User"}</p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-tighter truncate">Premium Access</p>
+                    </div>
+                    <MoreHorizontal size={14} className="text-gray-400 group-hover:text-primary transition-colors flex-shrink-0" />
+                  </>
+                )}
+              </div>
+            </PopoverTrigger>
+            <PopoverContent side="top" align={(!isMobile && !showSidebar) ? "center" : "start"} className="w-56 p-2 rounded-xl shadow-lg border-gray-100 mb-2">
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={() => { navigate.push("/profile"); if(isMobile) toggleSidebar(); }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-primary rounded-lg transition-colors text-left"
+                >
+                  <Settings size={14} className="text-gray-400" />
+                  Settings & Profile
+                </button>
+                <button
+                  onClick={() => { navigate.push("/subscription"); if(isMobile) toggleSidebar(); }}
+                  className="flex items-center justify-between w-full px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors text-left group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles size={14} className="text-amber-500 group-hover:animate-pulse" />
+                    Upgrade Plan
+                  </div>
+                  <span className="bg-amber-100 text-amber-600 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Pro</span>
+                </button>
+                <div className="h-px bg-gray-100 my-1 mx-1" />
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
+                >
+                  <LogOut size={14} />
+                  Log out
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </div>
