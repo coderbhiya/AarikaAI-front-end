@@ -30,7 +30,8 @@ import {
   Briefcase,
   Server,
   BookOpen,
-  MessageSquare
+  MessageSquare,
+  Megaphone
 } from "lucide-react";
 import {
   adminLogin,
@@ -51,6 +52,7 @@ import {
   updateSystemSettings
 } from "@/services/adminService";
 import ArchitectureGuide from "./ArchitectureGuide";
+import MarketingCenter from "@/app/admin/marketing/page";
 
 export default function AdminPanel() {
   // Authentication State
@@ -67,7 +69,7 @@ export default function AdminPanel() {
   const [department, setDepartment] = useState("");
 
   // Dashboard & Navigation State
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings" | "marketing">("dashboard");
   const [stats, setStats] = useState<any>(null);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
 
@@ -628,6 +630,18 @@ export default function AdminPanel() {
               <Settings size={16} />
               <span>System Settings</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab("marketing")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === "marketing"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+              }`}
+            >
+              <Megaphone size={16} />
+              <span>Marketing Center</span>
+            </button>
           </nav>
         </div>
 
@@ -670,6 +684,8 @@ export default function AdminPanel() {
                 ? "Architecture Guide"
                 : activeTab === "settings"
                 ? "System Settings"
+                : activeTab === "marketing"
+                ? "Marketing Center"
                 : "Job Listings"}
             </span>
           </div>
@@ -1679,6 +1695,12 @@ export default function AdminPanel() {
                   </div>
                 </form>
               )}
+            </div>
+          )}
+          {/* TAB 7: MARKETING CENTER */}
+          {activeTab === "marketing" && (
+            <div className="animate-in fade-in duration-300">
+              <MarketingCenter />
             </div>
           )}
         </div>

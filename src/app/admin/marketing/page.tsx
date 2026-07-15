@@ -8,20 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { WhatsappMarketingTab } from "./WhatsappMarketingTab";
 
 export default function MarketingPage() {
-  const { user } = useAuth();
-  
   // Email Form State
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [emailAudience, setEmailAudience] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-
-  // WhatsApp Form State
-  const [waMessage, setWaMessage] = useState("");
-  const [waAudience, setWaAudience] = useState("");
-  const [isSendingWa, setIsSendingWa] = useState(false);
 
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +26,7 @@ export default function MarketingPage() {
     
     setIsSendingEmail(true);
     try {
-      const token = localStorage.getItem("authToken");
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("authToken");
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const res = await fetch(`${baseUrl}/api/marketing/email`, {
         method: "POST",
@@ -62,48 +56,6 @@ export default function MarketingPage() {
       setIsSendingEmail(false);
     }
   };
-
-  const handleSendWhatsapp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!waMessage || !waAudience) {
-      toast.error("Please fill all WhatsApp fields");
-      return;
-    }
-
-    setIsSendingWa(true);
-    try {
-      const token = localStorage.getItem("authToken");
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const res = await fetch(`${baseUrl}/api/marketing/whatsapp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: waMessage,
-          audience: waAudience.split(",").map((s) => s.trim()),
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success("WhatsApp campaign sent successfully!");
-        setWaMessage("");
-        setWaAudience("");
-      } else {
-        toast.error(data.message || "Failed to send WhatsApp campaign");
-      }
-    } catch (error) {
-      toast.error("An error occurred while sending WhatsApp messages");
-    } finally {
-      setIsSendingWa(false);
-    }
-  };
-
-  if (user?.role !== "admin") {
-    return <div className="p-8">Access Denied. Admins only.</div>;
-  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto w-full">
@@ -157,33 +109,8 @@ export default function MarketingPage() {
           </form>
         </TabsContent>
 
-        <TabsContent value="whatsapp" className="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-          <form onSubmit={handleSendWhatsapp} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="waAudience">Target Phone Numbers (with country code, comma separated)</Label>
-              <Input
-                id="waAudience"
-                placeholder="e.g. +919876543210, +1234567890"
-                value={waAudience}
-                onChange={(e) => setWaAudience(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="waMessage">WhatsApp Message</Label>
-              <Textarea
-                id="waMessage"
-                placeholder="Type your WhatsApp message..."
-                className="min-h-[200px]"
-                value={waMessage}
-                onChange={(e) => setWaMessage(e.target.value)}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isSendingWa}>
-              {isSendingWa ? "Sending Campaign..." : "Send WhatsApp Campaign"}
-            </Button>
-          </form>
+        <TabsContent value="whatsapp" className="focus:outline-none">
+          <WhatsappMarketingTab />
         </TabsContent>
       </Tabs>
     </div>
