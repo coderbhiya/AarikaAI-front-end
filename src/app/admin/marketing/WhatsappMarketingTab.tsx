@@ -100,15 +100,16 @@ export function WhatsappMarketingTab() {
     return () => clearInterval(campaignInterval);
   }, []);
 
-  const isConnected = waStatus === "authenticated" || waStatus === "ready";
+  const isConnected = waStatus === "ready";
+  const isSyncing = waStatus === "authenticated";
 
   useEffect(() => {
-    if (isConnected) return;
+    if (waStatus === "ready") return; // Stop polling only if ready
     const interval = setInterval(() => {
       fetchWaStatus();
     }, 5000);
     return () => clearInterval(interval);
-  }, [isConnected]);
+  }, [waStatus]);
 
   const handleDownloadTemplate = () => {
     const csvContent = "data:text/csv;charset=utf-8,name,phone\nJohn Doe,+919876543210\nJane Doe,+1234567890";
@@ -206,23 +207,30 @@ export function WhatsappMarketingTab() {
             WhatsApp Device Connection
           </h3>
           <p className="text-sm text-slate-600">
-            {waStatus === "authenticated" || waStatus === "ready" 
+            {waStatus === "ready" 
               ? "Your WhatsApp account is successfully linked. You can now send campaigns." 
+              : waStatus === "authenticated"
+              ? "Your WhatsApp account is authenticated. Please wait while chats are syncing..."
               : "Link your WhatsApp account to send campaigns directly without Meta approvals."}
           </p>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold">
             Status: 
-            <span className={waStatus === "authenticated" || waStatus === "ready" ? "text-emerald-600" : "text-amber-600 uppercase"}>
+            <span className={waStatus === "ready" ? "text-emerald-600" : waStatus === "authenticated" ? "text-amber-600" : "text-slate-600 uppercase"}>
               {waStatus}
             </span>
           </div>
         </div>
         
         <div className="shrink-0 bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
-          {waStatus === "authenticated" || waStatus === "ready" ? (
+          {waStatus === "ready" ? (
             <div className="w-40 h-40 flex flex-col items-center justify-center bg-emerald-50 rounded-md border border-emerald-100 text-emerald-600">
               <CheckCircle2 size={48} className="mb-2" />
               <span className="text-sm font-bold">Connected</span>
+            </div>
+          ) : waStatus === "authenticated" ? (
+            <div className="w-40 h-40 flex flex-col items-center justify-center bg-amber-50 rounded-md border border-amber-100 text-amber-600 p-2 text-center">
+              <Loader2 size={32} className="animate-spin mb-2" />
+              <span className="text-xs font-bold">Syncing Chats...</span>
             </div>
           ) : qrCode ? (
             <Image src={qrCode} width={160} height={160} alt="WhatsApp QR Code" className="w-40 h-40 object-contain" />
@@ -344,13 +352,11 @@ export function WhatsappMarketingTab() {
             </div>
           </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-emerald-600 hover:bg-emerald-700" 
-              disabled={isSubmitting || (waStatus !== "authenticated" && waStatus !== "ready")}
-            >
+            <Button type="submit" disabled={isSubmitting || waStatus !== "ready"} className="w-full h-12 text-base font-semibold shadow-sm group">
               {isSubmitting ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Campaign...</>
+                <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Processing...</span>
+              ) : waStatus !== "ready" ? (
+                <span className="flex items-center gap-2">WhatsApp Not Ready</span>
               ) : (
                 <><Send className="mr-2 h-4 w-4" /> Start Campaign</>
               )}
