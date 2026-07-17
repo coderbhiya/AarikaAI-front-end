@@ -874,8 +874,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 <button
                                     onClick={() => setWorkspaceTab("preview")}
                                     className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${workspaceTab === "preview"
-                                            ? "bg-white text-gray-900 shadow-sm"
-                                            : "text-gray-500 hover:text-gray-800"
+                                        ? "bg-white text-gray-900 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-800"
                                         }`}
                                 >
                                     Preview
@@ -883,8 +883,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 <button
                                     onClick={() => setWorkspaceTab("code")}
                                     className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${workspaceTab === "code"
-                                            ? "bg-white text-gray-900 shadow-sm"
-                                            : "text-gray-500 hover:text-gray-800"
+                                        ? "bg-white text-gray-900 shadow-sm"
+                                        : "text-gray-500 hover:text-gray-800"
                                         }`}
                                 >
                                     Code

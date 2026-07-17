@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Message } from "@/types";
-import { Copy, Share, Download, FileText, ImageIcon, File as FileIcon, Globe, ExternalLink, Pencil, Check, X as XIcon } from "lucide-react";
+import { Copy, Share, Download, FileText, ImageIcon, File as FileIcon, Globe, ExternalLink, Pencil, Check, X as XIcon, Sparkles } from "lucide-react";
 import Markdown from "@/components/common/Markdown";
 import { toast } from "sonner";
 import BrainLogo from "../BrainLogo";
@@ -76,7 +76,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
 
   let rawText = message.message ?? "";
   let thoughtProcess: string | null = null;
-  
+
   // Parse <thinking> tags (both complete and streaming/unterminated)
   const thinkingTagRegex = /<thinking>([\s\S]*?)<\/thinking>/i;
   const thinkingMatch = rawText.match(thinkingTagRegex);
@@ -167,7 +167,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         try {
           let rawData = match[1].trim();
           rawData = rawData.replace(/```json|```/g, "").trim();
-          
+
           const firstBrace = rawData.indexOf("{");
           const lastBrace = rawData.lastIndexOf("}");
           if (firstBrace !== -1 && lastBrace !== -1) {
@@ -184,7 +184,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
               .replace(/,\s*([}\]])/g, "$1")         // trailing commas
               .replace(/(["'])\s*\n/g, "$1,\n")       // missing commas between lines
               .replace(/\\n/g, " ");                  // literal \n inside strings
-            
+
             // If string is unterminated, try closing it
             const openQuotes = (repaired.match(/"/g) || []).length;
             if (openQuotes % 2 !== 0) {
@@ -268,11 +268,35 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       if (parsedCourses.length > 0) {
         const cleanText = text.replace(courseCardRegex, "").trim();
         return (
-          <div className="flex flex-col gap-2 w-full max-w-2xl">
+          <div className="flex flex-col w-full max-w-6xl xl:max-w-7xl mt-2">
             {cleanText && <Markdown text={cleanText} />}
-            {parsedCourses.map((course, idx) => (
-              <CourseCard key={idx} {...course} />
-            ))}
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 mt-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-purple-50 rounded-lg shrink-0">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Here's what I found for you</h2>
+                  <p className="text-[13px] text-gray-500">Top resources to help you learn based on your request</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg shadow-sm text-sm text-gray-600">
+                  <span className="font-medium">Language:</span> {parsedCourses[0]?.language || 'Hindi'}
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg shadow-sm text-sm text-gray-600">
+                  <span className="font-medium">Sort by:</span> Relevance
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 w-full">
+              {parsedCourses.map((course, idx) => (
+                <CourseCard key={idx} {...course} />
+              ))}
+            </div>
           </div>
         );
       }
@@ -356,16 +380,16 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       try {
         let rawData = collegeMatch[2].trim();
         rawData = rawData.replace(/```json|```/g, "").trim();
-        
+
         // Isolate only the JSON part: from first [ to last ]
         const firstBracket = rawData.indexOf("[");
         const lastBracket = rawData.lastIndexOf("]");
         if (firstBracket !== -1 && lastBracket !== -1) {
           rawData = rawData.substring(firstBracket, lastBracket + 1);
         } else if (rawData.startsWith("{")) {
-            // If it's a single object or list of objects without brackets, find last }
-            const lastBrace = rawData.lastIndexOf("}");
-            if (lastBrace !== -1) rawData = rawData.substring(0, lastBrace + 1);
+          // If it's a single object or list of objects without brackets, find last }
+          const lastBrace = rawData.lastIndexOf("}");
+          if (lastBrace !== -1) rawData = rawData.substring(0, lastBrace + 1);
         }
 
         let colleges;
@@ -411,26 +435,26 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         {/* Avatar Section for AI */}
         {!isUser && (
           <div className="flex items-center gap-2 mb-1 px-1 sm:px-0">
-             <div className="w-6 h-6 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm shrink-0">
-               <BrainLogo size={14} />
-             </div>
-             <span className="font-semibold text-[14px] text-gray-800">AarikaAI</span>
+            <div className="w-6 h-6 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm shrink-0">
+              <BrainLogo size={14} />
+            </div>
+            <span className="font-semibold text-[14px] text-gray-800">AarikaAI</span>
           </div>
         )}
 
         {/* Content Section */}
         <div className={`w-full flex flex-col min-w-0 ${isUser && !isEditing ? "items-end" : "items-start"}`}>
           {!isUser && thoughtProcess && (
-             <details className="mb-3 max-w-2xl w-full group/think border border-slate-200 rounded-xl bg-slate-50/80 overflow-hidden shadow-sm">
-               <summary className="px-4 py-2.5 text-xs font-bold text-slate-600 cursor-pointer select-none flex items-center gap-2 hover:bg-slate-100 transition-colors list-none">
-                 <BrainLogo size={14} className="opacity-70 grayscale" />
-                 Thought Process
-                 <span className="ml-auto text-[10px] text-slate-400 group-open/think:rotate-180 transition-transform duration-300">▼</span>
-               </summary>
-               <div className="p-4 pt-3 text-[13px] text-slate-600 font-medium leading-relaxed border-t border-slate-100 bg-white">
-                 <Markdown text={thoughtProcess} />
-               </div>
-             </details>
+            <details className="mb-3 max-w-2xl w-full group/think border border-slate-200 rounded-xl bg-slate-50/80 overflow-hidden shadow-sm">
+              <summary className="px-4 py-2.5 text-xs font-bold text-slate-600 cursor-pointer select-none flex items-center gap-2 hover:bg-slate-100 transition-colors list-none">
+                <BrainLogo size={14} className="opacity-70 grayscale" />
+                Thought Process
+                <span className="ml-auto text-[10px] text-slate-400 group-open/think:rotate-180 transition-transform duration-300">▼</span>
+              </summary>
+              <div className="p-4 pt-3 text-[13px] text-slate-600 font-medium leading-relaxed border-t border-slate-100 bg-white">
+                <Markdown text={thoughtProcess} />
+              </div>
+            </details>
           )}
 
           <div className={`${isUser && !isEditing ? "message-bubble-user" : (!isUser ? "message-bubble-ai w-full px-1 sm:px-0" : "w-full")}`}>
@@ -503,18 +527,18 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
           {/* Actions */}
           {isUser ? (
             <div className="flex items-center gap-2 mt-2 px-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
-               {!isEditing && message.id !== "streaming" && (
-                  <button
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
-                    onClick={() => {
-                      setEditText(message.message);
-                      setIsEditing(true);
-                    }}
-                    title="Edit message"
-                  >
-                    <Pencil size={14} />
-                  </button>
-               )}
+              {!isEditing && message.id !== "streaming" && (
+                <button
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                  onClick={() => {
+                    setEditText(message.message);
+                    setIsEditing(true);
+                  }}
+                  title="Edit message"
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-3 mt-4 px-1 opacity-0 group-hover:opacity-100 transition-all duration-300">

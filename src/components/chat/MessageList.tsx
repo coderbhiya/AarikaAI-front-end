@@ -10,7 +10,7 @@ interface MessageListProps {
 
 const MessageList: React.FC<MessageListProps> = ({ messages, onSendMessage, onEditMessage }) => {
   return (
-    <div className="space-y-6 w-full max-w-4xl mx-auto pb-4">
+    <div className="space-y-6 w-full max-w-5xl mx-auto pb-4 px-2 sm:px-4">
       {messages.map((message) => (
         <MessageItem key={message.id} message={message} onSendMessage={onSendMessage} onEditMessage={onEditMessage} />
       ))}

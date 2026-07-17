@@ -129,7 +129,7 @@
   }
 
   .message-bubble-ai {
-    @apply bg-transparent text-[#202124] p-3 md:p-4 max-w-[100%] md:max-w-[90%] mr-auto text-[13px] md:text-[15px] break-words;
+    @apply bg-transparent text-[#202124] p-3 md:p-4 max-w-[100%] md:max-w-full mr-auto text-[13px] md:text-[15px] break-words;
     transition: var(--transition-smooth);
   }
 
