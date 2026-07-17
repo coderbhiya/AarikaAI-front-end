@@ -32,9 +32,11 @@ const WorkspaceChatArea: React.FC<WorkspaceChatAreaProps> = ({ embeddedContext, 
   const threadId = `course_${courseId}`;
 
   // Local query parameters listener (MCQ quiz or shortcuts)
+  const hasHandledMsg = useRef(false);
   useEffect(() => {
     const msg = searchParams.get("msg");
-    if (msg) {
+    if (msg && !hasHandledMsg.current) {
+      hasHandledMsg.current = true;
       handleSendMessage(msg);
       window.history.replaceState(null, "", window.location.pathname);
     }

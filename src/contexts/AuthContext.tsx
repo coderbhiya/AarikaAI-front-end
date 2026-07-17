@@ -10,6 +10,7 @@ import axiosInstance from "@/lib/axios";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  profileLoaded: boolean;
   login: (user: any, token?: string) => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
@@ -36,6 +37,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const [loading, setLoading] = useState(true);
+  // profileLoaded becomes true after the first syncProfile() finishes (success or fail).
+  // ProtectedRoute waits for this before enforcing the phone-verification redirect,
+  // so we don't bounce to /phone-verification while the backend call is still in-flight.
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -70,19 +75,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(transformedUser);
         localStorage.setItem("user", JSON.stringify(transformedUser));
 
-        // BUG-11 fix: await syncProfile so that the full backend profile (including
-        // UserProfile, credits, etc.) is loaded before setLoading(false) runs and
-        // protected routes are rendered.
-        await syncProfile();
+        // syncProfile runs in background — don't await so loading=false fires immediately
+        // and ProtectedRoute doesn't spin/redirect in a loop while the API call is in-flight
+        syncProfile().catch(() => {});
       } else {
         const authToken = localStorage.getItem("authToken");
         if (authToken) {
-          // Custom auth user (not firebase). Sync profile to verify token validity.
-          await syncProfile();
+          // Custom auth user (not firebase). Sync profile in background.
+          syncProfile().catch(() => {});
         } else {
           setUser(null);
           localStorage.removeItem("user");
           localStorage.removeItem("authToken");
+          document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         }
       }
       setLoading(false);
@@ -94,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const syncProfile = async () => {
     try {
       const token = localStorage.getItem("authToken");
-      if (!token) return;
+      if (!token) { setProfileLoaded(true); return; }
 
       const response = await axiosInstance.get('/profile');
       if (response.data.success && response.data.user) {
@@ -117,6 +122,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (err: any) {
       // Use console.warn instead of console.error to prevent Next.js from throwing a full-screen error overlay in dev mode when the backend is simply down.
       console.warn("Profile synchronization failed (Backend might be unreachable):", err.message);
+      
+      // If token is rejected, or we don't have a cached user (which causes an infinite loop between middleware and ProtectedRoute)
+      if (err.response?.status === 401 || err.response?.status === 403 || !localStorage.getItem("user")) {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem("user");
+        localStorage.removeItem("authToken");
+        document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      }
+    } finally {
+      setProfileLoaded(true);
     }
   };
 
@@ -127,7 +143,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(authToken);
       localStorage.setItem("authToken", authToken);
       document.cookie = `authToken=${authToken}; path=/; max-age=604800`; // 7 days
-      syncProfile();
+      // syncProfile runs in the background — don't await it so navigation is instant
+      syncProfile().catch(() => {});
     }
   };
 
@@ -171,6 +188,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value = {
     user,
     loading,
+    profileLoaded,
     login,
     logout,
     isAuthenticated: !!user && !!token,

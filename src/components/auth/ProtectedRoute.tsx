@@ -12,7 +12,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAuth = true }) => {
-  const { isAuthenticated, loading, user, showSidebar } = useAuth();
+  const { isAuthenticated, loading, profileLoaded, user, showSidebar } = useAuth();
   const isMobile = useIsMobile();
   const pathname = usePathname();
 
@@ -29,15 +29,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <Navigate to="/" replace />;
   }
 
-  // if user is authenticated and user mobile number is not complete then redirect to profile page
-  /*
-  if (isAuthenticated && !user?.phone && pathname !== "/phone-verification") {
-    if (pathname === "/") {
-      return null;
-    }
-    return <Navigate to="/phone-verification" replace />;
-  }
-  */
+  // DISABLED: Phone verification redirect — SMS credits nahi hain abhi
+  // Jab credits ho jayein tab uncomment karna
+  // if (profileLoaded && isAuthenticated && !user?.phone && pathname !== "/phone-verification" && pathname !== "/otp-verification") {
+  //   if (pathname === "/") {
+  //     return null;
+  //   }
+  //   return <Navigate to="/phone-verification" replace />;
+  // }
 
   // If route doesn't require authentication and user is authenticated
   if (!requireAuth && isAuthenticated) {
@@ -48,9 +47,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-[#F8F9FA] text-foreground relative">
       <Sidebar />
-      <main className={`flex-1 h-full flex flex-col min-w-0 overflow-hidden transition-all duration-500 ease-in-out ${
-        !isMobile && showSidebar ? "ml-0" : ""
-      }`}>
+      <main className={`flex-1 h-full flex flex-col min-w-0 overflow-hidden transition-all duration-500 ease-in-out ${!isMobile && showSidebar ? "ml-0" : ""
+        }`}>
         {children}
       </main>
     </div>

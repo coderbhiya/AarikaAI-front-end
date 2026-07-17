@@ -91,7 +91,7 @@ const renderArtifactPreview = (artifact: any) => {
             const svgMarkup = sanitizeSvg(data.svg || "");
             return (
                 <div className="flex flex-col items-center justify-center p-8 bg-white border border-gray-100 rounded-2xl w-full min-h-[350px] shadow-sm overflow-auto">
-                    <div 
+                    <div
                         className="max-w-full max-h-[400px] flex items-center justify-center svg-preview-container"
                         dangerouslySetInnerHTML={{ __html: svgMarkup }}
                     />
@@ -331,9 +331,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
     // Auto-send query param message if exists — Bug #3 fix: wait until chat history is loaded
     // so messages.length is accurate and embeddedContext is only injected when appropriate.
+    const hasHandledMsg = useRef(false);
     useEffect(() => {
         const msg = searchParams.get("msg");
-        if (msg && !isChatsLoading) {
+        if (msg && !isChatsLoading && !hasHandledMsg.current) {
+            hasHandledMsg.current = true;
             handleSendMessage(msg);
             const newParams = new URLSearchParams(searchParams.toString());
             newParams.delete("msg");
@@ -345,7 +347,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const hasFetchedWelcome = useRef(false);
     useEffect(() => {
         let isMounted = true;
-        
+
         if (!isChatsLoading && !hasFetchedWelcome.current) {
             hasFetchedWelcome.current = true;
             getWelcomeMessage().then((msg) => {
@@ -360,7 +362,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 if (isMounted) console.error("Welcome message fetch failed:", err);
             });
         }
-        
+
         return () => {
             isMounted = false;
         };
@@ -383,7 +385,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             setSearchProgress("Searching career trends...");
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
-            
+
             // BUG-03 fix: forward the active threadId so the backend appends
             // the message to the correct thread instead of creating a new UUID thread.
             return await sendChatMessage(text, files, webSearch, engine, (chunk) => {
@@ -426,34 +428,34 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 artifact: result.artifact,
                 createdAt: new Date().toISOString(),
             };
-            
+
             queryClient.setQueryData<Message[]>(["chats", activeThreadKey], (old) => {
                 const existing = old || [];
-                
+
                 // Remove the optimistic user message (tempId) and any exact AI message match
-                const filtered = existing.filter(msg => 
-                    msg.id !== context.tempId && 
+                const filtered = existing.filter(msg =>
+                    msg.id !== context.tempId &&
                     !(msg.role === "assistant" && msg.message === result.reply)
                 );
-                
+
                 const finalArray = [...filtered];
-                
-                const realUserMessageExists = filtered.some(msg => 
-                    msg.role === "user" && 
-                    msg.message === variables.text && 
+
+                const realUserMessageExists = filtered.some(msg =>
+                    msg.role === "user" &&
+                    msg.message === variables.text &&
                     !String(msg.id).startsWith("temp-")
                 );
-                
+
                 if (!realUserMessageExists) {
                     finalArray.push({
-                        id: context.tempId, 
-                        message: variables.text, 
-                        role: "user", 
+                        id: context.tempId,
+                        message: variables.text,
+                        role: "user",
                         FileAttachments: variables.files.length > 0 ? variables.files : undefined,
                         createdAt: new Date().toISOString()
                     });
                 }
-                
+
                 finalArray.push(aiMessage);
                 return finalArray;
             });
@@ -463,7 +465,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             }
             setStreamingReply(null);
             setSearchProgress(null);
-            
+
             // Delay invalidation so the optimistic AI reply renders first before
             // the background refetch overwrites the cache.
             setTimeout(() => {
@@ -503,16 +505,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const handleSendMessage = async (text: string, attachedFiles?: File[], webSearch?: boolean, engine?: string) => {
         let currentThreadId = searchParams.get("threadId");
         if (!currentThreadId || currentThreadId === "default") {
-            currentThreadId = typeof crypto !== 'undefined' && crypto.randomUUID 
-                ? crypto.randomUUID() 
+            currentThreadId = typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
                 : `chat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-            
+
             // Seed the new thread's cache bucket with whatever is in the current bucket
             // (e.g. the welcome message) so messages don't flash away during navigation.
             // Use activeThreadKey to read from the correct pre-navigate bucket.
             const oldMessages = queryClient.getQueryData<Message[]>(["chats", activeThreadKey]) || [];
             queryClient.setQueryData<Message[]>(["chats", currentThreadId], oldMessages);
-            
+
             navigate.replace(`/chat?threadId=${currentThreadId}`);
         }
 
@@ -554,14 +556,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         }
 
         let finalText = (!text.trim() && uploadedFiles.length > 0) ? "I have attached a document." : text;
-        
+
         // Bug #5 fix: use a stable ref instead of messages.length, which is unreliable after
         // re-mounts because the welcome message inflates the count before the first user message.
         if (embeddedContext && !hasInjectedContext.current) {
             hasInjectedContext.current = true;
             finalText = `[Context: ${embeddedContext}]\n${finalText}`;
         }
-        
+
         chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine, isPersonalized, threadId: currentThreadId ?? undefined });
     };
 
@@ -607,15 +609,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                             <button
                                 type="button"
                                 onClick={() => setIsPersonalized(!isPersonalized)}
-                                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                    isPersonalized ? "bg-primary" : "bg-gray-300"
-                                }`}
+                                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isPersonalized ? "bg-primary" : "bg-gray-300"
+                                    }`}
                                 title="Toggle between Personalized mode and Generic academic mode"
                             >
                                 <span
-                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                        isPersonalized ? "translate-x-4" : "translate-x-0"
-                                    }`}
+                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isPersonalized ? "translate-x-4" : "translate-x-0"
+                                        }`}
                                 />
                             </button>
                         </div>
@@ -689,7 +689,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 {/* Action Cards Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-4 md:px-2">
                                     {/* Card 1: Doubt Solving */}
-                                    <div 
+                                    <div
                                         onClick={() => handleSendMessage("I have a doubt, can you help me solve it?")}
                                         className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-purple-50/80 to-white hover:shadow-[0_8px_24px_rgba(168,85,247,0.1)] border border-purple-100/50 hover:border-purple-200 hover:-translate-y-1"
                                     >
@@ -708,7 +708,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                     </div>
 
                                     {/* Card 2: Exam Preparation */}
-                                    <div 
+                                    <div
                                         onClick={() => handleSendMessage("Help me prepare for my upcoming exams")}
                                         className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-rose-50/80 to-white hover:shadow-[0_8px_24px_rgba(244,63,94,0.1)] border border-rose-100/50 hover:border-rose-200 hover:-translate-y-1"
                                     >
@@ -727,7 +727,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                     </div>
 
                                     {/* Card 3: Resume Building */}
-                                    <div 
+                                    <div
                                         onClick={() => handleSendMessage("Can you help me build and review my resume?")}
                                         className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-blue-50/80 to-white hover:shadow-[0_8px_24px_rgba(59,130,246,0.1)] border border-blue-100/50 hover:border-blue-200 hover:-translate-y-1"
                                     >
@@ -746,7 +746,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                     </div>
 
                                     {/* Card 4: Career Guidance */}
-                                    <div 
+                                    <div
                                         onClick={() => handleSendMessage("I need career guidance and a roadmap")}
                                         className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-emerald-50/80 to-white hover:shadow-[0_8px_24px_rgba(16,185,129,0.1)] border border-emerald-100/50 hover:border-emerald-200 hover:-translate-y-1"
                                     >
@@ -783,7 +783,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                             toast.error("Message is still being saved. Please wait a moment and try again.");
                                             return;
                                         }
-                                        
+
                                         queryClient.setQueryData<Message[]>(["chats", searchParams.get("threadId") ?? "default"], (old) => {
                                             const existing = old || [];
                                             const idx = existing.findIndex(m => String(m.id) === String(messageId));
@@ -873,21 +873,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                             <div className="bg-gray-100/80 p-0.5 rounded-lg flex items-center shadow-inner">
                                 <button
                                     onClick={() => setWorkspaceTab("preview")}
-                                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
-                                        workspaceTab === "preview"
+                                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${workspaceTab === "preview"
                                             ? "bg-white text-gray-900 shadow-sm"
                                             : "text-gray-500 hover:text-gray-800"
-                                    }`}
+                                        }`}
                                 >
                                     Preview
                                 </button>
                                 <button
                                     onClick={() => setWorkspaceTab("code")}
-                                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${
-                                        workspaceTab === "code"
+                                    className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${workspaceTab === "code"
                                             ? "bg-white text-gray-900 shadow-sm"
                                             : "text-gray-500 hover:text-gray-800"
-                                    }`}
+                                        }`}
                                 >
                                     Code
                                 </button>

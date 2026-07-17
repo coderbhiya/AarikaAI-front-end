@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { getAuth, PhoneAuthProvider, linkWithCredential } from "firebase/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const OTPVerification: React.FC = () => {
   const [otp, setOtp] = useState("");
@@ -22,6 +23,7 @@ export const OTPVerification: React.FC = () => {
   const navigate = useRouter();
   const { toast } = useToast();
   const auth = getAuth();
+  const { updateUser } = useAuth();
 
   useEffect(() => {
     // Get the phone number from localStorage
@@ -104,6 +106,7 @@ export const OTPVerification: React.FC = () => {
         const localUser = JSON.parse(localUserStr);
         localUser.phone = phoneNumber;
         localStorage.setItem("user", JSON.stringify(localUser));
+        updateUser(localUser);
       }
 
       // Cleanup

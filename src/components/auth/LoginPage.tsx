@@ -78,14 +78,12 @@ export const LoginPage: React.FC = () => {
         };
         login(userData, response.data.token);
 
+        navigate.replace("/chat");
+
         toast({
           title: "Welcome back",
           description: "Login successful!",
         });
-
-        setTimeout(() => {
-          navigate.replace("/chat");
-        }, 500);
       }
     } catch (error: any) {
       console.warn("Email login error (Backend might be unreachable):", error.message);
@@ -117,14 +115,12 @@ export const LoginPage: React.FC = () => {
       if (response.data.success) {
         login(response.data.user, response.data.token);
 
+        navigate.replace("/chat");
+
         toast({
           title: "Success",
           description: `Identified as ${result.user.email}`,
         });
-
-        setTimeout(() => {
-          navigate.replace("/chat");
-        }, 500);
       }
     } catch (error: any) {
       // Clear half-logged-in state in Firebase if backend validation fails
@@ -152,8 +148,8 @@ export const LoginPage: React.FC = () => {
       });
       if (response.data.success) {
         login(response.data.user, response.data.token);
+        navigate.replace("/chat");
         toast({ title: "Welcome back", description: "Login successful!" });
-        setTimeout(() => { navigate.replace("/chat"); }, 500);
       }
     } catch (error: any) {
       console.warn("LinkedIn login error (Backend might be unreachable):", error.message);

@@ -20,8 +20,15 @@ export function NotificationBell() {
         try {
             const res = await axiosInstance.get("/notifications");
             setNotifications(res.data.notifications || []);
-        } catch (err) {
-            console.error("Failed to load notifications", err);
+        } catch (err: any) {
+            // Silently ignore network errors (happens when backend restarts)
+            if (err?.message === "Network Error" || err?.code === "ERR_NETWORK") {
+                return;
+            }
+            // 429 = rate limit — silently ignore, no console spam
+            if (err?.response?.status !== 429 && err?.response?.status !== 401) {
+                console.error("Failed to load notifications", err);
+            }
         }
     };
 
@@ -32,7 +39,7 @@ export function NotificationBell() {
             setPushEnabled(Notification.permission === 'granted');
         }
         
-        const interval = setInterval(fetchNotifications, 60000);
+        const interval = setInterval(fetchNotifications, 2 * 60 * 1000); // 2 min polling
         return () => clearInterval(interval);
     }, []);
 

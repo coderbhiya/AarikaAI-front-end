@@ -168,11 +168,14 @@ export default function LearningWorkspace() {
         const res = await fetch(`${apiUrl}/profile/courses/${courseId}/playlist`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        const data = await res.json();
+        
         if (res.ok) {
-          const data = await res.json();
           if (data.success && data.videos) {
             setPlaylistVideos(data.videos);
-            if (data.videos.length > 0 && !currentVideoId) {
+            // Only auto-select a video if it's NOT a playlist, or if user was watching a specific video
+            // If it IS a playlist, we leave currentVideoId as null so the iframe uses videoseries embed
+            if (data.videos.length > 0 && !currentVideoId && !data.isPlaylist) {
               const mainVideoId = extractYoutubeId(course?.url);
               const hasMainInPlaylist = data.videos.some((v: any) => v.videoId === mainVideoId);
               if (mainVideoId && hasMainInPlaylist) {
@@ -182,9 +185,14 @@ export default function LearningWorkspace() {
               }
             }
           }
+        } else {
+          // Display error from backend (e.g. YouTube Quota Exceeded)
+          toast.error(data.message || "Failed to fetch playlist");
+          setPlaylistVideos([]);
         }
       } catch (err) {
         console.error("Error fetching playlist:", err);
+        toast.error("Network error while fetching playlist.");
       } finally {
         setPlaylistLoading(false);
       }
@@ -229,7 +237,7 @@ export default function LearningWorkspace() {
               width="100%"
               height="100%"
               src={currentVideoId 
-                ? `https://www.youtube.com/embed/${currentVideoId}`
+                ? `https://www.youtube.com/embed/${currentVideoId}?autoplay=1`
                 : (isPlaylist 
                     ? `https://www.youtube.com/embed/videoseries?list=${youtubeId}` 
                     : `https://www.youtube.com/embed/${youtubeId}`)}
@@ -532,7 +540,7 @@ export default function LearningWorkspace() {
           <WorkspaceChatArea 
             embeddedContext={`I am currently studying the course "${course.title}" on ${course.platform}. Please act as my expert learning tutor for this specific topic.`} 
             courseId={String(courseId)}
-            activeVideoId={currentVideoId || youtubeId || undefined}
+            activeVideoId={currentVideoId || (isPlaylist && playlistVideos.length > 0 ? playlistVideos[0].videoId : youtubeId) || undefined}
           />
         </div>
       </div>
