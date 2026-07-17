@@ -11,7 +11,7 @@ import Courses from "@/components/profile/Courses";
 import { Briefcase, Award, CheckCircle2, Download, ExternalLink, MapPin, Globe, Camera, Menu, User, Sparkles, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProfileSyncModal } from "@/components/profile/ProfileSyncModal";
 import CareerJourneyTab from "@/components/profile/CareerJourneyTab";
 
@@ -21,6 +21,12 @@ const ProfilePage = () => {
   const isMobile = useIsMobile();
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'journey'>('profile');
+
+  useEffect(() => {
+    // Sync profile on mount to ensure we have the latest pendingResumeSnapshot
+    // if the user just navigated here from uploading a resume on another page.
+    syncProfile().catch(console.error);
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[#F0F2F5] relative overflow-hidden">
