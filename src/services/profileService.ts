@@ -216,3 +216,44 @@ export const deleteEducation = async (id) => {
     throw error;
   }
 };
+
+// Certifications API
+export const getCertifications = async () => {
+  try {
+    const response = await axiosInstance.get(`/profile/certifications`);
+    return response.data.certifications;
+  } catch (error) {
+    console.error("Error fetching certifications:", error);
+    throw error;
+  }
+};
+
+export const addCertification = async (certificationData) => {
+  try {
+    const response = await axiosInstance.post(`/profile/certifications`, certificationData);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding certification:", error);
+    throw error;
+  }
+};
+
+export const updateCertification = async (id, certificationData) => {
+  try {
+    const response = await axiosInstance.put(`/profile/certifications/${id}`, certificationData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating certification:", error);
+    throw error;
+  }
+};
+
+export const deleteCertification = async (id) => {
+  try {
+    const response = await axiosInstance.delete(`/profile/certifications/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting certification:", error);
+    throw error;
+  }
+};

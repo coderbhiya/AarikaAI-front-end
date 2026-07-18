@@ -8,6 +8,9 @@ import Experience from "@/components/profile/Experience";
 import Education from "@/components/profile/Education";
 import Projects from "@/components/profile/Projects";
 import Courses from "@/components/profile/Courses";
+import Certifications from "@/components/profile/Certifications";
+import Achievements from "@/components/profile/Achievements";
+import Hobbies from "@/components/profile/Hobbies";
 import { Briefcase, Award, CheckCircle2, Download, ExternalLink, MapPin, Globe, Camera, Menu, User, Sparkles, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -188,6 +191,21 @@ const ProfilePage = () => {
                   {/* Courses Card */}
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                     <Courses />
+                  </div>
+
+                  {/* Certifications Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <Certifications />
+                  </div>
+
+                  {/* Achievements Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <Achievements />
+                  </div>
+
+                  {/* Hobbies Card */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <Hobbies />
                   </div>
                 </div>
               ) : (

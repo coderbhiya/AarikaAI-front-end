@@ -17,6 +17,7 @@ import BadgeCard from "./cards/BadgeCard";
 import PdfDownloadCard from "./cards/PdfDownloadCard";
 import CourseCard from "./cards/CourseCard";
 import ExamSimulatorCard from "./cards/ExamSimulatorCard";
+import GeneratedResumeCard from "./cards/GeneratedResumeCard";
 
 interface CourseCardProps {
   title: string;
@@ -318,6 +319,16 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         <div className="flex flex-col gap-2 w-full max-w-2xl">
           {resumeData.cleanText && <Markdown text={resumeData.cleanText} />}
           <ResumeAnalysisCard {...resumeData.data} />
+        </div>
+      );
+    }
+
+    const resumeBuilderData = extractJsonData("RESUME_BUILDER_CARD");
+    if (resumeBuilderData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-4xl">
+          {resumeBuilderData.cleanText && <Markdown text={resumeBuilderData.cleanText} />}
+          <GeneratedResumeCard data={resumeBuilderData.data} />
         </div>
       );
     }

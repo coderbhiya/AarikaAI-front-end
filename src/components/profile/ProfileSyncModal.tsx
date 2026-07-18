@@ -22,7 +22,7 @@ interface ProfileSyncModalProps {
         newValue: any;
       }>;
       addedFields: Array<{
-        field: "skills" | "experiences" | "projects" | "certifications" | "educations";
+        field: "skills" | "experiences" | "projects" | "certifications" | "educations" | "hobbies" | "achievements";
         value: any;
         index?: number;
       }>;
@@ -51,6 +51,8 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
   const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
   const [selectedCertifications, setSelectedCertifications] = useState<number[]>([]);
   const [selectedEducations, setSelectedEducations] = useState<number[]>([]);
+  const [selectedHobbies, setSelectedHobbies] = useState<number[]>([]);
+  const [selectedAchievements, setSelectedAchievements] = useState<number[]>([]);
   const [conflictResolutions, setConflictResolutions] = useState<Record<string, "keep" | "update" | "merge">>({});
 
   // Initialize selections when snapshot changes or modal opens
@@ -95,6 +97,18 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
         .map((af) => af.index as number);
       setSelectedEducations(initialEdus);
 
+      // 5c. Added Hobbies (Default: all checked)
+      const initialHobbies = diff.addedFields
+        .filter((af) => af.field === "hobbies" && af.index !== undefined)
+        .map((af) => af.index as number);
+      setSelectedHobbies(initialHobbies);
+
+      // 5d. Added Achievements (Default: all checked)
+      const initialAchievements = diff.addedFields
+        .filter((af) => af.field === "achievements" && af.index !== undefined)
+        .map((af) => af.index as number);
+      setSelectedAchievements(initialAchievements);
+
       // 6. Conflict Resolutions (Default: 'update')
       const initialConflicts: Record<string, "keep" | "update" | "merge"> = {};
       diff.conflicts.forEach((c) => {
@@ -126,6 +140,8 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
         projects: selectedProjects,
         certifications: selectedCertifications,
         educations: selectedEducations,
+        hobbies: selectedHobbies,
+        achievements: selectedAchievements,
       };
 
       const response = await approveResumeChanges({
@@ -165,6 +181,12 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
       const allEdus = diff.addedFields
         .filter((af) => af.field === "educations" && af.index !== undefined)
         .map((af) => af.index as number);
+      const allHobbies = diff.addedFields
+        .filter((af) => af.field === "hobbies" && af.index !== undefined)
+        .map((af) => af.index as number);
+      const allAchievements = diff.addedFields
+        .filter((af) => af.field === "achievements" && af.index !== undefined)
+        .map((af) => af.index as number);
 
       const approvedFields = {
         headline: true,
@@ -177,6 +199,8 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
         projects: allProjs,
         certifications: allCerts,
         educations: allEdus,
+        hobbies: allHobbies,
+        achievements: allAchievements,
       };
 
       const syncConflicts: Record<string, "keep" | "update" | "merge"> = {};
@@ -227,6 +251,8 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
   const addedProjsList = diff.addedFields.filter((af) => af.field === "projects");
   const addedCertsList = diff.addedFields.filter((af) => af.field === "certifications");
   const addedEdusList = diff.addedFields.filter((af) => af.field === "educations");
+  const addedHobbiesList = diff.addedFields.filter((af) => af.field === "hobbies");
+  const addedAchievementsList = diff.addedFields.filter((af) => af.field === "achievements");
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose(false)}>
@@ -612,6 +638,95 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Section 8: Hobbies */}
+              {addedHobbiesList.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-slate-400" />
+                    New Hobbies ({addedHobbiesList.length})
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {addedHobbiesList.map((hobby) => {
+                      const idx = hobby.index as number;
+                      const isChecked = selectedHobbies.includes(idx);
+                      const name = hobby.value;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setSelectedHobbies((prev) =>
+                              isChecked ? prev.filter((i) => i !== idx) : [...prev, idx]
+                            );
+                          }}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                            isChecked
+                              ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50 shadow-sm"
+                              : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-850 hover:bg-slate-50"
+                          }`}
+                        >
+                          {isChecked && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                          {name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 9: Achievements */}
+              {addedAchievementsList.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-slate-400" />
+                    New Achievements ({addedAchievementsList.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {addedAchievementsList.map((ach) => {
+                      const idx = ach.index as number;
+                      const isChecked = selectedAchievements.includes(idx);
+                      const data = ach.value;
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${
+                            isChecked
+                              ? "border-blue-100 dark:border-blue-900/30 bg-blue-50/10 dark:bg-blue-950/5"
+                              : "border-slate-100 dark:border-slate-850 bg-slate-50/30 dark:bg-slate-950/20"
+                          }`}
+                        >
+                          <Checkbox
+                            id={`ach-${idx}`}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              setSelectedAchievements((prev) =>
+                                checked ? [...prev, idx] : prev.filter((i) => i !== idx)
+                              );
+                            }}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <span className="text-sm font-bold text-slate-950 dark:text-white block">
+                              {data.title || (typeof data === 'string' ? data : "Achievement")}
+                            </span>
+                            {data.issuer && (
+                              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                                Issuer: {data.issuer}
+                              </span>
+                            )}
+                            {data.description && (
+                              <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed line-clamp-2 pt-1 border-t border-dashed border-slate-100 dark:border-slate-850">
+                                {data.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -637,7 +752,7 @@ export const ProfileSyncModal: React.FC<ProfileSyncModalProps> = ({
             )}
             <button
               onClick={handleUpdateApproved}
-              disabled={isLoading || (hasChanges && !Object.values(selectedUpdatedFields).some(Boolean) && selectedSkills.length === 0 && selectedExperiences.length === 0 && selectedProjects.length === 0 && selectedCertifications.length === 0 && selectedEducations.length === 0)}
+              disabled={isLoading || (hasChanges && !Object.values(selectedUpdatedFields).some(Boolean) && selectedSkills.length === 0 && selectedExperiences.length === 0 && selectedProjects.length === 0 && selectedCertifications.length === 0 && selectedEducations.length === 0 && selectedHobbies.length === 0 && selectedAchievements.length === 0)}
               className="px-5 py-2.5 bg-primary text-white font-bold text-xs rounded-xl hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 w-full sm:w-auto"
             >
               {isLoading ? (
