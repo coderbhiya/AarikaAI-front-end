@@ -516,7 +516,13 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
                 <div
                   key={index}
                   className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:border-primary/30 transition-all duration-300 cursor-pointer group/file"
-                  onClick={() => window.open(file.filePath, "_blank")}
+                  onClick={() => {
+                    const cleanPath = file.filePath.startsWith('/') ? file.filePath.substring(1) : file.filePath;
+                    const url = file.filePath.startsWith('http') 
+                      ? file.filePath 
+                      : `${process.env.NEXT_PUBLIC_API_BASE_URL}/${cleanPath}`;
+                    window.open(url, "_blank");
+                  }}
                 >
                   <div className="shrink-0 w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
                     {getFileIcon(file.mimeType)}

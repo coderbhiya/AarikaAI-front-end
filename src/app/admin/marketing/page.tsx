@@ -94,13 +94,22 @@ export default function MarketingPage() {
 
             <div className="space-y-2">
               <Label htmlFor="emailBody">Email Body (HTML supported)</Label>
-              <Textarea
-                id="emailBody"
-                placeholder="Write your email content here..."
-                className="min-h-[200px]"
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-              />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Textarea
+                  id="emailBody"
+                  placeholder="Write your HTML email content here..."
+                  className="min-h-[300px] font-mono text-sm"
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                />
+                <div className="border rounded-md p-4 min-h-[300px] bg-gray-50 overflow-auto">
+                  <Label className="text-xs text-gray-500 mb-2 block uppercase tracking-wider">Live Preview</Label>
+                  <div 
+                    className="bg-white p-4 border shadow-sm max-w-full"
+                    dangerouslySetInnerHTML={{ __html: emailBody || '<p class="text-gray-400">Preview will appear here...</p>' }}
+                  />
+                </div>
+              </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={isSendingEmail}>

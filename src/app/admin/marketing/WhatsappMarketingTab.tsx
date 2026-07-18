@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { format, isValid } from "date-fns";
 import { Upload, Download, Clock, CheckCircle2, XCircle, Loader2, Send, QrCode } from "lucide-react";
-import Image from "next/image";
+
 
 interface Campaign {
   id: number;
@@ -233,7 +233,7 @@ export function WhatsappMarketingTab() {
               <span className="text-xs font-bold">Syncing Chats...</span>
             </div>
           ) : qrCode ? (
-            <Image src={qrCode} width={160} height={160} alt="WhatsApp QR Code" className="w-40 h-40 object-contain" />
+            <img src={qrCode} width={160} height={160} alt="WhatsApp QR Code" className="w-40 h-40 object-contain" />
           ) : (
             <div className="w-40 h-40 flex flex-col items-center justify-center bg-slate-50 rounded-md border border-slate-100 text-slate-400">
               <Loader2 size={24} className="animate-spin mb-2" />

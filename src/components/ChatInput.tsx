@@ -61,6 +61,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!isLoading) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (isLoading) return;
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      setSelectedFiles((prev) => [...prev, ...files]);
+    }
+  };
+
   const removeFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
@@ -92,7 +117,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div 
+      className={`w-full max-w-4xl mx-auto transition-all duration-300 ${isDragging ? "ring-2 ring-primary bg-primary/5 rounded-3xl p-2" : ""}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* File Preview */}
       {selectedFiles.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
