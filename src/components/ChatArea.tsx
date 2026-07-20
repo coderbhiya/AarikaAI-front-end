@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb, X } from "lucide-react";
+import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb, X, Flame, Star } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,8 @@ import BrainLogo from "./BrainLogo";
 import { Message, FileAttachment } from "@/types";
 import { ProfileSyncModal } from "./profile/ProfileSyncModal";
 import { sendChatMessage } from "@/services/chatService";
+import { getMobileBanner } from "@/services/settingService";
+import { pingStreak } from "@/services/gamificationService";
 
 // Bug #7 fix: sanitize AI-generated SVG to prevent XSS via <script>, onload, foreignObject, etc.
 const sanitizeSvg = (svgMarkup: string): string => {
@@ -306,6 +308,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const [activeArtifact, setActiveArtifact] = useState<any>(null);
     const [workspaceTab, setWorkspaceTab] = useState<"preview" | "code">("preview");
     const [isPersonalized, setIsPersonalized] = useState<boolean>(true);
+    const [mobileBannerUrl, setMobileBannerUrl] = useState<string | null>(null);
+    const [myStreak, setMyStreak] = useState<any>(null);
+
+    useEffect(() => {
+        pingStreak().then(res => setMyStreak(res.data)).catch(() => {});
+        if (isMobile) {
+            getMobileBanner().then((data) => {
+                if (data.bannerUrl) setMobileBannerUrl(data.bannerUrl);
+            }).catch(() => {});
+        }
+    }, [isMobile]);
 
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -620,6 +633,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                             </button>
                         </div>
 
+                        {/* Top Header Gamification Stats */}
+                        {myStreak && (
+                            <div className="flex items-center gap-1.5 mr-2">
+                                <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-2 py-1 rounded-lg shadow-sm">
+                                    <Flame size={12} className="text-orange-500 fill-orange-500" />
+                                    <span className="text-[11px] font-bold text-gray-700">{myStreak.learningStreaks || 0}</span>
+                                </div>
+                                <div className="flex items-center gap-1 bg-blue-50 border border-blue-100 px-2 py-1 rounded-lg shadow-sm">
+                                    <Star size={12} className="text-blue-500 fill-blue-500" />
+                                    <span className="text-[11px] font-bold text-gray-700">{myStreak.consistencyScore || 0}</span>
+                                </div>
+                            </div>
+                        )}
+
                         {!isMobile && (
                             <div className="flex items-center gap-1.5 mr-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -637,7 +664,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                 {/* Content Area */}
                 <main ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-3 md:px-6 pt-4 md:pt-6 pb-24 md:pb-20">
-                    <div className="max-w-5xl mx-auto w-full">
+                    <div className="max-w-4xl mx-auto w-full">
                         {isError ? (
                             <div className="flex flex-col justify-center items-center h-[70vh] gap-4 p-8 text-center bg-red-50/50 rounded-3xl border border-red-100 animate-in fade-in zoom-in duration-500">
                                 <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center text-red-600 mb-2">
@@ -661,6 +688,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                             </div>
                         ) : messages.length === 0 ? (
                             <div className="flex flex-col items-center justify-start min-h-[75vh] px-2 pt-6 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out w-full">
+
                                 {/* Concentric Logo Rings */}
                                 <div className="relative mb-8 w-32 h-32 flex items-center justify-center mt-4">
                                     <div className="absolute inset-[-20px] rounded-full border border-gray-200/40 shadow-[0_0_40px_-10px_rgba(0,0,0,0.03)]"></div>
@@ -686,8 +714,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                     Your AI Career Companion is ready to help you grow.
                                 </p>
 
+                                {isMobile && mobileBannerUrl && (
+                                    <div className="w-full max-w-sm aspect-video rounded-2xl overflow-hidden mb-6 shadow-sm border border-gray-100 bg-gray-50 flex items-center justify-center">
+                                        <img src={mobileBannerUrl} alt="Welcome Banner" className="w-full h-full object-cover" />
+                                    </div>
+                                )}
+
                                 {/* Action Cards Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-4 md:px-2">
+                                {!(isMobile && mobileBannerUrl) && (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-4 md:px-2">
                                     {/* Card 1: Doubt Solving */}
                                     <div
                                         onClick={() => handleSendMessage("I have a doubt, can you help me solve it?")}
@@ -763,7 +798,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                             <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Map out your dream career path</p>
                                         </div>
                                     </div>
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <MessageList
@@ -831,7 +867,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                 {/* Footer / Input Area */}
                 <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-3 sm:pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
-                    <div className="max-w-5xl mx-auto">
+                    <div className="max-w-4xl mx-auto flex flex-col gap-2">
+                        {messages.length === 0 && (
+                            <div className="flex overflow-x-auto no-scrollbar gap-2 px-1 pb-2">
+                                {[
+                                    { text: "Solve a Physics Doubt", classes: "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100/50 text-blue-700 shadow-sm hover:shadow-md hover:from-blue-100 hover:to-indigo-100" },
+                                    { text: "Start a Mock Exam", classes: "bg-gradient-to-r from-purple-50 to-fuchsia-50 border-purple-100/50 text-purple-700 shadow-sm hover:shadow-md hover:from-purple-100 hover:to-fuchsia-100" },
+                                    { text: "Analyze my Resume", classes: "bg-gradient-to-r from-orange-50 to-rose-50 border-orange-100/50 text-orange-700 shadow-sm hover:shadow-md hover:from-orange-100 hover:to-rose-100" },
+                                    { text: "Give Career Advice", classes: "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100/50 text-emerald-700 shadow-sm hover:shadow-md hover:from-emerald-100 hover:to-teal-100" }
+                                ].map((suggestion) => (
+                                    <button
+                                        key={suggestion.text}
+                                        onClick={() => handleSendMessage(suggestion.text)}
+                                        className={`whitespace-nowrap px-4 py-2 border rounded-[10px] text-[12px] font-semibold transition-all transform hover:-translate-y-0.5 ${suggestion.classes}`}
+                                    >
+                                        {suggestion.text}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                         <ChatInput onSendMessage={handleSendMessage} onStopGenerate={() => abortControllerRef.current?.abort()} isLoading={isProcessing} />
                     </div>
                 </footer>

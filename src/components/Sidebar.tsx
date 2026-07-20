@@ -22,6 +22,7 @@ import {
   Clock,
   Pencil,
   Check,
+  Trophy,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -423,6 +424,7 @@ const Sidebar = () => {
             {features.jobRecommendationsEnabled && (
               <SidebarItem to="/jobs" icon={<Briefcase size={18} />} label="Mission Hunt" active={pathname === "/jobs"} />
             )}
+
             {(user?.role === "admin" || user?.role === "super_admin") && (
               <SidebarItem to="/admin/marketing" icon={<Megaphone size={18} />} label="Marketing" active={pathname === "/admin/marketing"} />
             )}

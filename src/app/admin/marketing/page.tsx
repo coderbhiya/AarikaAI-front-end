@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { WhatsappMarketingTab } from "./WhatsappMarketingTab";
+import { SettingsTab } from "./SettingsTab";
 
 export default function MarketingPage() {
   // Email Form State
@@ -65,9 +66,10 @@ export default function MarketingPage() {
       </div>
 
       <Tabs defaultValue="email" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
           <TabsTrigger value="email">Email Marketing</TabsTrigger>
           <TabsTrigger value="whatsapp">WhatsApp Marketing</TabsTrigger>
+          <TabsTrigger value="settings">App Customization</TabsTrigger>
         </TabsList>
 
         <TabsContent value="email" className="space-y-6 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
@@ -120,6 +122,10 @@ export default function MarketingPage() {
 
         <TabsContent value="whatsapp" className="focus:outline-none">
           <WhatsappMarketingTab />
+        </TabsContent>
+
+        <TabsContent value="settings" className="focus:outline-none">
+          <SettingsTab />
         </TabsContent>
       </Tabs>
     </div>

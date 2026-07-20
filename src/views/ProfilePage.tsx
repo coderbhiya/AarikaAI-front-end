@@ -17,13 +17,14 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
 import { ProfileSyncModal } from "@/components/profile/ProfileSyncModal";
 import CareerJourneyTab from "@/components/profile/CareerJourneyTab";
+import LeaderboardTab from "@/components/LeaderboardTab";
 
 const ProfilePage = () => {
   const { user, toggleSidebar, syncProfile } = useAuth();
   const navigate = useRouter();
   const isMobile = useIsMobile();
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'journey'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'journey' | 'leaderboard'>('profile');
 
   useEffect(() => {
     // Sync profile on mount to ensure we have the latest pendingResumeSnapshot
@@ -158,6 +159,12 @@ const ProfilePage = () => {
                 >
                   Career Journey
                 </button>
+                <button
+                  className={`py-4 text-[15px] font-semibold transition-colors border-b-2 whitespace-nowrap ${activeTab === 'leaderboard' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'}`}
+                  onClick={() => setActiveTab('leaderboard')}
+                >
+                  Leaderboard
+                </button>
               </div>
 
               {/* Content Sections */}
@@ -208,11 +215,15 @@ const ProfilePage = () => {
                     <Hobbies />
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
+              ) : activeTab === 'journey' ? (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <CareerJourneyTab />
                 </div>
-              )}
+              ) : activeTab === 'leaderboard' ? (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <LeaderboardTab />
+                </div>
+              ) : null}
 
             </div>
           </div>
