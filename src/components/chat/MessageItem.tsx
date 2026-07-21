@@ -95,7 +95,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
   }
 
   const renderContent = () => {
-    const text = rawText;
+    // Normalize escaped brackets that the LLM might sometimes output
+    let text = rawText.replace(/\\\[/g, "[").replace(/\\\]/g, "]");
+    let originalRawText = rawText;
+    rawText = text; // Ensure extractJsonData also uses normalized text
 
     if (isUser && isEditing) {
       return (
@@ -435,7 +438,52 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       }
     }
 
-    return <Markdown text={text} />;
+    // Strip out all [ARTIFACT_...] blocks since they are rendered in the side panel by ChatArea
+    // Support streaming by making the closing tag optional
+    const artifactRegex = /\[ARTIFACT_[a-zA-Z0-9_]+\]([\s\S]*?)(?:\[\/ARTIFACT_[a-zA-Z0-9_]+\]|$)/gi;
+    text = text.replace(artifactRegex, "").trim();
+
+    // Handle Follow-Up Questions
+    const followUpTagRegex = /\[FOLLOW_UP\]([\s\S]*?)(?:\[\/FOLLOW_UP\]|$)/i;
+    const followUpMatch = text.match(followUpTagRegex);
+    let followUpQuestions: string[] = [];
+
+    if (followUpMatch) {
+      try {
+        let rawData = followUpMatch[1].trim();
+        rawData = rawData.replace(/```json|```/g, "").trim();
+        
+        const parsed = JSON.parse(rawData);
+        if (parsed.questions && Array.isArray(parsed.questions)) {
+          followUpQuestions = parsed.questions;
+        }
+      } catch (err: any) {
+        // Silently ignore SyntaxError during streaming as the JSON is likely incomplete
+        if (!(err instanceof SyntaxError)) {
+          console.error("Failed to parse follow up data", err);
+        }
+      }
+      text = text.replace(followUpTagRegex, "").trim(); // Remove tag from text
+    }
+
+    return (
+      <div className="flex flex-col gap-2 w-full max-w-2xl">
+        <Markdown text={text} />
+        {followUpQuestions.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t border-gray-100/50">
+            {followUpQuestions.map((question, idx) => (
+              <button
+                key={idx}
+                onClick={() => onSendMessage && onSendMessage(question)}
+                className="px-4 py-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 hover:from-blue-100 hover:to-indigo-100 text-indigo-700 text-[13px] font-semibold rounded-[10px] border border-blue-100/50 transition-all duration-200 shadow-sm text-left leading-snug hover:shadow-md hover:-translate-y-0.5"
+              >
+                {question}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
