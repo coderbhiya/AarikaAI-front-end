@@ -18,6 +18,7 @@ import PdfDownloadCard from "./cards/PdfDownloadCard";
 import CourseCard from "./cards/CourseCard";
 import ExamSimulatorCard from "./cards/ExamSimulatorCard";
 import GeneratedResumeCard from "./cards/GeneratedResumeCard";
+import DiagramCard from "./cards/DiagramCard";
 
 interface CourseCardProps {
   title: string;
@@ -362,6 +363,21 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         <div className="flex flex-col gap-2 w-full max-w-2xl">
           {badgeData.cleanText && <Markdown text={badgeData.cleanText} />}
           <BadgeCard type={badgeData.data.type} message={badgeData.data.message} />
+        </div>
+      );
+    }
+
+    // ── DIAGRAM CARD (Mermaid.js) ──────────────────────────────────────────────
+    const diagramData = extractJsonData("DIAGRAM_CARD");
+    if (diagramData) {
+      return (
+        <div className="flex flex-col gap-2 w-full">
+          {diagramData.cleanText && <Markdown text={diagramData.cleanText} />}
+          <DiagramCard
+            type={diagramData.data.type}
+            title={diagramData.data.title}
+            mermaid={diagramData.data.mermaid}
+          />
         </div>
       );
     }
