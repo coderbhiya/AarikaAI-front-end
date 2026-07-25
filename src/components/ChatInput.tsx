@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Paperclip, X, Globe, Shield, ArrowRight, Mic, Plus, Cpu } from "lucide-react";
+import { Paperclip, X, Globe, Shield, ArrowRight, Mic, Plus, Cpu, Sparkles } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 
 interface ChatInputProps {
-  onSendMessage: (message: string, files?: File[], webSearch?: boolean, engine?: string) => void;
+  onSendMessage: (message: string, files?: File[], webSearch?: boolean, engine?: string, isVisualIntel?: boolean) => void;
   onFocus?: () => void;
   isLoading?: boolean;
   fileInputShow?: boolean;
@@ -38,6 +38,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [message, setMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [webSearchActive, setWebSearchActive] = useState(false);
+  const [visualIntelActive, setVisualIntelActive] = useState(false);
   const [selectedEngine, setSelectedEngine] = useState(engines[0].id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -100,7 +101,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if ((message.trim() || selectedFiles.length > 0) && !isLoading) {
-      onSendMessage(message, selectedFiles, webSearchActive, selectedEngine);
+      onSendMessage(message, selectedFiles, webSearchActive, selectedEngine, visualIntelActive);
       setMessage("");
       setSelectedFiles([]);
       if (inputRef.current) {
@@ -165,7 +166,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   handleSubmit();
                 }
               }}
-              placeholder={isLoading ? "Generating strategy..." : "Ask Aarika anything..."}
+              placeholder={isLoading ? "Generating strategy..." : (visualIntelActive ? "Describe the visual diagram/asset to generate..." : "Ask Aarika anything...")}
               className={`w-full bg-transparent text-[#202124] focus:outline-none resize-none text-sm placeholder-[#444746]/60 font-normal min-h-[30px] sm:min-h-[40px] max-h-[200px] scrollbar-none leading-normal sm:leading-relaxed ${isLoading ? "cursor-not-allowed" : ""}`}
               rows={1}
               disabled={isLoading}
@@ -202,6 +203,24 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   <span className="hidden sm:inline">Search Web</span>
                   <span className="sm:hidden">Web</span>
                   <span className={`w-1.5 h-1.5 rounded-full ml-0.5 ${webSearchActive ? "bg-primary" : "bg-gray-400"}`} />
+                </button>
+
+                {/* Visual Intel / Image Mode Toggle Pill */}
+                <button
+                  type="button"
+                  onClick={() => setVisualIntelActive(!visualIntelActive)}
+                  className={`flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 rounded-full text-[11px] md:text-xs font-semibold border transition-all duration-300 shrink-0 ${
+                    visualIntelActive
+                      ? "bg-purple-100 border-purple-300 text-purple-700 shadow-sm"
+                      : "bg-transparent border-gray-300/60 text-[#444746]"
+                  } ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-white"}`}
+                  disabled={isLoading}
+                  title="Generate visual career assets & graphics with DALL-E 3"
+                >
+                  <Sparkles size={13} strokeWidth={2.5} className={visualIntelActive && !isLoading ? "animate-spin-slow text-purple-600" : ""} />
+                  <span className="hidden sm:inline">Visual Intel</span>
+                  <span className="sm:hidden">Visual</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ml-0.5 ${visualIntelActive ? "bg-purple-600" : "bg-gray-400"}`} />
                 </button>
               </div>
 

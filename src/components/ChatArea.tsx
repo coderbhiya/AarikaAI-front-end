@@ -302,6 +302,64 @@ const renderArtifactPreview = (artifact: any) => {
             );
         }
 
+        case "visual_intel": {
+            const imageUrl = data.url || data.imageUrl || "";
+            const promptText = data.prompt || artifact.title || "";
+            const revisedPromptText = data.revisedPrompt || "";
+            const styleName = (data.style || "Architecture Graphic").replace("_", " ");
+
+            return (
+                <div className="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm space-y-6 flex flex-col items-center">
+                    <div className="w-full flex items-center justify-between border-b border-gray-100 pb-4">
+                        <div>
+                            <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-md">
+                                {styleName}
+                            </span>
+                            <h3 className="text-base font-bold text-slate-800 mt-2 leading-snug">{artifact.title || "Visual Intel Asset"}</h3>
+                        </div>
+                        {imageUrl && (
+                            <a
+                                href={imageUrl}
+                                download="aarika_visual_intel.png"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3.5 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-md hover:bg-primary/90 transition-all flex items-center gap-1.5 active:scale-95 shrink-0"
+                            >
+                                Download High-Res
+                            </a>
+                        )}
+                    </div>
+
+                    {imageUrl ? (
+                        <div className="w-full relative rounded-2xl overflow-hidden border border-gray-200 bg-slate-900 group shadow-lg">
+                            <img
+                                src={imageUrl}
+                                alt={promptText}
+                                className="w-full h-auto max-h-[500px] object-contain transition-all duration-300 group-hover:scale-[1.01]"
+                            />
+                        </div>
+                    ) : (
+                        <div className="w-full h-64 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 text-sm font-semibold">
+                            Image loading or unavailable
+                        </div>
+                    )}
+
+                    <div className="w-full space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+                        <div>
+                            <span className="font-bold text-slate-700">Original Prompt:</span>
+                            <p className="text-slate-600 mt-0.5 font-medium">{promptText}</p>
+                        </div>
+                        {revisedPromptText && (
+                            <div>
+                                <span className="font-bold text-slate-700">Aarika AI Enhanced Vision:</span>
+                                <p className="text-slate-500 italic mt-0.5 leading-relaxed">{revisedPromptText}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         default: {
             return (
                 <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
@@ -416,9 +474,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     };
 
     const chatMutation = useMutation({
-        mutationFn: async ({ text, files, webSearch, engine, isPersonalized, threadId }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string; isPersonalized?: boolean; threadId?: string }) => {
+        mutationFn: async ({ text, files, webSearch, engine, isPersonalized, threadId, isVisualIntel }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string; isPersonalized?: boolean; threadId?: string; isVisualIntel?: boolean }) => {
             setStreamingReply("");
-            setSearchProgress("Searching career trends...");
+            setSearchProgress(isVisualIntel ? "Generating Visual Intel graphic with DALL-E 3..." : "Searching career trends...");
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
 
@@ -431,7 +489,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     setSearchProgress(null);
                     setStreamingReply((prev) => (prev || "") + chunk.content);
                 }
-            }, abortController.signal, threadId, undefined, isPersonalized);
+            }, abortController.signal, threadId, undefined, isPersonalized, isVisualIntel);
         },
         onMutate: async ({ text, files }) => {
             await queryClient.cancelQueries({ queryKey: ["chats", activeThreadKey] });
@@ -539,7 +597,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         }
     };
 
-    const handleSendMessage = async (text: string, attachedFiles?: File[], webSearch?: boolean, engine?: string) => {
+    const handleSendMessage = async (text: string, attachedFiles?: File[], webSearch?: boolean, engine?: string, isVisualIntel?: boolean) => {
         let currentThreadId = searchParams.get("threadId");
         if (!currentThreadId || currentThreadId === "default") {
             currentThreadId = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -601,7 +659,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             finalText = `[Context: ${embeddedContext}]\n${finalText}`;
         }
 
-        chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine, isPersonalized, threadId: currentThreadId ?? undefined });
+        chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine, isPersonalized, threadId: currentThreadId ?? undefined, isVisualIntel });
     };
 
     const isProcessing = chatMutation.isPending || isUploading;
@@ -684,7 +742,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
 
                 {/* Content Area */}
-                <main ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-3 md:px-6 pt-4 md:pt-6 pb-24 md:pb-20">
+                <main ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-2 sm:px-4 md:px-6 pt-3 md:pt-6 pb-36 sm:pb-32 md:pb-28">
                     <div className="max-w-4xl mx-auto w-full">
                         {isError ? (
                             <div className="flex flex-col justify-center items-center h-[70vh] gap-4 p-8 text-center bg-red-50/50 rounded-3xl border border-red-100 animate-in fade-in zoom-in duration-500">
@@ -882,7 +940,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                         )}
 
                         {/* Invisible spacer to allow scrolling past the fixed footer */}
-                        <div className="h-32 md:h-40 flex-shrink-0 w-full" />
+                        <div className="h-36 sm:h-44 flex-shrink-0 w-full" />
                     </div>
                 </main>
 

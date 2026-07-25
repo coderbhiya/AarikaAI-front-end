@@ -17,7 +17,8 @@ export const sendChatMessage = async (
   signal?: AbortSignal,
   threadId?: string,
   activeVideoId?: string,
-  isPersonalized?: boolean
+  isPersonalized?: boolean,
+  isVisualIntel?: boolean
 ): Promise<{ reply: string; citations: any[]; artifact?: any; FileAttachments?: any[] }> => {
   const token = localStorage.getItem("authToken");
   
@@ -27,7 +28,7 @@ export const sendChatMessage = async (
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ message, fileAttachments, webSearch, engine, threadId, activeVideoId, isPersonalized }),
+    body: JSON.stringify({ message, fileAttachments, webSearch, engine, threadId, activeVideoId, isPersonalized, isVisualIntel }),
     signal,
   });
 
