@@ -13,6 +13,8 @@ import { autoFillProfileFromResume } from "@/services/profileService";
 import { detectResume } from "@/utils/resumeDetector";
 import { NotificationBell } from "./notifications/NotificationBell";
 import MessageList from "./chat/MessageList";
+import Markdown from "@/components/common/Markdown";
+import GeneratedResumeCard from "./chat/cards/GeneratedResumeCard";
 import BrainLogo from "./BrainLogo";
 import { Message, FileAttachment } from "@/types";
 import { ProfileSyncModal } from "./profile/ProfileSyncModal";
@@ -47,6 +49,27 @@ const renderArtifactPreview = (artifact: any) => {
     const { type, data } = artifact;
 
     switch (type) {
+        case "resume_builder": {
+            return (
+                <div className="w-full h-full min-h-[450px] overflow-y-auto bg-gray-50 flex flex-col items-center py-4">
+                    <div className="w-full max-w-4xl px-2">
+                        <GeneratedResumeCard data={data} />
+                    </div>
+                </div>
+            );
+        }
+
+        case "document_builder": {
+            const content = data.content || data.markdown || "";
+            return (
+                <div className="w-full h-full min-h-[450px] border border-gray-150 rounded-2xl overflow-y-auto bg-white shadow-sm flex flex-col p-6 md:p-10">
+                    <div className="prose prose-sm md:prose-base max-w-none prose-slate">
+                        <Markdown text={content} />
+                    </div>
+                </div>
+            );
+        }
+
         case "html_preview": {
             const htmlContent = data.html || "";
             const cssContent = data.css || "";
@@ -312,11 +335,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const [myStreak, setMyStreak] = useState<any>(null);
 
     useEffect(() => {
-        pingStreak().then(res => setMyStreak(res.data)).catch(() => {});
+        pingStreak().then(res => setMyStreak(res.data)).catch(() => { });
         if (isMobile) {
             getMobileBanner().then((data) => {
                 if (data.bannerUrl) setMobileBannerUrl(data.bannerUrl);
-            }).catch(() => {});
+            }).catch(() => { });
         }
     }, [isMobile]);
 
@@ -439,6 +462,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 role: "assistant",
                 citations: result.citations,
                 artifact: result.artifact,
+                FileAttachments: result.FileAttachments,
                 createdAt: new Date().toISOString(),
             };
 
@@ -587,34 +611,31 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             {/* Left/Main Chat Area */}
             <div className={`flex flex-col h-full bg-[#F8F9FA] relative overflow-hidden transition-all duration-300 ${activeArtifact ? (isMobile ? 'w-full hidden' : 'w-1/2 border-r border-gray-200') : 'w-full'}`}>
                 {/* Header */}
-                <header className="sticky top-0 z-40 flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-[#F8F9FA]/80 backdrop-blur-xl border-b border-gray-100/50">
-                    <div className="flex items-center gap-2 md:gap-3">
+                <header className="sticky top-0 z-40 shrink-0 w-full flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-[#F8F9FA]/95 backdrop-blur-xl border-b border-gray-100/50">
+                    <div className="flex items-center gap-2 md:gap-3 shrink-0">
                         <button
                             onClick={toggleSidebar}
-                            className="p-1.5 md:p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors active:scale-95"
+                            className="p-1.5 md:p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors active:scale-95 shrink-0"
                         >
                             <Menu size={18} className="md:w-5 md:h-5" />
                         </button>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[17px] font-semibold text-[#444746] tracking-tight">AarikaAI</span>
-                            <div className="px-1.5 py-0.5 rounded-md bg-primary/5 border border-primary/10">
-                                <span className="text-[10px] font-bold text-primary uppercase tracking-tight">v3.0</span>
-                            </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[16px] sm:text-[17px] font-semibold text-[#444746] tracking-tight">AarikaAI</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         {/* Personalized Mode Toggle */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 mr-1 sm:mr-2 bg-gray-50 border border-gray-100 px-2 sm:px-2.5 py-1 rounded-xl shadow-sm select-none">
+                        <div className="flex items-center gap-1 sm:gap-2 bg-gray-50 border border-gray-100 px-2 sm:px-2.5 py-1 rounded-xl shadow-sm select-none shrink-0">
                             <span className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                                 {isPersonalized ? (
                                     <>
-                                        <Sparkles size={10} className="text-primary sm:hidden" />
+                                        <Sparkles size={10} className="text-primary sm:hidden shrink-0" />
                                         <span>Personalized<span className="hidden sm:inline"> Mode</span></span>
                                     </>
                                 ) : (
                                     <>
-                                        <Globe size={10} className="text-gray-400 sm:hidden" />
+                                        <Globe size={10} className="text-gray-400 sm:hidden shrink-0" />
                                         <span>Generic<span className="hidden sm:inline"> Mode</span></span>
                                     </>
                                 )}
@@ -622,12 +643,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                             <button
                                 type="button"
                                 onClick={() => setIsPersonalized(!isPersonalized)}
-                                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isPersonalized ? "bg-primary" : "bg-gray-300"
+                                className={`relative inline-flex h-4 sm:h-5 w-7 sm:w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isPersonalized ? "bg-primary" : "bg-gray-300"
                                     }`}
                                 title="Toggle between Personalized mode and Generic academic mode"
                             >
                                 <span
-                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isPersonalized ? "translate-x-4" : "translate-x-0"
+                                    className={`pointer-events-none inline-block h-3 sm:h-4 w-3 sm:w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isPersonalized ? "translate-x-3 sm:translate-x-4" : "translate-x-0"
                                         }`}
                                 />
                             </button>
@@ -635,26 +656,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                         {/* Top Header Gamification Stats */}
                         {myStreak && (
-                            <div className="flex items-center gap-1.5 mr-2">
-                                <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-2 py-1 rounded-lg shadow-sm">
-                                    <Flame size={12} className="text-orange-500 fill-orange-500" />
-                                    <span className="text-[11px] font-bold text-gray-700">{myStreak.learningStreaks || 0}</span>
+                            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shadow-sm">
+                                    <Flame size={12} className="text-orange-500 fill-orange-500 shrink-0" />
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-700">{myStreak.learningStreaks || 0}</span>
                                 </div>
-                                <div className="flex items-center gap-1 bg-blue-50 border border-blue-100 px-2 py-1 rounded-lg shadow-sm">
-                                    <Star size={12} className="text-blue-500 fill-blue-500" />
-                                    <span className="text-[11px] font-bold text-gray-700">{myStreak.consistencyScore || 0}</span>
+                                <div className="hidden sm:flex items-center gap-1 bg-blue-50 border border-blue-100 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shadow-sm">
+                                    <Star size={12} className="text-blue-500 fill-blue-500 shrink-0" />
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-700">{myStreak.consistencyScore || 0}</span>
                                 </div>
                             </div>
                         )}
 
                         {!isMobile && (
-                            <div className="flex items-center gap-1.5 mr-2">
+                            <div className="flex items-center gap-1.5 mr-2 shrink-0">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                 <span className="text-[11px] font-medium text-gray-400">System Live</span>
                             </div>
                         )}
                         <NotificationBell />
-                        <button className="hidden sm:flex w-9 h-9 rounded-full bg-primary/10 border border-primary/20 items-center justify-center text-primary hover:bg-primary hover:text-white transition-all overflow-hidden shadow-sm" onClick={() => navigate.push("/profile")}>
+                        <button className="hidden sm:flex w-9 h-9 rounded-full bg-primary/10 border border-primary/20 items-center justify-center text-primary hover:bg-primary hover:text-white transition-all overflow-hidden shadow-sm shrink-0" onClick={() => navigate.push("/profile")}>
                             <User size={18} />
                         </button>
                     </div>
@@ -723,81 +744,81 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 {/* Action Cards Grid */}
                                 {!(isMobile && mobileBannerUrl) && (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-4 md:px-2">
-                                    {/* Card 1: Doubt Solving */}
-                                    <div
-                                        onClick={() => handleSendMessage("I have a doubt, can you help me solve it?")}
-                                        className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-purple-50/80 to-white hover:shadow-[0_8px_24px_rgba(168,85,247,0.1)] border border-purple-100/50 hover:border-purple-200 hover:-translate-y-1"
-                                    >
-                                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
-                                                <Sparkles size={14} className="text-purple-500" />
+                                        {/* Card 1: Doubt Solving */}
+                                        <div
+                                            onClick={() => handleSendMessage("I have a doubt, can you help me solve it?")}
+                                            className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-purple-50/80 to-white hover:shadow-[0_8px_24px_rgba(168,85,247,0.1)] border border-purple-100/50 hover:border-purple-200 hover:-translate-y-1"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
+                                                    <Sparkles size={14} className="text-purple-500" />
+                                                </div>
+                                            </div>
+                                            <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-purple-50 flex items-center justify-center text-purple-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                                <Lightbulb size={20} className="md:w-[22px] md:h-[22px]" />
+                                            </div>
+                                            <div className="flex-1 text-left w-full mt-auto">
+                                                <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Doubt Solving</h3>
+                                                <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Instant help with your academic questions</p>
                                             </div>
                                         </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-purple-50 flex items-center justify-center text-purple-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
-                                            <Lightbulb size={20} className="md:w-[22px] md:h-[22px]" />
-                                        </div>
-                                        <div className="flex-1 text-left w-full mt-auto">
-                                            <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Doubt Solving</h3>
-                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Instant help with your academic questions</p>
-                                        </div>
-                                    </div>
 
-                                    {/* Card 2: Exam Preparation */}
-                                    <div
-                                        onClick={() => handleSendMessage("Help me prepare for my upcoming exams")}
-                                        className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-rose-50/80 to-white hover:shadow-[0_8px_24px_rgba(244,63,94,0.1)] border border-rose-100/50 hover:border-rose-200 hover:-translate-y-1"
-                                    >
-                                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
-                                                <Sparkles size={14} className="text-rose-500" />
+                                        {/* Card 2: Exam Preparation */}
+                                        <div
+                                            onClick={() => handleSendMessage("Help me prepare for my upcoming exams")}
+                                            className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-rose-50/80 to-white hover:shadow-[0_8px_24px_rgba(244,63,94,0.1)] border border-rose-100/50 hover:border-rose-200 hover:-translate-y-1"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
+                                                    <Sparkles size={14} className="text-rose-500" />
+                                                </div>
+                                            </div>
+                                            <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-rose-50 flex items-center justify-center text-rose-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                                <FileText size={20} className="md:w-[22px] md:h-[22px]" />
+                                            </div>
+                                            <div className="flex-1 text-left w-full mt-auto">
+                                                <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Exam Prep</h3>
+                                                <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Structured plans & mock tests</p>
                                             </div>
                                         </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-rose-50 flex items-center justify-center text-rose-500 shrink-0 group-hover:scale-110 transition-transform duration-300">
-                                            <FileText size={20} className="md:w-[22px] md:h-[22px]" />
-                                        </div>
-                                        <div className="flex-1 text-left w-full mt-auto">
-                                            <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Exam Prep</h3>
-                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Structured plans & mock tests</p>
-                                        </div>
-                                    </div>
 
-                                    {/* Card 3: Resume Building */}
-                                    <div
-                                        onClick={() => handleSendMessage("Can you help me build and review my resume?")}
-                                        className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-blue-50/80 to-white hover:shadow-[0_8px_24px_rgba(59,130,246,0.1)] border border-blue-100/50 hover:border-blue-200 hover:-translate-y-1"
-                                    >
-                                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
-                                                <Sparkles size={14} className="text-blue-500" />
+                                        {/* Card 3: Resume Building */}
+                                        <div
+                                            onClick={() => handleSendMessage("Can you help me build and review my resume?")}
+                                            className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-blue-50/80 to-white hover:shadow-[0_8px_24px_rgba(59,130,246,0.1)] border border-blue-100/50 hover:border-blue-200 hover:-translate-y-1"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
+                                                    <Sparkles size={14} className="text-blue-500" />
+                                                </div>
+                                            </div>
+                                            <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-blue-50 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                                <Code size={20} className="md:w-[22px] md:h-[22px]" />
+                                            </div>
+                                            <div className="flex-1 text-left w-full mt-auto">
+                                                <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Resume Build</h3>
+                                                <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">ATS-friendly resume analysis</p>
                                             </div>
                                         </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-blue-50 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
-                                            <Code size={20} className="md:w-[22px] md:h-[22px]" />
-                                        </div>
-                                        <div className="flex-1 text-left w-full mt-auto">
-                                            <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Resume Build</h3>
-                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">ATS-friendly resume analysis</p>
-                                        </div>
-                                    </div>
 
-                                    {/* Card 4: Career Guidance */}
-                                    <div
-                                        onClick={() => handleSendMessage("I need career guidance and a roadmap")}
-                                        className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-emerald-50/80 to-white hover:shadow-[0_8px_24px_rgba(16,185,129,0.1)] border border-emerald-100/50 hover:border-emerald-200 hover:-translate-y-1"
-                                    >
-                                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
-                                                <Sparkles size={14} className="text-emerald-500" />
+                                        {/* Card 4: Career Guidance */}
+                                        <div
+                                            onClick={() => handleSendMessage("I need career guidance and a roadmap")}
+                                            className="relative overflow-hidden rounded-2xl md:rounded-[24px] p-4 md:p-5 flex flex-col items-start justify-between aspect-square cursor-pointer transition-all duration-300 group bg-gradient-to-br from-emerald-50/80 to-white hover:shadow-[0_8px_24px_rgba(16,185,129,0.1)] border border-emerald-100/50 hover:border-emerald-200 hover:-translate-y-1"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                <div className="w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center border border-white">
+                                                    <Sparkles size={14} className="text-emerald-500" />
+                                                </div>
+                                            </div>
+                                            <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-emerald-50 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
+                                                <Compass size={20} className="md:w-[22px] md:h-[22px]" />
+                                            </div>
+                                            <div className="flex-1 text-left w-full mt-auto">
+                                                <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Career Guide</h3>
+                                                <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Map out your dream career path</p>
                                             </div>
                                         </div>
-                                        <div className="w-10 h-10 md:w-12 md:h-12 mb-3 rounded-2xl bg-white shadow-sm border border-emerald-50 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-110 transition-transform duration-300">
-                                            <Compass size={20} className="md:w-[22px] md:h-[22px]" />
-                                        </div>
-                                        <div className="flex-1 text-left w-full mt-auto">
-                                            <h3 className="font-extrabold text-gray-900 text-[14px] md:text-[15px] leading-tight mb-1">Career Guide</h3>
-                                            <p className="text-[12px] text-gray-500 line-clamp-2 leading-relaxed font-medium">Map out your dream career path</p>
-                                        </div>
-                                    </div>
                                     </div>
                                 )}
                             </div>
@@ -866,10 +887,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 </main>
 
                 {/* Footer / Input Area */}
-                <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-3 sm:pb-6 pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
+                <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-1.5 sm:pb-6 pt-1 sm:pt-2 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA] to-transparent shrink-0">
                     <div className="max-w-4xl mx-auto flex flex-col gap-2">
                         {messages.length === 0 && (
-                            <div className="flex overflow-x-auto no-scrollbar gap-2 px-1 pb-2">
+                            <div className="hidden sm:flex overflow-x-auto no-scrollbar gap-2 px-1 pb-2">
                                 {[
                                     { text: "Solve a Physics Doubt", classes: "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100/50 text-blue-700 shadow-sm hover:shadow-md hover:from-blue-100 hover:to-indigo-100" },
                                     { text: "Start a Mock Exam", classes: "bg-gradient-to-r from-purple-50 to-fuchsia-50 border-purple-100/50 text-purple-700 shadow-sm hover:shadow-md hover:from-purple-100 hover:to-fuchsia-100" },

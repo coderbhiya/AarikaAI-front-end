@@ -41,61 +41,54 @@ export function WhatsappMarketingTab() {
   const fetchWaStatus = async () => {
     try {
       const token = localStorage.getItem("adminToken") || localStorage.getItem("authToken");
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      if (!baseUrl) return;
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       const res = await fetch(`${baseUrl}/api/marketing/whatsapp/status`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      let data;
-      try {
-        data = await res.json();
-      } catch (err) {
-        throw new Error("Invalid server response");
-      }
-      if (res.ok && data.success) {
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      if (data && data.success) {
         setWaStatus(data.data.status);
         setQrCode(data.data.qrCode);
       }
-    } catch (error) {
-      console.error("Failed to fetch WhatsApp status", error);
+    } catch {
+      // Gracefully handle server offline or network errors without spamming dev overlay
+      setWaStatus("disconnected");
     }
   };
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = async (isInitial = false) => {
     try {
       const token = localStorage.getItem("adminToken") || localStorage.getItem("authToken");
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      if (!baseUrl) {
-        toast.error("API URL not configured");
-        return;
-      }
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
       const res = await fetch(`${baseUrl}/api/marketing/whatsapp/campaigns`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      let data;
-      try {
-        data = await res.json();
-      } catch (err) {
-        throw new Error("Invalid server response");
+      if (!res.ok) {
+        if (isInitial) toast.error("Unable to load campaigns");
+        return;
       }
-      if (res.ok && data.success) {
+      const data = await res.json().catch(() => null);
+      if (data && data.success) {
         setCampaigns(data.campaigns);
       }
-    } catch (error) {
-      console.error("Failed to fetch campaigns", error);
-      toast.error("Unable to load campaigns");
+    } catch {
+      // Handle network or backend offline silently during interval polling
+      if (isInitial) {
+        toast.error("Unable to load campaigns. Check backend connection.");
+      }
     } finally {
       setIsLoadingCampaigns(false);
     }
   };
 
   useEffect(() => {
-    fetchCampaigns();
+    fetchCampaigns(true);
     fetchWaStatus();
     
     // Poll campaigns every 5 seconds to update counts in real-time
     const campaignInterval = setInterval(() => {
-      fetchCampaigns();
+      fetchCampaigns(false);
     }, 5000);
     return () => clearInterval(campaignInterval);
   }, []);

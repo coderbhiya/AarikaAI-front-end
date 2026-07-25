@@ -152,7 +152,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onSubmit={handleSubmit}
           className="relative flex flex-col w-full bg-[#F0F4F9] border-none rounded-[14.5px] sm:rounded-[26.5px] group transition-all duration-300"
         >
-          <div className="flex flex-col w-full px-3 sm:px-4 pt-3 pb-2">
+          <div className="flex flex-col w-full px-2.5 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2">
             <textarea
               ref={inputRef}
               value={message}
@@ -166,19 +166,19 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 }
               }}
               placeholder={isLoading ? "Generating strategy..." : "Ask Aarika anything..."}
-              className={`w-full bg-transparent text-[#202124] focus:outline-none resize-none text-sm placeholder-[#444746]/60 font-normal min-h-[40px] max-h-[200px] scrollbar-none leading-relaxed ${isLoading ? "cursor-not-allowed" : ""}`}
+              className={`w-full bg-transparent text-[#202124] focus:outline-none resize-none text-sm placeholder-[#444746]/60 font-normal min-h-[30px] sm:min-h-[40px] max-h-[200px] scrollbar-none leading-normal sm:leading-relaxed ${isLoading ? "cursor-not-allowed" : ""}`}
               rows={1}
               disabled={isLoading}
             />
 
             {/* Bottom Utilities Row */}
-            <div className="flex items-center justify-between border-t border-gray-200/30 mt-2 pt-2">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between border-t border-gray-200/30 mt-1.5 sm:mt-2 pt-1.5 sm:pt-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {fileInputShow && (
                   <button
                     type="button"
                     onClick={handleImageClick}
-                    className={`p-2 rounded-full text-[#444746] transition-colors shrink-0 flex items-center justify-center border border-transparent ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-white active:scale-95"}`}
+                    className={`p-1.5 sm:p-2 rounded-full text-[#444746] transition-colors shrink-0 flex items-center justify-center border border-transparent ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-white active:scale-95"}`}
                     disabled={isLoading}
                     title="Upload resume or files"
                   >
@@ -239,7 +239,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   <button
                     type="button"
                     onClick={onStopGenerate}
-                    className="p-2 rounded-full transition-all duration-300 flex items-center justify-center bg-gray-800 text-white shadow-md hover:bg-gray-900 active:scale-95"
+                    className="p-1.5 sm:p-2 rounded-full transition-all duration-300 flex items-center justify-center bg-gray-800 text-white shadow-md hover:bg-gray-900 active:scale-95"
                     title="Stop Generating"
                   >
                     <div className="w-3.5 h-3.5 bg-white rounded-sm"></div>
@@ -248,7 +248,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   <button
                     type="submit"
                     disabled={!(message.trim() || selectedFiles.length > 0) || isLoading}
-                    className={`p-2 rounded-full transition-all duration-300 flex items-center justify-center ${
+                    className={`p-1.5 sm:p-2 rounded-full transition-all duration-300 flex items-center justify-center ${
                       (message.trim() || selectedFiles.length > 0) && !isLoading
                         ? "bg-primary text-white shadow-md shadow-primary/20 hover:scale-105 active:scale-95"
                         : "text-gray-300 pointer-events-none bg-transparent"

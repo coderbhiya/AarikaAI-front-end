@@ -18,7 +18,7 @@ export const sendChatMessage = async (
   threadId?: string,
   activeVideoId?: string,
   isPersonalized?: boolean
-): Promise<{ reply: string; citations: any[]; artifact?: any }> => {
+): Promise<{ reply: string; citations: any[]; artifact?: any; FileAttachments?: any[] }> => {
   const token = localStorage.getItem("authToken");
   
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chat`, {
@@ -44,6 +44,7 @@ export const sendChatMessage = async (
   let accumulatedReply = "";
   let finalCitations: any[] = [];
   let finalArtifact: any = null;
+  let finalFileAttachments: any = null;
   let buffer = "";
 
   if (reader) {
@@ -67,6 +68,7 @@ export const sendChatMessage = async (
                   finalReply = data.reply;
                   finalCitations = data.citations || [];
                   finalArtifact = data.artifact || null;
+                  finalFileAttachments = data.FileAttachments || null;
                 } else if (data.type === "text") {
                   accumulatedReply += data.content;
                   if (onChunk) onChunk(data);
@@ -85,7 +87,7 @@ export const sendChatMessage = async (
     } catch (e: any) {
       if (e.name === "AbortError" || e.message === "AbortError") {
         console.log("Stream aborted manually");
-        return { reply: accumulatedReply, citations: finalCitations, artifact: finalArtifact };
+        return { reply: accumulatedReply, citations: finalCitations, artifact: finalArtifact, FileAttachments: finalFileAttachments };
       }
       throw e;
     }
@@ -93,7 +95,7 @@ export const sendChatMessage = async (
 
   // Bug #1 fix: prefer accumulatedReply (built chunk-by-chunk) over finalReply from the `done`
   // event, which may be truncated or an empty string if the backend omits it.
-  return { reply: accumulatedReply || finalReply, citations: finalCitations, artifact: finalArtifact };
+  return { reply: accumulatedReply || finalReply, citations: finalCitations, artifact: finalArtifact, FileAttachments: finalFileAttachments };
 };
 
 export const uploadFile = async (file: File): Promise<FileAttachment> => {
