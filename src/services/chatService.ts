@@ -73,10 +73,14 @@ export const sendChatMessage = async (
                 } else if (data.type === "text") {
                   accumulatedReply += data.content;
                   if (onChunk) onChunk(data);
+                } else if (data.type === "error") {
+                  console.error("[chatService] Stream error received from server:", data.message);
+                  throw new Error(data.message || "Server error occurred during streaming");
                 } else if (onChunk) {
                   onChunk(data);
                 }
-              } catch (e) {
+              } catch (e: any) {
+                if (e.message && e.message.includes("Server error")) throw e;
                 console.error("Failed to parse block:", block, e);
               }
             }
