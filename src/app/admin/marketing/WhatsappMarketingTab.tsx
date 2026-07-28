@@ -212,6 +212,15 @@ export function WhatsappMarketingTab() {
               {waStatus}
             </span>
           </div>
+          {waStatus !== "ready" && (
+            <button
+              type="button"
+              onClick={fetchWaStatus}
+              className="ml-3 text-xs text-emerald-600 hover:text-emerald-700 underline font-medium"
+            >
+              Refresh Status / QR
+            </button>
+          )}
         </div>
         
         <div className="shrink-0 bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
@@ -226,7 +235,10 @@ export function WhatsappMarketingTab() {
               <span className="text-xs font-bold">Syncing Chats...</span>
             </div>
           ) : qrCode ? (
-            <img src={qrCode} width={160} height={160} alt="WhatsApp QR Code" className="w-40 h-40 object-contain" />
+            <div className="flex flex-col items-center">
+              <img src={qrCode} width={160} height={160} alt="WhatsApp QR Code" className="w-40 h-40 object-contain" />
+              <span className="text-[10px] text-slate-400 mt-1">Scan with WhatsApp &gt; Linked Devices</span>
+            </div>
           ) : (
             <div className="w-40 h-40 flex flex-col items-center justify-center bg-slate-50 rounded-md border border-slate-100 text-slate-400">
               <Loader2 size={24} className="animate-spin mb-2" />
