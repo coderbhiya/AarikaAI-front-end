@@ -101,6 +101,46 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
     let originalRawText = rawText;
     rawText = text; // Ensure extractJsonData also uses normalized text
 
+    // 0. Extract & Strip [FOLLOW_UP] tag globally BEFORE any card parsing
+    const followUpTagRegex = /\[FOLLOW_UP\]([\s\S]*?)(?:\[\/FOLLOW_UP\]|$)/i;
+    const followUpMatch = text.match(followUpTagRegex);
+    let followUpQuestions: string[] = [];
+
+    if (followUpMatch) {
+      try {
+        let rawData = followUpMatch[1].trim();
+        rawData = rawData.replace(/```json|```/g, "").trim();
+
+        const parsed = JSON.parse(rawData);
+        if (parsed.questions && Array.isArray(parsed.questions)) {
+          followUpQuestions = parsed.questions;
+        }
+      } catch (err: any) {
+        if (!(err instanceof SyntaxError)) {
+          console.error("Failed to parse follow up data", err);
+        }
+      }
+      text = text.replace(followUpTagRegex, "").trim();
+      rawText = text;
+    }
+
+    const renderFollowUpChips = () => {
+      if (!followUpQuestions || followUpQuestions.length === 0) return null;
+      return (
+        <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t border-gray-100/50">
+          {followUpQuestions.map((question, idx) => (
+            <button
+              key={idx}
+              onClick={() => onSendMessage && onSendMessage(question)}
+              className="px-4 py-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 hover:from-blue-100 hover:to-indigo-100 text-indigo-700 text-[13px] font-semibold rounded-[10px] border border-blue-100/50 transition-all duration-200 shadow-sm text-left leading-snug hover:shadow-md hover:-translate-y-0.5"
+            >
+              {question}
+            </button>
+          ))}
+        </div>
+      );
+    };
+
     if (isUser && isEditing) {
       return (
         <div className="flex flex-col gap-3 w-full">
@@ -240,6 +280,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         <div className="flex flex-col gap-2 w-full max-w-2xl">
           {examData.cleanText && <Markdown text={examData.cleanText} />}
           <ExamSimulatorCard blueprint={examData.data} />
+          {renderFollowUpChips()}
         </div>
       );
     }
@@ -459,45 +500,10 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
     const artifactRegex = /\[ARTIFACT_[a-zA-Z0-9_]+\]([\s\S]*?)(?:\[\/ARTIFACT_[a-zA-Z0-9_]+\]|$)/gi;
     text = text.replace(artifactRegex, "").trim();
 
-    // Handle Follow-Up Questions
-    const followUpTagRegex = /\[FOLLOW_UP\]([\s\S]*?)(?:\[\/FOLLOW_UP\]|$)/i;
-    const followUpMatch = text.match(followUpTagRegex);
-    let followUpQuestions: string[] = [];
-
-    if (followUpMatch) {
-      try {
-        let rawData = followUpMatch[1].trim();
-        rawData = rawData.replace(/```json|```/g, "").trim();
-        
-        const parsed = JSON.parse(rawData);
-        if (parsed.questions && Array.isArray(parsed.questions)) {
-          followUpQuestions = parsed.questions;
-        }
-      } catch (err: any) {
-        // Silently ignore SyntaxError during streaming as the JSON is likely incomplete
-        if (!(err instanceof SyntaxError)) {
-          console.error("Failed to parse follow up data", err);
-        }
-      }
-      text = text.replace(followUpTagRegex, "").trim(); // Remove tag from text
-    }
-
     return (
       <div className="flex flex-col gap-2 w-full max-w-2xl">
         <Markdown text={text} />
-        {followUpQuestions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t border-gray-100/50">
-            {followUpQuestions.map((question, idx) => (
-              <button
-                key={idx}
-                onClick={() => onSendMessage && onSendMessage(question)}
-                className="px-4 py-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 hover:from-blue-100 hover:to-indigo-100 text-indigo-700 text-[13px] font-semibold rounded-[10px] border border-blue-100/50 transition-all duration-200 shadow-sm text-left leading-snug hover:shadow-md hover:-translate-y-0.5"
-              >
-                {question}
-              </button>
-            ))}
-          </div>
-        )}
+        {renderFollowUpChips()}
       </div>
     );
   };
