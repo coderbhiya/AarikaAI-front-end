@@ -1,31 +1,13 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Copy, Check, Maximize2, X, GitBranch, Network, ArrowRightLeft, Calendar, PieChart, Database, Layers, Activity, Clock, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Copy, Check, Maximize2, X, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles } from "lucide-react";
 
 interface DiagramCardProps {
   type?: string;
   title?: string;
   mermaid: string;
 }
-
-const TYPE_LABEL: Record<string, string> = {
-  flowchart: "Flowchart", mindmap: "Mind Map", sequence: "Sequence",
-  gantt: "Gantt", pie: "Pie Chart", er: "ER Diagram",
-  classdiagram: "Class Diagram", statediagram: "State Diagram", timeline: "Timeline",
-};
-
-const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  flowchart:    { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
-  mindmap:      { bg: "#faf5ff", text: "#7e22ce", border: "#e9d5ff" },
-  sequence:     { bg: "#f0fdf4", text: "#166534", border: "#bbf7d0" },
-  gantt:        { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" },
-  pie:          { bg: "#fdf2f8", text: "#be185d", border: "#fbcfe8" },
-  er:           { bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4" },
-  classdiagram: { bg: "#eef2ff", text: "#4338ca", border: "#c7d2fe" },
-  statediagram: { bg: "#fef2f2", text: "#b91c1c", border: "#fecaca" },
-  timeline:     { bg: "#fffbeb", text: "#92400e", border: "#fde68a" },
-};
 
 let _cnt = 0;
 let _mermaidReady = false;
@@ -42,24 +24,25 @@ async function getMermaid() {
         useMaxWidth: true,
         htmlLabels: true,
         curve: "basis",
-        nodeSpacing: 40,
-        rankSpacing: 45,
+        nodeSpacing: 30,
+        rankSpacing: 35,
+        padding: 12,
       },
       themeVariables: {
         darkMode: false,
         background: "#ffffff",
-        primaryColor: "#eff6ff",
-        primaryTextColor: "#1e293b",
-        primaryBorderColor: "#3b82f6",
+        primaryColor: "#f8fafc",
+        primaryTextColor: "#0f172a",
+        primaryBorderColor: "#cbd5e1",
         lineColor: "#64748b",
-        secondaryColor: "#f0fdf4",
+        secondaryColor: "#f1f5f9",
         tertiaryColor: "#faf5ff",
         mainBkg: "#ffffff",
-        nodeBorder: "#93c5fd",
+        nodeBorder: "#cbd5e1",
         clusterBkg: "#f8fafc",
         titleColor: "#0f172a",
         edgeLabelBackground: "#ffffff",
-        fontSize: "14px",
+        fontSize: "13px",
         fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
       },
     });
@@ -72,39 +55,45 @@ function applyStyles(container: HTMLDivElement | null) {
   if (!container) return;
   const svg = container.querySelector("svg");
   if (!svg) return;
+  
   const vb = svg.getAttribute("viewBox");
-  if (!vb) {
-    const w = parseFloat(svg.getAttribute("width") || "800");
-    const h = parseFloat(svg.getAttribute("height") || "400");
-    svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+  let viewBoxWidth = 600;
+  if (vb) {
+    const parts = vb.split(/\s+/);
+    if (parts.length === 4) {
+      viewBoxWidth = parseFloat(parts[2]);
+    }
+  } else {
+    const w = parseFloat(svg.getAttribute("width") || "600");
+    const h = parseFloat(svg.getAttribute("height") || "350");
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    viewBoxWidth = w;
   }
+  
   svg.removeAttribute("width");
   svg.removeAttribute("height");
-  svg.style.cssText = "display:block;width:100%;height:auto;max-width:100%;";
+  
+  // Natural scaling: Don't blow up small diagrams to giant sizes!
+  const targetMaxWidth = Math.min(Math.max(viewBoxWidth + 40, 320), 620);
+  svg.style.cssText = `display: block; width: 100%; max-width: ${targetMaxWidth}px; height: auto; margin: 0 auto; transition: all 0.2s ease;`;
 }
 
 const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, mermaid: mermaidCode }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const modalRef    = useRef<HTMLDivElement>(null);
-  const idRef       = useRef("mmd-" + (++_cnt));
+  const modalRef = useRef<HTMLDivElement>(null);
+  const idRef = useRef("mmd-" + (++_cnt));
 
-  const [copied,      setCopied]      = useState(false);
-  const [error,       setError]       = useState<string | null>(null);
-  const [isFullscreen,setIsFullscreen]= useState(false);
-  const [svgHtml,     setSvgHtml]     = useState("");
-  const [zoom,        setZoom]        = useState(1);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [svgHtml, setSvgHtml] = useState("");
+  const [zoom, setZoom] = useState(1);
 
-  const typeKey = (type || "flowchart").toLowerCase();
-  const label   = TYPE_LABEL[typeKey] || "Diagram";
-  const colors  = BADGE_COLORS[typeKey] || { bg: "#f9fafb", text: "#374151", border: "#e5e7eb" };
-
-  // Decode \\n escape sequences that came through JSON transport
   const rawCode = (mermaidCode ?? "")
     .replace(/\\\\n/g, "\n")
-    .replace(/\\n/g,   "\n")
+    .replace(/\\n/g, "\n")
     .trim();
 
-  // Render SVG once
   useEffect(() => {
     if (!rawCode) return;
     let gone = false;
@@ -121,7 +110,6 @@ const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, me
     return () => { gone = true; };
   }, [rawCode]);
 
-  // Inject into card container
   useEffect(() => {
     if (svgHtml && containerRef.current) {
       containerRef.current.innerHTML = svgHtml;
@@ -129,7 +117,6 @@ const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, me
     }
   }, [svgHtml]);
 
-  // Inject into modal container
   useEffect(() => {
     if (svgHtml && isFullscreen && modalRef.current) {
       modalRef.current.innerHTML = svgHtml;
@@ -144,126 +131,100 @@ const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, me
     });
   };
 
-  const Badge = ({ small }: { small?: boolean }) => (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        padding: small ? "3px 10px" : "4px 12px",
-        borderRadius: 999,
-        border: "1px solid " + colors.border,
-        background: colors.bg,
-        color: colors.text,
-        fontSize: small ? 11 : 12,
-        fontWeight: 600,
-      }}
-    >
-      {typeKey === "mindmap"      ? <Network size={12} /> :
-       typeKey === "sequence"     ? <ArrowRightLeft size={12} /> :
-       typeKey === "gantt"        ? <Calendar size={12} /> :
-       typeKey === "pie"          ? <PieChart size={12} /> :
-       typeKey === "er"           ? <Database size={12} /> :
-       typeKey === "classdiagram" ? <Layers size={12} /> :
-       typeKey === "statediagram" ? <Activity size={12} /> :
-       typeKey === "timeline"     ? <Clock size={12} /> :
-                                   <GitBranch size={12} />}
-      {label}
-    </span>
-  );
-
-  const Spinner = () => (
-    <div className="flex flex-col items-center gap-2 py-6 text-slate-400">
-      <div className="w-6 h-6 border-2 border-slate-200 border-t-primary rounded-full animate-spin" />
-      <span className="text-xs font-medium">Rendering diagram…</span>
-    </div>
-  );
-
-  const ErrorView = () => (
-    <div className="w-full p-2">
-      <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-xl mb-3">
-        <span className="text-xs text-red-600 font-semibold">⚠ Diagram syntax error — showing source</span>
-      </div>
-      <pre className="text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-4 overflow-auto font-mono whitespace-pre-wrap">{rawCode}</pre>
-    </div>
-  );
+  const handleDownloadSVG = () => {
+    if (!svgHtml) return;
+    const blob = new Blob([svgHtml], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(title || "diagram").replace(/\s+/g, "_").toLowerCase()}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <>
-      {/* ── CARD ─────────────────────────────────────────────────── */}
-      <div className="w-full max-w-2xl my-3 rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] overflow-hidden transition-all duration-300 hover:shadow-[0_6px_24px_rgba(0,0,0,0.06)]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-3.5 sm:px-5 py-2.5 sm:py-3 bg-slate-50/90 border-b border-slate-100 backdrop-blur-md select-none">
-          <div className="flex items-center gap-2 min-w-0">
-            <Badge small />
-            {title && (
-              <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate max-w-[180px] sm:max-w-[280px]">
-                {title}
+      {/* ── CLAUDE-STYLE CENTERED EMBEDDED DIAGRAM ────────────────────── */}
+      <div className="w-full my-4 flex flex-col items-center justify-center">
+        <div className="w-full max-w-2xl bg-slate-50/60 hover:bg-slate-50/90 border border-slate-200/60 rounded-2xl p-4 transition-all duration-200 group relative">
+          
+          {/* Top Bar with Minimal Floating Action Controls */}
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-md bg-blue-50 text-blue-600 border border-blue-100/80">
+                <Sparkles size={13} />
               </span>
+              <span className="text-xs font-semibold text-slate-700 tracking-tight">
+                {title || "Visual Diagram"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={handleCopy}
+                className="px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 hover:bg-white hover:text-slate-900 transition-all flex items-center gap-1 border border-transparent hover:border-slate-200"
+                title="Copy Mermaid Code"
+              >
+                {copied ? (
+                  <>
+                    <Check size={12} className="text-emerald-500" />
+                    <span className="text-emerald-600 font-semibold">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleDownloadSVG}
+                className="p-1.5 rounded-md text-slate-600 hover:bg-white hover:text-slate-900 transition-all border border-transparent hover:border-slate-200"
+                title="Download SVG"
+              >
+                <Download size={13} />
+              </button>
+
+              <button
+                onClick={() => { setIsFullscreen(true); setZoom(1); }}
+                className="p-1.5 rounded-md text-slate-600 hover:bg-white hover:text-slate-900 transition-all border border-transparent hover:border-slate-200"
+                title="Expand Fullscreen"
+              >
+                <Maximize2 size={13} />
+              </button>
+            </div>
+          </div>
+
+          {/* Centered Clean SVG Body */}
+          <div className="w-full flex justify-center items-center py-2 px-1 overflow-x-auto min-h-[120px] max-h-[360px] scrollbar-thin">
+            {error ? (
+              <div className="text-xs text-red-500 p-2 font-medium">Failed to render diagram syntax</div>
+            ) : !svgHtml ? (
+              <div className="flex items-center gap-2 text-xs text-slate-400 py-4 font-medium animate-pulse">
+                <span>Generating diagram...</span>
+              </div>
+            ) : (
+              <div ref={containerRef} className="w-full flex justify-center items-center" />
             )}
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 shadow-2xs"
-            >
-              {copied ? (
-                <>
-                  <Check size={12} className="text-emerald-500" />
-                  <span className="text-emerald-600">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={12} />
-                  <span>Copy</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => { setIsFullscreen(true); setZoom(1); }}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-95 shadow-2xs"
-              title="Expand Fullscreen"
-            >
-              <Maximize2 size={13} />
-            </button>
-          </div>
         </div>
-
-        {/* Diagram Body Container */}
-        <div className="p-3 sm:p-5 min-h-[160px] max-h-[360px] sm:max-h-[460px] bg-white flex items-center justify-center overflow-auto scrollbar-thin">
-          {error ? <ErrorView /> : !svgHtml ? <Spinner /> : <div ref={containerRef} className="w-full overflow-x-auto flex justify-center" />}
-        </div>
-
-        {/* Footer */}
-        {svgHtml && !error && (
-          <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400 font-medium flex items-center justify-between select-none">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-              <span>Interactive Diagram</span>
-            </div>
-            <button
-              onClick={() => { setIsFullscreen(true); setZoom(1); }}
-              className="hover:text-primary transition-colors font-semibold flex items-center gap-1"
-            >
-              <span>Expand view</span>
-              <span>↗</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ── FULLSCREEN MODAL ──────────────────────────────────────────── */}
       {isFullscreen && (
         <div
           onClick={(e) => { if (e.target === e.currentTarget) setIsFullscreen(false); }}
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
         >
           <div className="w-full max-w-5xl h-[88vh] bg-white border border-slate-200 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-slate-50 border-b border-slate-100 shrink-0 select-none">
-              <div className="flex items-center gap-3 min-w-0">
-                <Badge />
-                {title && <h3 className="text-sm sm:text-base font-bold text-slate-800 truncate">{title}</h3>}
+            <div className="flex items-center justify-between px-6 py-3.5 bg-slate-50 border-b border-slate-100 shrink-0 select-none">
+              <div className="flex items-center gap-2">
+                <Sparkles size={15} className="text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-800">{title || "Visual Diagram"}</h3>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
@@ -290,10 +251,11 @@ const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, me
                 </div>
 
                 <button
-                  onClick={handleCopy}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all active:scale-95 shadow-2xs flex items-center gap-1"
+                  onClick={handleDownloadSVG}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"
                 >
-                  {copied ? <><Check size={12} className="text-emerald-500" /><span className="text-emerald-600">Copied</span></> : <><Copy size={12} /><span>Copy</span></>}
+                  <Download size={13} />
+                  <span>Download SVG</span>
                 </button>
 
                 <button
@@ -306,14 +268,10 @@ const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, me
             </div>
 
             {/* Canvas Area */}
-            <div className="flex-1 overflow-auto p-4 sm:p-8 bg-slate-50/50 flex items-center justify-center">
-              {error ? (
-                <ErrorView />
-              ) : (
-                <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.2s ease" }} className="w-full">
-                  <div ref={modalRef} className="w-full bg-white rounded-2xl p-6 border border-slate-150 shadow-sm flex justify-center" />
-                </div>
-              )}
+            <div className="flex-1 overflow-auto p-6 bg-slate-50/40 flex items-center justify-center">
+              <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.2s ease" }} className="w-full flex justify-center">
+                <div ref={modalRef} className="w-full bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex justify-center" />
+              </div>
             </div>
           </div>
         </div>
