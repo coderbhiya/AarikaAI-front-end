@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { Paperclip, X, Globe, Shield, ArrowRight, Mic, Plus, Cpu, Sparkles } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
@@ -294,7 +295,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
       {/* Footer Info */}
       <div className="mt-2 md:mt-3 px-2 text-center">
         <p className="text-[10px] md:text-[11px] text-[#444746]/60 font-normal tracking-tight">
-          AarikaAI may display inaccurate info, so double-check its responses. <span className="underline cursor-pointer">Your privacy & AarikaAI Apps</span>
+          AarikaAI may display inaccurate info, so double-check its responses.{" "}
+          <Link href="/privacy" className="underline cursor-pointer hover:text-primary transition-colors">
+            Your privacy & AarikaAI Apps
+          </Link>
         </p>
       </div>
     </div>

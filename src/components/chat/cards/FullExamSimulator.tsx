@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { 
   CheckCircle2, ChevronRight, ChevronLeft, ChevronDown, Trash2, Clock, MoreVertical,
   Flag, AlertCircle, BookOpen, Calculator, FileText, 
-  Info, Pause, Play, Maximize2, Menu, Loader2
+  Info, Pause, Play, Maximize2, Menu, Loader2, Award, Sparkles, TrendingUp
 } from 'lucide-react';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
@@ -38,10 +38,10 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
   useEffect(() => {
     if (!adapterRef.current) {
-      // In a real app, generate a unique session ID per exam attempt
-      const sessionId = `exam_${Date.now()}`;
+      const cleanExamSlug = (blueprint.exam || 'practice_exam').replace(/\s+/g, '_').toLowerCase();
+      const sessionId = `exam_${cleanExamSlug}_${blueprint.questions}`;
       adapterRef.current = new AssessmentRuntimeAdapter(blueprint, sessionId, (idx, status) => {
-        // When status updates, we might need to re-render if it's the current question
+        // When status updates, re-render if it's the current question
         forceRender(prev => prev + 1);
       });
     }
@@ -216,36 +216,123 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   };
 
   if (isSubmitted) {
-    let score = 0;
-    // We only have the questions we actually generated/fetched, but score calculations should be based on adapter's answers.
-    // For simplicity, just give a generic submitted screen
+    const timeUsedSeconds = (blueprint.durationMinutes * 60) - timeLeft;
+    const timeFormatted = formatTime(timeUsedSeconds > 0 ? timeUsedSeconds : 0);
+    const completionPct = Math.round((stats.answered / (blueprint.questions || 1)) * 100);
+
     const submittedScreen = (
-      <div className="fixed inset-0 z-50 bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white p-10 rounded-[5px] shadow-xl max-w-2xl w-full text-center">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-12 h-12 text-green-600" />
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Test Submitted Successfully</h2>
-          <p className="text-gray-500 mb-8">{blueprint.exam}</p>
+      <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-in fade-in duration-300">
+        <div className="bg-white border border-gray-100/80 rounded-3xl shadow-2xl max-w-2xl w-full text-center overflow-hidden relative p-6 md:p-10 animate-in zoom-in-95 duration-300">
           
-          <div className="grid grid-cols-2 gap-6 mb-10">
-            <div className="p-6 bg-primary/5 rounded-[5px] border border-primary/10">
-              <p className="text-sm font-medium text-primary mb-1">Attempted</p>
-              <p className="text-4xl font-black text-primary">{stats.answered} / {blueprint.questions}</p>
+          {/* Ambient Decorative Blur */}
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Hero Icon Badge */}
+          <div className="relative mb-4 inline-flex">
+            <div className="w-20 h-20 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center shadow-lg shadow-emerald-500/10 mx-auto">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
             </div>
-            <div className="p-6 bg-gray-50 rounded-[5px] border border-gray-100">
-              <p className="text-sm font-medium text-gray-500 mb-1">Completion</p>
-              <p className="text-4xl font-black text-gray-800">
-                {Math.round((stats.answered / blueprint.questions) * 100)}%
+            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+            </span>
+          </div>
+
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100/70 border border-emerald-200/80 text-emerald-800 text-[11px] font-extrabold uppercase tracking-wider mb-2.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Assessment Completed
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight">
+              Test Submitted Successfully
+            </h2>
+            <p className="text-sm font-semibold text-gray-500 mt-1">
+              {blueprint.exam} <span className="text-gray-300">•</span> Mock Test
+            </p>
+          </div>
+
+          {/* Analytics Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            
+            {/* Attempted */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/80 to-blue-100/30 border border-blue-100 text-left shadow-2xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Attempted</span>
+                <FileText className="w-4 h-4 text-blue-500" />
+              </div>
+              <p className="text-xl md:text-2xl font-black text-blue-950 leading-tight">
+                {stats.answered} <span className="text-xs font-semibold text-blue-500">/ {blueprint.questions}</span>
               </p>
+              <p className="text-[10px] font-medium text-blue-600/80 mt-0.5">
+                {blueprint.questions - stats.answered} Skipped
+              </p>
+            </div>
+
+            {/* Completion */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-100/30 border border-emerald-100 text-left shadow-2xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Completion</span>
+                <Award className="w-4 h-4 text-emerald-500" />
+              </div>
+              <p className="text-xl md:text-2xl font-black text-emerald-950 leading-tight">
+                {completionPct}%
+              </p>
+              <p className="text-[10px] font-medium text-emerald-600/80 mt-0.5">
+                Pacing Score
+              </p>
+            </div>
+
+            {/* Review Flagged */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-100/30 border border-amber-100 text-left shadow-2xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Review Flags</span>
+                <Flag className="w-4 h-4 text-amber-500" />
+              </div>
+              <p className="text-xl md:text-2xl font-black text-amber-950 leading-tight">
+                {stats.review}
+              </p>
+              <p className="text-[10px] font-medium text-amber-600/80 mt-0.5">
+                Bookmarked
+              </p>
+            </div>
+
+            {/* Time Spent */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-50/80 to-indigo-100/30 border border-purple-100 text-left shadow-2xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Time Elapsed</span>
+                <Clock className="w-4 h-4 text-purple-500" />
+              </div>
+              <p className="text-xl md:text-2xl font-black text-purple-950 leading-tight">
+                {timeFormatted}
+              </p>
+              <p className="text-[10px] font-medium text-purple-600/80 mt-0.5">
+                of {blueprint.durationMinutes}m allotted
+              </p>
+            </div>
+
+          </div>
+
+          {/* AI Telemetry Sync Card */}
+          <div className="bg-slate-900 text-white rounded-2xl p-4 mb-8 flex items-center justify-between gap-4 text-left shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 text-primary">
+                <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white leading-snug">Telemetry Sync Active</h4>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Attempt data stored to AarikaAI MemoryOS for weak-topic recommendations.
+                </p>
+              </div>
             </div>
           </div>
           
           <button 
             onClick={onClose}
-            className="px-8 py-3 bg-primary text-white font-semibold rounded-[5px] hover:bg-primary/90 transition-colors"
+            className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/95 hover:to-blue-600/95 text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 active:scale-[0.98] transition-all duration-200 text-sm flex items-center justify-center gap-2 mx-auto cursor-pointer"
           >
-            Back to Dashboard
+            <span>Back to Dashboard</span>
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>

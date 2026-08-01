@@ -19,6 +19,10 @@ import {
   Archive,
   MoreHorizontal,
   ChevronDown,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeft,
+  Info,
   Clock,
   Pencil,
   Check,
@@ -116,9 +120,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ convo, isActive, on
 
   return (
     <div
-      className={`group relative flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 select-none ${
-        isActive ? "bg-primary/10 border border-primary/15" : "hover:bg-gray-50 border border-transparent"
-      }`}
+      className={`group relative flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 select-none ${isActive ? "bg-primary/10 border border-primary/15" : "hover:bg-gray-50 border border-transparent"
+        }`}
       onClick={() => !renaming && onOpen(convo.id)}
     >
       {/* Icon */}
@@ -234,9 +237,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, to, onCl
 
   return (
     <div
-      className={`group flex items-center ${(!isMobile && !showSidebar) ? "justify-center px-0" : "justify-between px-3.5"} w-full py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
-        active ? "bg-primary/10 text-primary" : "text-[#444746] hover:bg-gray-100"
-      }`}
+      className={`group flex items-center ${(!isMobile && !showSidebar) ? "justify-center px-0" : "justify-between px-3.5"} w-full py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${active ? "bg-primary/10 text-primary" : "text-[#444746] hover:bg-gray-100"
+        }`}
       onClick={handleClick}
     >
       <div className="flex items-center gap-3">
@@ -283,7 +285,7 @@ const Sidebar = () => {
 
   React.useEffect(() => {
     let active = true;
-    getEnabledFeatures().then((flags) => { if (active) setFeatures(flags); }).catch(() => {});
+    getEnabledFeatures().then((flags) => { if (active) setFeatures(flags); }).catch(() => { });
     return () => { active = false; };
   }, []);
 
@@ -357,11 +359,10 @@ const Sidebar = () => {
 
   const sidebarClasses = isMobile
     ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300`
-    : `h-screen bg-white border-r border-gray-100 flex flex-col relative z-30 transition-all duration-300 ease-in-out ${
-        isLearningWorkspace
-          ? showSidebar ? "w-64" : "w-0 border-r-0 overflow-hidden"
-          : showSidebar ? "w-64" : "w-[72px]"
-      }`;
+    : `h-screen bg-white border-r border-gray-100 flex flex-col relative z-30 transition-all duration-300 ease-in-out ${isLearningWorkspace
+      ? showSidebar ? "w-64" : "w-0 border-r-0 overflow-hidden"
+      : showSidebar ? "w-64" : "w-[72px]"
+    }`;
 
   const displayConversations = searchResults !== null ? searchResults : null;
   const showChatHistory = showSidebar || isMobile;
@@ -373,7 +374,7 @@ const Sidebar = () => {
       )}
 
       <div className={`${isMobile ? "fixed left-0 top-0 h-full w-72 bg-white z-50 border-r border-gray-100 flex flex-col" : "flex flex-col h-full"}`}>
-        
+
         {/* ── Header ── */}
         <div className={`p-4 flex items-center ${showSidebar ? "justify-between" : "justify-center px-0"} relative flex-shrink-0`}>
           {(!isMobile && !showSidebar) ? (
@@ -557,22 +558,22 @@ const Sidebar = () => {
                 )}
               </div>
             </PopoverTrigger>
-            <PopoverContent 
-              side="top" 
-              align={(!isMobile && !showSidebar) ? "center" : "start"} 
+            <PopoverContent
+              side="top"
+              align={(!isMobile && !showSidebar) ? "center" : "start"}
               className="p-2 rounded-xl shadow-lg border-gray-100 mb-2"
               style={{ width: "var(--radix-popover-trigger-width)" }}
             >
               <div className="flex flex-col gap-1">
                 <button
-                  onClick={() => { navigate.push("/profile"); if(isMobile) toggleSidebar(); }}
+                  onClick={() => { navigate.push("/profile"); if (isMobile) toggleSidebar(); }}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-primary rounded-lg transition-colors text-left"
                 >
                   <Settings size={14} className="text-gray-400" />
                   Settings & Profile
                 </button>
                 <button
-                  onClick={() => { navigate.push("/subscription"); if(isMobile) toggleSidebar(); }}
+                  onClick={() => { navigate.push("/subscription"); if (isMobile) toggleSidebar(); }}
                   className="flex items-center justify-between w-full px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors text-left group"
                 >
                   <div className="flex items-center gap-2.5">

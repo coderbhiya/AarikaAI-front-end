@@ -5,21 +5,31 @@ export function middleware(request: NextRequest) {
   // Read the authToken from the cookies
   const authToken = request.cookies.get('authToken')?.value;
   
-  const isAuthPage = 
+  const isPublicPage = 
     request.nextUrl.pathname === '/' || 
     request.nextUrl.pathname === '/register' || 
     request.nextUrl.pathname === '/forgot-password' ||
+    request.nextUrl.pathname === '/about' ||
+    request.nextUrl.pathname === '/privacy' ||
+    request.nextUrl.pathname === '/terms' ||
+    request.nextUrl.pathname === '/updates-faq' ||
+    request.nextUrl.pathname === '/reviews' ||
     request.nextUrl.pathname.startsWith('/api') ||
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname === '/favicon.ico';
 
+  const isAuthOnlyPage = 
+    request.nextUrl.pathname === '/' || 
+    request.nextUrl.pathname === '/register' || 
+    request.nextUrl.pathname === '/forgot-password';
+
   // If there's no auth token and the user is trying to access a protected route
-  if (!authToken && !isAuthPage) {
+  if (!authToken && !isPublicPage) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // If there IS an auth token and they are on the login/register pages, redirect to chat
-  if (authToken && isAuthPage && !request.nextUrl.pathname.startsWith('/api') && !request.nextUrl.pathname.startsWith('/_next')) {
+  // If there IS an auth token and they are on login/register pages, redirect to chat
+  if (authToken && isAuthOnlyPage) {
     return NextResponse.redirect(new URL('/chat', request.url));
   }
 

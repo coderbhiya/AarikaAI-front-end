@@ -126,7 +126,7 @@ export const LoginPage: React.FC = () => {
       // Clear half-logged-in state in Firebase if backend validation fails
       try {
         await auth.signOut();
-      } catch (e) {}
+      } catch (e) { }
 
       toast({
         title: "Login Failed",
@@ -142,8 +142,8 @@ export const LoginPage: React.FC = () => {
   const handleLinkedInSuccess = React.useCallback(async (code: string) => {
     setIsLoading(prev => ({ ...prev, linkedin: true }));
     try {
-      const response = await axiosInstance.post("/auth/linkedin", { 
-        code, 
+      const response = await axiosInstance.post("/auth/linkedin", {
+        code,
         redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/linkedin` : "http://localhost:3001/linkedin"
       });
       if (response.data.success) {
@@ -231,104 +231,110 @@ export const LoginPage: React.FC = () => {
       <div className="w-full lg:w-1/2 h-full overflow-y-auto scrollbar-none">
         <div className="min-h-full w-full flex flex-col items-center justify-between p-8 relative">
           <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
-          <div className="flex items-center gap-3.5 mb-6 group cursor-pointer">
-            <BrainLogo size={42} className="rounded-lg shadow-md" />
-            <div className="flex flex-col">
-              <span className="text-[#202124] font-bold text-xl tracking-tight leading-tight">Aarika.AI</span>
-              <span className="text-[9px] font-bold text-primary uppercase tracking-widest opacity-80">Professional Hub</span>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#202124] mb-1 tracking-tight">Welcome back.</h2>
-            <p className="text-gray-500 text-[14px] font-medium">Continue your career journey.</p>
-          </div>
-
-          <form onSubmit={handleEmailSignIn} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-bold text-gray-700 ml-1">Email Address</label>
-              <div className="relative group">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
-                <input
-                  type="email"
-                  required
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+            <div className="flex items-center gap-3.5 mb-6 group cursor-pointer">
+              <BrainLogo size={42} className="rounded-lg shadow-md" />
+              <div className="flex flex-col">
+                <span className="text-[#202124] font-bold text-xl tracking-tight leading-tight">Aarika.AI</span>
+                <span className="text-[9px] font-bold text-primary uppercase tracking-widest opacity-80">Professional Hub</span>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center px-1">
-                <label className="text-[12px] font-bold text-gray-700">Password</label>
-                <Link href="/forgot-password" title="Forgot Password" className="text-[11px] font-bold text-primary hover:underline">Forgot?</Link>
-              </div>
-              <div className="relative group">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
-                <input
-                  type="password"
-                  required
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+            <div className="mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-[#202124] mb-1 tracking-tight">Welcome back.</h2>
+              <p className="text-gray-500 text-[14px] font-medium">Continue your career journey.</p>
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading.email}
-              className="w-full h-11 mt-2.5 rounded-lg bg-[#202124] text-white text-sm font-bold hover:bg-primary hover:shadow-lg active:scale-[0.98] disabled:opacity-50 shadow-md transition-all duration-300"
-            >
-              {isLoading.email ? (
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
-              ) : (
-                "Sign In"
-              )}
-            </button>
-          </form>
+            <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-bold text-gray-700 ml-1">Email Address</label>
+                <div className="relative group">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
+                  <input
+                    type="email"
+                    required
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
 
-          <div className="relative my-8 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-100"></div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[12px] font-bold text-gray-700">Password</label>
+                  <Link href="/forgot-password" title="Forgot Password" className="text-[11px] font-bold text-primary hover:underline">Forgot?</Link>
+                </div>
+                <div className="relative group">
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors duration-300" />
+                  <input
+                    type="password"
+                    required
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading.email}
+                className="w-full h-11 mt-2.5 rounded-lg bg-[#202124] text-white text-sm font-bold hover:bg-primary hover:shadow-lg active:scale-[0.98] disabled:opacity-50 shadow-md transition-all duration-300"
+              >
+                {isLoading.email ? (
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto" />
+                ) : (
+                  "Sign In"
+                )}
+              </button>
+            </form>
+
+            <div className="relative my-8 text-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-100"></div>
+              </div>
+              <span className="relative px-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest bg-white">Professional Auth</span>
             </div>
-            <span className="relative px-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest bg-white">Professional Auth</span>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={handleGoogleSignIn}
-              disabled={isLoading.google}
-              className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11 disabled:opacity-50"
-            >
-              <img src="https://www.google.com/favicon.ico" className="w-3.5 h-3.5" alt="G" />
-              Google
-            </button>
-            <button 
-              type="button"
-              onClick={handleLinkedInSignIn}
-              disabled={isLoading.linkedin}
-              className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11 disabled:opacity-50"
-            >
-              <img src="https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg" className="w-4 h-4" alt="IN" />
-              LinkedIn
-            </button>
-          </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={isLoading.google}
+                className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11 disabled:opacity-50"
+              >
+                <img src="https://www.google.com/favicon.ico" className="w-3.5 h-3.5" alt="G" />
+                Google
+              </button>
+              <button
+                type="button"
+                onClick={handleLinkedInSignIn}
+                disabled={isLoading.linkedin}
+                className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11 disabled:opacity-50"
+              >
+                <img src="https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg" className="w-4 h-4" alt="IN" />
+                LinkedIn
+              </button>
+            </div>
 
-          <div className="text-center mt-10">
-            <p className="text-[13px] text-gray-500 font-medium">
-              Don't have an account?{" "}
-              <Link href="/register" className="text-primary font-bold hover:underline ml-1 transition-all">Sign Up</Link>
-            </p>
-          </div>
+            <div className="text-center mt-10">
+              <p className="text-[13px] text-gray-500 font-medium">
+                Don't have an account?{" "}
+                <Link href="/register" className="text-primary font-bold hover:underline ml-1 transition-all">Sign Up</Link>
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="pb-6 text-center opacity-40">
-          <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-400">Secure AES-256 Encryption • AarikaAI Cloud</p>
+        <div className="pb-6 text-center opacity-60">
+          <p className="text-[10px] font-semibold text-gray-500">
+            © 2026{" "}
+            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="hover:underline text-gray-700 font-bold">
+              SenseforgeAI
+            </a>{" "}
+            • Aarika.AI. All rights reserved.
+          </p>
         </div>
       </div>
     </div>
