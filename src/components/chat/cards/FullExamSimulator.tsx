@@ -106,11 +106,26 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
     );
   }, [blueprint.exam, currentQuestion]);
 
+  const isDescriptiveQuestion = useMemo(() => {
+    const examLower = (blueprint.exam || "").toLowerCase();
+    const qText = (currentQuestion?.question || "").toLowerCase();
+    return (
+      examLower.includes("upsc mains") ||
+      examLower.includes("essay") ||
+      examLower.includes("descriptive") ||
+      examLower.includes("mains") ||
+      qText.includes("write an essay") ||
+      qText.includes("critically analyze") ||
+      qText.includes("discuss the impact") ||
+      qText.includes("word limit")
+    );
+  }, [blueprint.exam, currentQuestion]);
+
   useEffect(() => {
-    if (isCodingQuestion) {
+    if (isCodingQuestion || isDescriptiveQuestion) {
       setIsPaletteOpen(false);
     }
-  }, [isCodingQuestion]);
+  }, [isCodingQuestion, isDescriptiveQuestion]);
 
   const handleRunCode = async () => {
     try {
@@ -846,7 +861,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                 </div>
             ) : currentQuestion ? (
               <div className="flex-1 flex flex-col h-full">
-                {!isCodingQuestion && (
+                {!isCodingQuestion && !isDescriptiveQuestion && (
                   <div className="prose max-w-none mb-6">
                     <p className="text-[15px] text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
                       {currentQuestion.question}
@@ -862,7 +877,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                         <span className="px-2.5 py-1 text-xs font-bold bg-blue-100 text-blue-700 rounded-full uppercase tracking-wider">
                           Problem Statement
                         </span>
-                        <span className="text-xs font-semibold text-gray-500">Google SDE OA Format</span>
+                        <span className="text-xs font-semibold text-gray-500">Coding Assessment Format</span>
                       </div>
 
                       <div className="prose max-w-none text-gray-800 font-medium text-sm leading-relaxed whitespace-pre-wrap">
@@ -940,6 +955,50 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                           ))}
                         </div>
                       )}
+                    </div>
+                  </div>
+                ) : isDescriptiveQuestion ? (
+                  /* 50-50 DESCRIPTIVE / UPSC MAINS RESPONSE EDITOR */
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 h-full min-h-[500px]">
+                    {/* LEFT COLUMN (50% Width) - UPSC / DESCRIPTIVE QUESTION */}
+                    <div className="bg-slate-50 border border-gray-200 rounded-xl p-6 flex flex-col overflow-y-auto space-y-4 shadow-2xs">
+                      <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                        <span className="px-2.5 py-1 text-xs font-bold bg-amber-100 text-amber-800 rounded-full uppercase tracking-wider">
+                          UPSC Mains / Descriptive Question
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500">Word Limit: 250 Words</span>
+                      </div>
+
+                      <div className="prose max-w-none text-gray-900 font-bold text-base leading-relaxed whitespace-pre-wrap">
+                        {currentQuestion.question}
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-gray-500">Key Evaluation Rubrics:</h5>
+                        <ul className="text-xs text-gray-700 space-y-1 list-disc pl-4">
+                          <li>Structure: Introduction, Body, Analytical Arguments & Conclusion</li>
+                          <li>Factual Accuracy & Contemporary Context</li>
+                          <li>Clarity, Neutrality & Constructive Synthesis</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* RIGHT COLUMN (50% Width) - DESCRIPTIVE ANSWER EDITOR */}
+                    <div className="flex flex-col gap-3 h-full">
+                      <div className="flex items-center justify-between bg-slate-900 text-white p-3 rounded-t-xl">
+                        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Your Written Answer:</span>
+                        <span className="text-xs font-bold text-emerald-400">
+                          {(answers[activeQuestionIdx] || "").trim().split(/\s+/).filter(Boolean).length} / 250 Words
+                        </span>
+                      </div>
+                      <div className="flex-1 border border-gray-300 bg-white rounded-b-xl overflow-hidden shadow-inner flex flex-col min-h-[350px]">
+                        <textarea
+                          value={answers[activeQuestionIdx] || ""}
+                          onChange={(e) => handleOptionSelect(e.target.value)}
+                          placeholder="Type your structured analytical response here..."
+                          className="w-full h-full p-4 font-sans text-sm text-gray-900 focus:outline-none resize-none leading-relaxed flex-1"
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : (
