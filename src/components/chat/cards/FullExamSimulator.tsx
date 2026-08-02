@@ -109,15 +109,28 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const isDescriptiveQuestion = useMemo(() => {
     const examLower = (blueprint.exam || "").toLowerCase();
     const qText = (currentQuestion?.question || "").toLowerCase();
+
+    // JEE, NEET, GATE, SSC, Banking & Prelims are ALWAYS MCQs!
+    if (
+      examLower.includes("jee") || 
+      examLower.includes("neet") || 
+      examLower.includes("gate") || 
+      examLower.includes("ssc") || 
+      examLower.includes("banking") ||
+      examLower.includes("prelims") ||
+      examLower.includes("nqt")
+    ) {
+      return false;
+    }
+
     return (
       examLower.includes("upsc mains") ||
-      examLower.includes("essay") ||
-      examLower.includes("descriptive") ||
-      examLower.includes("mains") ||
+      examLower.includes("essay writing") ||
+      examLower.includes("descriptive test") ||
+      examLower.includes("state psc mains") ||
       qText.includes("write an essay") ||
       qText.includes("critically analyze") ||
-      qText.includes("discuss the impact") ||
-      qText.includes("word limit")
+      qText.includes("discuss the impact")
     );
   }, [blueprint.exam, currentQuestion]);
 
