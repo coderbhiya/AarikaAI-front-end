@@ -11,20 +11,21 @@ import Courses from "@/components/profile/Courses";
 import Certifications from "@/components/profile/Certifications";
 import Achievements from "@/components/profile/Achievements";
 import Hobbies from "@/components/profile/Hobbies";
-import { Briefcase, Award, CheckCircle2, Download, ExternalLink, MapPin, Globe, Camera, Menu, User, Sparkles, ArrowRight } from "lucide-react";
+import { Briefcase, Award, CheckCircle2, Download, ExternalLink, MapPin, Globe, Camera, Menu, User, Sparkles, ArrowRight, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
 import { ProfileSyncModal } from "@/components/profile/ProfileSyncModal";
 import CareerJourneyTab from "@/components/profile/CareerJourneyTab";
 import LeaderboardTab from "@/components/LeaderboardTab";
+import AssessmentReportsTab from "@/components/profile/AssessmentReportsTab";
 
 const ProfilePage = () => {
   const { user, toggleSidebar, syncProfile } = useAuth();
   const navigate = useRouter();
   const isMobile = useIsMobile();
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'journey' | 'leaderboard'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'journey' | 'leaderboard' | 'reports'>('profile');
 
   useEffect(() => {
     // Sync profile on mount to ensure we have the latest pendingResumeSnapshot
@@ -165,6 +166,13 @@ const ProfilePage = () => {
                 >
                   Leaderboard
                 </button>
+                <button
+                  className={`py-4 text-[15px] font-semibold transition-colors border-b-2 whitespace-nowrap flex items-center gap-1.5 ${activeTab === 'reports' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300'}`}
+                  onClick={() => setActiveTab('reports')}
+                >
+                  <FileText size={16} />
+                  <span>Assessment Reports</span>
+                </button>
               </div>
 
               {/* Content Sections */}
@@ -222,6 +230,10 @@ const ProfilePage = () => {
               ) : activeTab === 'leaderboard' ? (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <LeaderboardTab />
+                </div>
+              ) : activeTab === 'reports' ? (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <AssessmentReportsTab />
                 </div>
               ) : null}
 

@@ -17,6 +17,7 @@ import BadgeCard from "./cards/BadgeCard";
 import PdfDownloadCard from "./cards/PdfDownloadCard";
 import CourseCard from "./cards/CourseCard";
 import ExamSimulatorCard from "./cards/ExamSimulatorCard";
+import CompanyTestCard from "./cards/CompanyTestCard";
 import GeneratedResumeCard from "./cards/GeneratedResumeCard";
 import DiagramCard from "./cards/DiagramCard";
 
@@ -280,6 +281,17 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         <div className="flex flex-col gap-2 w-full max-w-2xl">
           {examData.cleanText && <Markdown text={examData.cleanText} />}
           <ExamSimulatorCard blueprint={examData.data} />
+          {renderFollowUpChips()}
+        </div>
+      );
+    }
+
+    const companyTestData = extractJsonData("COMPANY_TEST_CARD");
+    if (companyTestData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {companyTestData.cleanText && <Markdown text={companyTestData.cleanText} />}
+          <CompanyTestCard {...companyTestData.data} />
           {renderFollowUpChips()}
         </div>
       );

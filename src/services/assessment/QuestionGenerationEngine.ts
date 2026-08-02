@@ -8,6 +8,42 @@ const generateQuestion = async (
   difficulty: string,
   excludeTexts?: string[]
 ): Promise<Question> => {
+  const isCompany = (blueprint.exam || "").toLowerCase().includes("google") ||
+    (blueprint.exam || "").toLowerCase().includes("tcs") ||
+    (blueprint.exam || "").toLowerCase().includes("infosys") ||
+    (blueprint.exam || "").toLowerCase().includes("amazon") ||
+    (blueprint.exam || "").toLowerCase().includes("meta") ||
+    (blueprint.exam || "").toLowerCase().includes("goldman");
+
+  if (isCompany) {
+    try {
+      const compRes = await axiosInstance.post("/company-assessment/start", {
+        testName: blueprint.exam || "Google SDE OA",
+      });
+
+      if (compRes.data && compRes.data.success && compRes.data.data?.sections) {
+        const paper = compRes.data.data;
+        const allQuestions: any[] = [];
+        paper.sections.forEach((sec: any) => {
+          if (sec.questions) allQuestions.push(...sec.questions);
+        });
+
+        if (allQuestions[index]) {
+          const q = allQuestions[index];
+          return {
+            _id: q.id || index + 1,
+            question: q.problemStatement || q.question || "Write an algorithm solution.",
+            options: q.options || ["Solution Code"],
+            correctAnswer: q.correctAnswer || "Solution Code",
+            explanation: q.constraints ? `Constraints: ${q.constraints}` : "Execute code against test cases.",
+          };
+        }
+      }
+    } catch (compErr) {
+      console.warn("[QuestionGenerationEngine] Company assessment endpoint fallback:", compErr);
+    }
+  }
+
   const response = await axiosInstance.post(
     `/assessment/generate-question`, 
     { 

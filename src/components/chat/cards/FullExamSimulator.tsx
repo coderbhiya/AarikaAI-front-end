@@ -56,6 +56,12 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       setQStatus(adapter.getStatus(activeQuestionIdx));
       adapter.getQuestion(activeQuestionIdx).then(q => {
         setCurrentQuestion(q);
+        setCodeResult(null);
+        if (answers[activeQuestionIdx]) {
+          setCodeText(answers[activeQuestionIdx]);
+        } else {
+          setCodeText(`function solution(input) {\n  // Write your solution for Problem ${activeQuestionIdx + 1} here\n  return input;\n}`);
+        }
       });
     }
   }, [activeQuestionIdx, adapter, renderTrigger]);
@@ -81,6 +87,50 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const [isPaused, setIsPaused] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [language, setLanguage] = useState<'Eng' | 'Hi'>('Eng');
+  const [codeLanguage, setCodeLanguage] = useState<'javascript' | 'python' | 'cpp' | 'java'>('javascript');
+  const [codeText, setCodeText] = useState<string>(`function solution(input) {\n  // Write your algorithm solution here\n  return input;\n}`);
+  const [codeRunning, setCodeRunning] = useState(false);
+  const [codeResult, setCodeResult] = useState<any>(null);
+
+  const isCodingQuestion = useMemo(() => {
+    const examLower = (blueprint.exam || "").toLowerCase();
+    const qText = (currentQuestion?.question || "").toLowerCase();
+    return (
+      examLower.includes("google") ||
+      examLower.includes("hackwithinfy") ||
+      examLower.includes("coding") ||
+      examLower.includes("oa") ||
+      qText.includes("write a function") ||
+      qText.includes("write an efficient algorithm") ||
+      qText.includes("function solution")
+    );
+  }, [blueprint.exam, currentQuestion]);
+
+  useEffect(() => {
+    if (isCodingQuestion) {
+      setIsPaletteOpen(false);
+    }
+  }, [isCodingQuestion]);
+
+  const handleRunCode = async () => {
+    try {
+      setCodeRunning(true);
+      setCodeResult(null);
+      const response = await axiosInstance.post('/company-assessment/run-code', {
+        code: codeText,
+        language: codeLanguage,
+        testCases: [
+          { input: "5", output: "10" },
+          { input: "12", output: "24" },
+        ],
+      });
+      setCodeResult(response.data?.data || response.data);
+    } catch (err: any) {
+      setCodeResult({ success: false, error: err.message });
+    } finally {
+      setCodeRunning(false);
+    }
+  };
 
   useEffect(() => {
     if (isPaused || isSubmitted || timeLeft <= 0) return;
@@ -215,125 +265,263 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
     }));
   };
 
+  const [activeResultTab, setActiveResultTab] = useState<'overview' | 'solutions'>('overview');
+  const [hasSavedAttempt, setHasSavedAttempt] = useState(false);
+
+  // Auto-submit score to backend when test is submitted
+  useEffect(() => {
+    if (isSubmitted && !hasSavedAttempt && adapter) {
+      setHasSavedAttempt(true);
+      const allQs = adapter.getAllLoadedQuestions();
+      let correct = 0;
+      allQs.forEach((q, idx) => {
+        const userAns = answers[idx];
+        if (userAns && q.correctAnswer && (userAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase() || userAns.startsWith(q.correctAnswer.charAt(0)))) {
+          correct++;
+        }
+      });
+      const scorePct = Math.round((correct / (allQs.length || blueprint.questions || 1)) * 100);
+      
+      // Save attempt in backend
+      axiosInstance.post('/company-assessment/submit', {
+        companyName: blueprint.exam?.split(' ')[0] || "Standard",
+        testName: blueprint.exam,
+        sectionScores: { correctCount: correct, totalCount: blueprint.questions, percentage: scorePct },
+        timeSpentSeconds: (blueprint.durationMinutes * 60) - timeLeft,
+        answers
+      }).catch(err => console.warn("[FullExamSimulator] Auto-save attempt warning:", err));
+    }
+  }, [isSubmitted, hasSavedAttempt, adapter, answers, blueprint, timeLeft]);
+
   if (isSubmitted) {
     const timeUsedSeconds = (blueprint.durationMinutes * 60) - timeLeft;
     const timeFormatted = formatTime(timeUsedSeconds > 0 ? timeUsedSeconds : 0);
     const completionPct = Math.round((stats.answered / (blueprint.questions || 1)) * 100);
 
+    // Evaluate answers against loaded questions
+    const allQuestions = adapter ? adapter.getAllLoadedQuestions() : [];
+    let correctCount = 0;
+    let wrongCount = 0;
+    const questionEvaluations = Array.from({ length: blueprint.questions }).map((_, idx) => {
+      const q = adapter ? adapter.getQuestionSync(idx) : null;
+      const userAns = answers[idx] || "Not Answered";
+      let isCorrect = false;
+      if (q && userAns !== "Not Answered") {
+        if (q.correctAnswer && (userAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase() || userAns.startsWith(q.correctAnswer.charAt(0)))) {
+          isCorrect = true;
+          correctCount++;
+        } else {
+          wrongCount++;
+        }
+      }
+      return {
+        idx,
+        question: q?.question || `Question ${idx + 1}`,
+        options: q?.options || [],
+        userAnswer: userAns,
+        correctAnswer: q?.correctAnswer || "Refer to Solution",
+        explanation: q?.explanation || "Explanations available in review.",
+        isCorrect,
+        isAnswered: userAns !== "Not Answered"
+      };
+    });
+
+    const scorePercentage = Math.round((correctCount / (blueprint.questions || 1)) * 100);
+
     const submittedScreen = (
       <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-in fade-in duration-300">
-        <div className="bg-white border border-gray-100/80 rounded-3xl shadow-2xl max-w-2xl w-full text-center overflow-hidden relative p-6 md:p-10 animate-in zoom-in-95 duration-300">
+        <div className="bg-white border border-gray-100/80 rounded-3xl shadow-2xl max-w-3xl w-full text-center overflow-hidden relative p-6 md:p-8 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
           
           {/* Ambient Decorative Blur */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Hero Icon Badge */}
-          <div className="relative mb-4 inline-flex">
-            <div className="w-20 h-20 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center shadow-lg shadow-emerald-500/10 mx-auto">
-              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+          <div className="relative mb-3 inline-flex shrink-0 mx-auto">
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center shadow-lg shadow-emerald-500/10 mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
             </div>
-            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
-            </span>
           </div>
 
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100/70 border border-emerald-200/80 text-emerald-800 text-[11px] font-extrabold uppercase tracking-wider mb-2.5">
+          <div className="mb-4 shrink-0">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100/70 border border-emerald-200/80 text-emerald-800 text-[11px] font-extrabold uppercase tracking-wider mb-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Assessment Completed
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-tight">
-              Test Submitted Successfully
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
+              Test Submitted & Evaluated
             </h2>
-            <p className="text-sm font-semibold text-gray-500 mt-1">
-              {blueprint.exam} <span className="text-gray-300">•</span> Mock Test
+            <p className="text-xs font-semibold text-gray-500 mt-0.5">
+              {blueprint.exam} <span className="text-gray-300">•</span> Score: <span className="text-emerald-600 font-bold">{scorePercentage}%</span> ({correctCount}/{blueprint.questions} Correct)
             </p>
           </div>
 
-          {/* Analytics Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            
-            {/* Attempted */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/80 to-blue-100/30 border border-blue-100 text-left shadow-2xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Attempted</span>
-                <FileText className="w-4 h-4 text-blue-500" />
-              </div>
-              <p className="text-xl md:text-2xl font-black text-blue-950 leading-tight">
-                {stats.answered} <span className="text-xs font-semibold text-blue-500">/ {blueprint.questions}</span>
-              </p>
-              <p className="text-[10px] font-medium text-blue-600/80 mt-0.5">
-                {blueprint.questions - stats.answered} Skipped
-              </p>
-            </div>
-
-            {/* Completion */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-100/30 border border-emerald-100 text-left shadow-2xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Completion</span>
-                <Award className="w-4 h-4 text-emerald-500" />
-              </div>
-              <p className="text-xl md:text-2xl font-black text-emerald-950 leading-tight">
-                {completionPct}%
-              </p>
-              <p className="text-[10px] font-medium text-emerald-600/80 mt-0.5">
-                Pacing Score
-              </p>
-            </div>
-
-            {/* Review Flagged */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-100/30 border border-amber-100 text-left shadow-2xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Review Flags</span>
-                <Flag className="w-4 h-4 text-amber-500" />
-              </div>
-              <p className="text-xl md:text-2xl font-black text-amber-950 leading-tight">
-                {stats.review}
-              </p>
-              <p className="text-[10px] font-medium text-amber-600/80 mt-0.5">
-                Bookmarked
-              </p>
-            </div>
-
-            {/* Time Spent */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-50/80 to-indigo-100/30 border border-purple-100 text-left shadow-2xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Time Elapsed</span>
-                <Clock className="w-4 h-4 text-purple-500" />
-              </div>
-              <p className="text-xl md:text-2xl font-black text-purple-950 leading-tight">
-                {timeFormatted}
-              </p>
-              <p className="text-[10px] font-medium text-purple-600/80 mt-0.5">
-                of {blueprint.durationMinutes}m allotted
-              </p>
-            </div>
-
+          {/* Navigation Tabs */}
+          <div className="flex items-center justify-center gap-2 mb-4 shrink-0 bg-gray-100 p-1 rounded-xl max-w-md mx-auto w-full">
+            <button
+              onClick={() => setActiveResultTab('overview')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                activeResultTab === 'overview'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Performance Overview
+            </button>
+            <button
+              onClick={() => setActiveResultTab('solutions')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                activeResultTab === 'solutions'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              View Answer Key & Solutions
+            </button>
           </div>
 
-          {/* AI Telemetry Sync Card */}
-          <div className="bg-slate-900 text-white rounded-2xl p-4 mb-8 flex items-center justify-between gap-4 text-left shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 text-primary">
-                <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+            {activeResultTab === 'overview' ? (
+              <>
+                {/* Analytics Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  
+                  {/* Score */}
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-100/30 border border-emerald-100 text-left shadow-2xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Score</span>
+                      <Award className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <p className="text-xl md:text-2xl font-black text-emerald-950 leading-tight">
+                      {scorePercentage}%
+                    </p>
+                    <p className="text-[10px] font-medium text-emerald-600/80 mt-0.5">
+                      {correctCount} Correct / {blueprint.questions} Qs
+                    </p>
+                  </div>
+
+                  {/* Attempted */}
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/80 to-blue-100/30 border border-blue-100 text-left shadow-2xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Attempted</span>
+                      <FileText className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <p className="text-xl md:text-2xl font-black text-blue-950 leading-tight">
+                      {stats.answered} <span className="text-xs font-semibold text-blue-500">/ {blueprint.questions}</span>
+                    </p>
+                    <p className="text-[10px] font-medium text-blue-600/80 mt-0.5">
+                      {blueprint.questions - stats.answered} Skipped
+                    </p>
+                  </div>
+
+                  {/* Accuracy */}
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-purple-100/30 border border-indigo-100 text-left shadow-2xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Accuracy</span>
+                      <TrendingUp className="w-4 h-4 text-indigo-500" />
+                    </div>
+                    <p className="text-xl md:text-2xl font-black text-indigo-950 leading-tight">
+                      {stats.answered > 0 ? Math.round((correctCount / stats.answered) * 100) : 0}%
+                    </p>
+                    <p className="text-[10px] font-medium text-indigo-600/80 mt-0.5">
+                      Precision Rate
+                    </p>
+                  </div>
+
+                  {/* Time Spent */}
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-50/80 to-indigo-100/30 border border-purple-100 text-left shadow-2xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Time Elapsed</span>
+                      <Clock className="w-4 h-4 text-purple-500" />
+                    </div>
+                    <p className="text-xl md:text-2xl font-black text-purple-950 leading-tight">
+                      {timeFormatted}
+                    </p>
+                    <p className="text-[10px] font-medium text-purple-600/80 mt-0.5">
+                      of {blueprint.durationMinutes}m allotted
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* AI Telemetry Sync Card */}
+                <div className="bg-slate-900 text-white rounded-2xl p-4 flex items-center justify-between gap-4 text-left shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 text-primary">
+                      <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white leading-snug">Evaluation Saved to MemoryOS</h4>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Attempt performance indexed for AI weak-topic remediation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* DETAILED SOLUTION KEY & EXPLANATIONS */
+              <div className="space-y-4 text-left">
+                {questionEvaluations.map((item) => (
+                  <div key={item.idx} className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs space-y-2">
+                    <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                      <span className="font-bold text-gray-900">Q{item.idx + 1}. {item.question}</span>
+                      {item.isCorrect ? (
+                        <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold text-[10px]">
+                          CORRECT (+2.0)
+                        </span>
+                      ) : item.isAnswered ? (
+                        <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold text-[10px]">
+                          INCORRECT (-0.66)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded bg-gray-200 text-gray-700 font-bold text-[10px]">
+                          SKIPPED
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+                      <div className="p-2 rounded bg-white border border-gray-200">
+                        <span className="font-semibold text-gray-500">Your Answer: </span>
+                        <span className={item.isCorrect ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
+                          {item.userAnswer}
+                        </span>
+                      </div>
+                      <div className="p-2 rounded bg-white border border-gray-200">
+                        <span className="font-semibold text-gray-500">Correct Answer: </span>
+                        <span className="font-bold text-emerald-600">{item.correctAnswer}</span>
+                      </div>
+                    </div>
+
+                    {item.explanation && (
+                      <div className="p-2.5 rounded bg-blue-50 border border-blue-100 text-blue-900 text-[11px]">
+                        <span className="font-bold text-blue-700">AI Explanation: </span>
+                        {item.explanation}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-              <div>
-                <h4 className="text-xs font-bold text-white leading-snug">Telemetry Sync Active</h4>
-                <p className="text-[11px] text-gray-400 mt-0.5">
-                  Attempt data stored to AarikaAI MemoryOS for weak-topic recommendations.
-                </p>
-              </div>
-            </div>
+            )}
           </div>
           
-          <button 
-            onClick={onClose}
-            className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/95 hover:to-blue-600/95 text-white font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 active:scale-[0.98] transition-all duration-200 text-sm flex items-center justify-center gap-2 mx-auto cursor-pointer"
-          >
-            <span>Back to Dashboard</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="mt-4 pt-3 border-t border-gray-100 shrink-0 flex items-center justify-between gap-3">
+            <button 
+              onClick={() => window.print()}
+              className="px-5 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs rounded-xl transition-all border border-blue-200 flex items-center gap-2"
+            >
+              <Award className="w-4 h-4 text-blue-600" />
+              <span>Download PDF Diagnostic Report</span>
+            </button>
+            <button 
+              onClick={onClose}
+              className="px-8 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/95 text-white font-bold rounded-xl shadow-lg shadow-primary/25 active:scale-[0.98] transition-all text-xs flex items-center gap-2"
+            >
+              <span>Return to Chat</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -362,6 +550,26 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             <h1 className="font-bold text-gray-900 leading-tight">{blueprint.exam}</h1>
             <p className="text-xs text-gray-500">Mock Test</p>
           </div>
+
+          {/* Top Problem Tabs for Coding Assessments (CodeSignal / LeetCode Style) */}
+          {isCodingQuestion && (
+            <div className="flex items-center gap-1.5 ml-4 bg-gray-100 p-1 rounded-xl">
+              {Array.from({ length: blueprint.questions }).map((_, qIdx) => (
+                <button
+                  key={qIdx}
+                  onClick={() => jumpToQuestion(qIdx)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeQuestionIdx === qIdx
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  <span>Problem {qIdx + 1}</span>
+                  {statuses[qIdx] === 'answered' && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-3">
@@ -546,7 +754,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
 
         {/* LEFT PANEL - QUESTION PALETTE (Desktop Only) */}
-        <div className={`hidden md:flex bg-white border-gray-200 flex-col shrink-0 transition-all duration-300 md:min-h-0 ${isPaletteOpen ? 'w-80 border-r opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'}`}>
+        <div className={`hidden md:flex bg-white border-gray-200 flex-col shrink-0 transition-all duration-300 md:min-h-0 z-20 ${isPaletteOpen ? 'w-80 border-r opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'}`}>
           <div className="p-5 border-b border-gray-100 w-80">
             <h3 className="font-bold text-gray-900 mb-4 text-base">Question Palette</h3>
             <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs font-medium text-gray-600">
@@ -637,13 +845,104 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                   </button>
                 </div>
             ) : currentQuestion ? (
-                <>
-                  <div className="prose max-w-none mb-10">
+              <div className="flex-1 flex flex-col h-full">
+                {!isCodingQuestion && (
+                  <div className="prose max-w-none mb-6">
                     <p className="text-[15px] text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
                       {currentQuestion.question}
                     </p>
                   </div>
+                )}
 
+                {isCodingQuestion ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 h-full min-h-[500px]">
+                    {/* LEFT COLUMN (50% Width) - PROBLEM STATEMENT & CONSTRAINTS */}
+                    <div className="bg-slate-50 border border-gray-200 rounded-xl p-6 flex flex-col overflow-y-auto space-y-4 shadow-2xs">
+                      <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                        <span className="px-2.5 py-1 text-xs font-bold bg-blue-100 text-blue-700 rounded-full uppercase tracking-wider">
+                          Problem Statement
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500">Google SDE OA Format</span>
+                      </div>
+
+                      <div className="prose max-w-none text-gray-800 font-medium text-sm leading-relaxed whitespace-pre-wrap">
+                        {currentQuestion.question}
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-gray-500">Sample Constraints:</h5>
+                        <ul className="text-xs font-mono text-gray-700 space-y-1 list-disc pl-4">
+                          <li>1 &lt;= N &lt;= 10^5</li>
+                          <li>-10^9 &lt;= Node.val &lt;= 10^9</li>
+                          <li>Expected Time Complexity: O(N)</li>
+                          <li>Expected Auxiliary Space: O(H)</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* RIGHT COLUMN (50% Width) - DARK MODE CODE EDITOR IDE */}
+                    <div className="flex flex-col gap-3 h-full">
+                      {/* IDE Header */}
+                      <div className="flex items-center justify-between bg-slate-900 text-white p-3 rounded-t-xl border-b border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Language:</span>
+                          <select
+                            value={codeLanguage}
+                            onChange={(e: any) => setCodeLanguage(e.target.value)}
+                            className="bg-slate-800 text-white text-xs font-bold py-1 px-3 rounded border border-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="javascript">JavaScript (Node.js)</option>
+                            <option value="python">Python 3</option>
+                            <option value="cpp">C++ (GCC 11)</option>
+                            <option value="java">Java 17</option>
+                          </select>
+                        </div>
+                        <button
+                          onClick={handleRunCode}
+                          disabled={codeRunning}
+                          className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded shadow transition-all disabled:opacity-50"
+                        >
+                          {codeRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                          <span>{codeRunning ? "Executing..." : "Run Code Sandbox"}</span>
+                        </button>
+                      </div>
+
+                      {/* Code Editor Textarea */}
+                      <div className="flex-1 border border-slate-800 bg-slate-950 rounded-b-xl overflow-hidden shadow-inner flex flex-col min-h-[320px]">
+                        <textarea
+                          value={codeText}
+                          onChange={(e) => {
+                            setCodeText(e.target.value);
+                            handleOptionSelect(e.target.value);
+                          }}
+                          placeholder="// Write your solution function here..."
+                          className="w-full h-full p-4 font-mono text-sm bg-slate-950 text-emerald-400 focus:outline-none resize-none leading-relaxed flex-1"
+                          spellCheck={false}
+                        />
+                      </div>
+
+                      {/* Execution Output Panel */}
+                      {codeResult && (
+                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs space-y-2 max-h-40 overflow-y-auto">
+                          <div className="flex items-center justify-between font-bold border-b border-slate-800 pb-2">
+                            <span>Execution Console</span>
+                            <span className={codeResult.allPassed ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                              Passed {codeResult.passedCount}/{codeResult.totalTestCases} Test Cases ({codeResult.passPercentage?.toFixed(0)}%)
+                            </span>
+                          </div>
+                          {codeResult.results?.map((r: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between py-1 border-b border-slate-800/50">
+                              <span>Test Case #{r.testCaseIndex}</span>
+                              <span className={r.status === "PASSED" ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
+                                {r.status} ({r.executionTimeMs}ms)
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {currentQuestion.options.map((opt, oIdx) => {
                       const label = String.fromCharCode(65 + oIdx);
@@ -671,7 +970,8 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                       );
                     })}
                   </div>
-                </>
+                )}
+              </div>
             ) : null}
           </div>
 

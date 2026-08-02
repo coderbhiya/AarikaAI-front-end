@@ -58,6 +58,10 @@ export class AssessmentRuntimeAdapter {
     return result;
   }
 
+  public getQuestionSync(index: number): Question | undefined {
+    return this.repository.getQuestion(index);
+  }
+
   public async getQuestion(index: number): Promise<Question | null> {
     if (this.repository.hasQuestion(index)) {
       this.queue.prefetchQuestions(index);
