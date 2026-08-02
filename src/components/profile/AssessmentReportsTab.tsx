@@ -77,7 +77,10 @@ const downloadPDFReport = (report: TestReportItem) => {
         <div class="roadmap">
           <h3 style="margin-top:0; font-size:14px; color:#60a5fa;">Targeted Remediation Roadmap (Synced with AarikaAI MemoryOS):</h3>
           <ul>
-            ${(report.remediationRoadmap || ["Review incorrect answer explanations"]).map((item: string) => `<li>• ${item}</li>`).join("")}
+            ${(report.remediationRoadmap || ["Review incorrect answer explanations"]).map((item: any) => {
+              const text = typeof item === 'string' ? item : (item?.topic ? `${item.topic}${item.gap ? `: ${item.gap}` : ''}${item.actionableAdvice ? ` - ${item.actionableAdvice}` : ''}` : JSON.stringify(item));
+              return `<li>• ${text}</li>`;
+            }).join("")}
           </ul>
         </div>
 
@@ -326,14 +329,19 @@ const AssessmentReportsTab: React.FC = () => {
                     <h4 className="font-bold text-sm text-white">AI Weakness Detection & Remediation Roadmap</h4>
                   </div>
                   <ul className="space-y-2 text-xs text-gray-300">
-                    {selectedReport.remediationRoadmap.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
-                          {idx + 1}
-                        </span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
+                    {selectedReport.remediationRoadmap.map((item: any, idx: number) => {
+                      const text = typeof item === 'string' 
+                        ? item 
+                        : (item?.topic ? `${item.topic}${item.gap ? `: ${item.gap}` : ''}${item.actionableAdvice ? ` - ${item.actionableAdvice}` : ''}` : JSON.stringify(item));
+                      return (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                            {idx + 1}
+                          </span>
+                          <span>{text}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
