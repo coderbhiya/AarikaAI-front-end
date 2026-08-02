@@ -94,6 +94,10 @@ export const sendChatMessage = async (
         console.log("Stream aborted manually");
         return { reply: accumulatedReply, citations: finalCitations, artifact: finalArtifact, FileAttachments: finalFileAttachments };
       }
+      if (accumulatedReply && accumulatedReply.trim().length > 0) {
+        console.warn("Stream error encountered after partial transmission, returning accumulated reply:", e.message);
+        return { reply: accumulatedReply, citations: finalCitations, artifact: finalArtifact, FileAttachments: finalFileAttachments };
+      }
       throw e;
     }
   }

@@ -507,11 +507,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             queryClient.setQueryData<Message[]>(["chats", activeThreadKey], (old) => [...(old || []), newUserMessage]);
             return { previousChats, tempId };
         },
-        onError: (err, newMessage, context) => {
+        onError: (err: any, newMessage, context) => {
             queryClient.setQueryData(["chats", activeThreadKey], context?.previousChats);
             setStreamingReply(null);
             setSearchProgress(null);
-            toast.error("Transmission failed. Please retry.");
+            toast.error(err?.message || "Transmission failed. Please retry.");
         },
         onSuccess: (result, variables, context) => {
             const aiMessage: Message = {
