@@ -152,9 +152,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
       <div className={`relative transition-all duration-500 p-[1.5px] rounded-2xl sm:rounded-[28px] bg-[linear-gradient(to_right,#4285F4,#EA4335,#FBBC05,#34A853)] ${isLoading ? "opacity-90 shadow-[0_4px_24px_rgba(0,0,0,0.06)]" : "opacity-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] focus-within:shadow-[0_8px_32px_rgba(0,0,0,0.1)]"}`}>
         <form
           onSubmit={handleSubmit}
-          className="relative flex flex-col w-full bg-[#F0F4F9] border-none rounded-[14.5px] sm:rounded-[26.5px] group transition-all duration-300"
+          className="relative flex flex-col w-full bg-white border-none rounded-[13.5px] sm:rounded-[26.5px] group transition-all duration-300"
         >
-          <div className="flex flex-col w-full px-2.5 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2">
+          <div className="flex flex-col w-full px-2.5 sm:px-4 pt-2 sm:pt-2.5 pb-1 sm:pb-1.5">
             <textarea
               ref={inputRef}
               value={message}
@@ -168,13 +168,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 }
               }}
               placeholder={isLoading ? "Generating strategy..." : (visualIntelActive ? "Describe the visual diagram/asset to generate..." : "Ask Aarika anything...")}
-              className={`w-full bg-transparent text-[#202124] focus:outline-none resize-none text-sm placeholder-[#444746]/60 font-normal min-h-[30px] sm:min-h-[40px] max-h-[200px] scrollbar-none leading-normal sm:leading-relaxed ${isLoading ? "cursor-not-allowed" : ""}`}
+              className={`w-full bg-transparent text-[#202124] focus:outline-none resize-none text-[13.5px] placeholder-gray-400/80 font-normal min-h-[24px] sm:min-h-[28px] max-h-[200px] scrollbar-none leading-relaxed ${isLoading ? "cursor-not-allowed" : ""}`}
               rows={1}
               disabled={isLoading}
             />
 
             {/* Bottom Utilities Row */}
-            <div className="flex items-center justify-between border-t border-gray-200/30 mt-1.5 sm:mt-2 pt-1.5 sm:pt-2">
+            <div className="flex items-center justify-between border-t border-gray-200/40 mt-1 pt-1 sm:mt-1.5 sm:pt-1.5">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {fileInputShow && (
                   <button
