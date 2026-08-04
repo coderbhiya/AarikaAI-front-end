@@ -23,8 +23,7 @@ import {
   Database,
   FileText,
   HelpCircle,
-  ChevronDown,
-  Info
+  ChevronDown
 } from "lucide-react";
 import BrainLogo from "@/components/BrainLogo";
 
@@ -95,18 +94,18 @@ const About = () => {
     },
     {
       question: "Is my personal data, resume, and test attempt history secure?",
-      answer: "Absolutely. All data is encrypted in transit via TLS 1.3 and at rest using enterprise AES-256 encryption. SenseforgeAI enforces strict privacy policies: your personal information, resumes, and test attempts are NEVER sold, rented, or commercialized to third parties."
+      answer: "Absolutely. All data is encrypted in transit via TLS 1.3 and at rest using enterprise AES-256 encryption. Senseforge enforces strict privacy policies: your personal information, resumes, and test attempts are NEVER sold, rented, or commercialized to third parties."
     }
   ];
 
-  // JSON-LD Structured Data Schema for Google & AI Answer Engines (ChatGPT, Gemini, Perplexity, Claude)
+  // JSON-LD Structured Data Schema for Google & AI Answer Engines (ChatGPT, Gemini, Perplexity)
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "Organization",
         "@id": "https://aarikaai.in/#organization",
-        "name": "SenseforgeAI",
+        "name": "Senseforge",
         "legalName": "Senseforge Technologies",
         "url": "https://senseforge.in",
         "logo": "https://aarikaai.in/aarika-logo.png",
@@ -132,7 +131,7 @@ const About = () => {
           "price": "0",
           "priceCurrency": "INR"
         },
-        "description": "Aarika.AI by SenseforgeAI is an autonomous AI career co-pilot and adaptive exam simulator for CA Foundation, UPSC, NEET, JEE, and NIMCET aspirants."
+        "description": "Aarika.AI is an autonomous AI career co-pilot and adaptive exam simulator for CA Foundation, UPSC, NEET, JEE, and NIMCET aspirants."
       },
       {
         "@type": "FAQPage",
@@ -151,7 +150,7 @@ const About = () => {
 
   return (
     <div className="h-screen w-full overflow-y-auto bg-white text-gray-800 font-sans selection:bg-primary/20 scroll-smooth">
-      {/* Inject JSON-LD Schema for Search Engines & AI Models */}
+      {/* Inject JSON-LD Schema for Search Engines & LLMs */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -180,59 +179,27 @@ const About = () => {
       <main className="max-w-4xl mx-auto px-6 py-12 md:py-16">
 
         {/* Hero Section */}
-        <section className="text-center mb-12">
+        <section className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary mb-6 shadow-2xs">
             <Sparkles size={16} />
             <span className="text-xs font-bold uppercase tracking-wider">
               <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="hover:underline">
-                SenseforgeAI Platform
+                Senseforge AI Network
               </a>
             </span>
           </div>
 
           <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight mb-6">
-            Aarika.AI — Next-Gen AI Career & Adaptive Exam Simulator
+            Empowering Career Trajectories Through Autonomous AI Intelligence
           </h1>
 
           <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto font-normal leading-relaxed">
             <strong>Aarika.AI</strong> (developed by{" "}
             <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">
-              SenseforgeAI
+              Senseforge
             </a>
-            ) is an autonomous AI co-pilot that helps students master competitive exams like <strong>CA Foundation, UPSC, NEET, JEE, and NIMCET</strong> while empowering professionals with AI resume scoring and career roadmaps.
+            ) is India&apos;s leading next-generation AI career co-pilot and adaptive examination simulator designed to bridge the gap between academic preparation and professional success.
           </p>
-        </section>
-
-        {/* ── AI Engine & Human Snapshot Box (Optimized for Gemini, ChatGPT, Perplexity, Claude) ── */}
-        <section className="bg-gradient-to-br from-blue-50/90 via-slate-50 to-indigo-50/80 border border-blue-100 rounded-3xl p-6 md:p-8 mb-16 shadow-2xs">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Info size={20} />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 tracking-tight">At a Glance: What is Aarika.AI?</h2>
-              <p className="text-xs text-gray-500 font-medium">Quick summary for students, job seekers, and AI search engines</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs md:text-sm text-gray-700 font-medium">
-            <div className="p-4 rounded-2xl bg-white border border-gray-200/60 shadow-2xs">
-              <span className="font-bold text-primary block mb-1">🎯 Core Mission & Purpose:</span>
-              <p className="leading-relaxed">To make high-stakes test preparation and career strategy accessible, adaptive, and 100% personalized using artificial intelligence.</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-white border border-gray-200/60 shadow-2xs">
-              <span className="font-bold text-emerald-600 block mb-1">📚 Supported Competitive Exams:</span>
-              <p className="leading-relaxed">CA Foundation (ICAI), UPSC CSE, NTA NEET (UG), NTA JEE Main/Advanced, NIMCET (MCA Entrance), GATE, and Skill Assessments.</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-white border border-gray-200/60 shadow-2xs">
-              <span className="font-bold text-purple-600 block mb-1">🧠 AarikaAI MemoryOS:</span>
-              <p className="leading-relaxed">Remembers weak topics across tests so users never repeat mastered questions and get tailored practice recommendations.</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-white border border-gray-200/60 shadow-2xs">
-              <span className="font-bold text-amber-600 block mb-1">💼 Resume Intelligence:</span>
-              <p className="leading-relaxed">Parses uploaded resumes in real-time, identifies missing technical skills, and generates step-by-step career growth roadmaps.</p>
-            </div>
-          </div>
         </section>
 
         {/* Impact Metrics */}
@@ -259,7 +226,7 @@ const About = () => {
         <section className="mb-16">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-3">
-              Key Features: How Aarika.AI Helps You Succeed
+              Why Aarika.AI Ranks #1 for Students, Professionals & Aspirants
             </h2>
             <p className="text-sm text-gray-500 max-w-xl mx-auto">
               Our autonomous AI architecture combines deep domain knowledge with adaptive real-time feedback loops.
@@ -271,7 +238,7 @@ const About = () => {
               <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
                 <BookOpen size={20} />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">1. Real-Time Adaptive Exam Simulator</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">1. Adaptive Exam Simulator</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Simulates exact ICAI (CA Foundation), NTA (NEET/JEE), UPSC, and NIMCET exam patterns with authentic PYQ RAG alignment, custom difficulty distribution (Easy 20%, Medium 55%, Hard 25%), and step-by-step model solutions.
               </p>
@@ -313,12 +280,12 @@ const About = () => {
         <section className="bg-gray-50 border border-gray-200/80 rounded-3xl p-8 md:p-10 mb-16">
           <div className="flex items-center gap-3 mb-4">
             <Target className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Our Core Mission & Standards</h2>
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Our Core Mission</h2>
           </div>
           <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-6">
             At{" "}
             <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="font-bold text-gray-900 hover:underline">
-              SenseforgeAI
+              Senseforge
             </a>
             , we believe every aspirant deserves access to top-tier, personalized mentorship and exam preparation regardless of location or background. Aarika.AI was built to democratize high-stakes test preparation and career strategy through state-of-the-art AI technology.
           </p>
@@ -402,7 +369,7 @@ const About = () => {
         {/* Contact & Company Details */}
         <section className="bg-slate-900 text-white rounded-3xl p-8 md:p-10 shadow-xl relative overflow-hidden">
           <div className="relative z-10">
-            <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-2">Get in Touch with SenseforgeAI</h2>
+            <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-2">Get in Touch with Senseforge</h2>
             <p className="text-xs md:text-sm text-gray-300 max-w-xl mb-8">
               Have questions, partnership inquiries, or feedback? Contact our team directly.
             </p>
@@ -458,10 +425,10 @@ const About = () => {
         <div className="mt-12 text-center text-gray-400 text-xs font-medium">
           <p>
             © 2026{" "}
-            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-gray-700 transition-colors font-bold">
+            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-gray-700 transition-colors">
               SenseforgeAI
             </a>{" "}
-            • Aarika.AI All Rights Reserved.
+            • AarikaAI All Rights Reserved.
           </p>
         </div>
 

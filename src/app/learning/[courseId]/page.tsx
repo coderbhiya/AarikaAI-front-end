@@ -134,7 +134,7 @@ export default function LearningWorkspace() {
         });
         if (!res.ok) throw new Error("Failed to fetch courses");
         const data = await res.json();
-        
+
         // Find the specific course
         const found = (data.courses || []).find((c: any) => String(c.id) === String(courseId));
         if (found) {
@@ -169,7 +169,7 @@ export default function LearningWorkspace() {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
-        
+
         if (res.ok) {
           if (data.success && data.videos) {
             setPlaylistVideos(data.videos);
@@ -236,11 +236,11 @@ export default function LearningWorkspace() {
             <iframe
               width="100%"
               height="100%"
-              src={currentVideoId 
+              src={currentVideoId
                 ? `https://www.youtube.com/embed/${currentVideoId}?autoplay=1`
-                : (isPlaylist 
-                    ? `https://www.youtube.com/embed/videoseries?list=${youtubeId}` 
-                    : `https://www.youtube.com/embed/${youtubeId}`)}
+                : (isPlaylist
+                  ? `https://www.youtube.com/embed/videoseries?list=${youtubeId}`
+                  : `https://www.youtube.com/embed/${youtubeId}`)}
               title="YouTube video player"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -251,9 +251,9 @@ export default function LearningWorkspace() {
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 text-white">
               <Video size={48} className="text-gray-400 mb-4" />
               <p className="text-gray-300 font-medium">External Course Content</p>
-              <a 
-                href={course.url} 
-                target="_blank" 
+              <a
+                href={course.url}
+                target="_blank"
                 rel="noreferrer"
                 className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md shadow-blue-900/10"
               >
@@ -270,9 +270,8 @@ export default function LearningWorkspace() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all ${
-                activeTab === tab ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
-              }`}
+              className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all ${activeTab === tab ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
+                }`}
             >
               {tab}
               {activeTab === tab && (
@@ -358,11 +357,10 @@ export default function LearningWorkspace() {
                             toast.success(`Playing lesson ${i + 1}: ${video.title}`);
                           }
                         }}
-                        className={`p-3 rounded-2xl border flex flex-col justify-between cursor-pointer transition-all duration-300 ${
-                          isPlaying
+                        className={`p-3 rounded-2xl border flex flex-col justify-between cursor-pointer transition-all duration-300 ${isPlaying
                             ? "bg-blue-50/70 border-blue-200 shadow-sm"
                             : "bg-white border-gray-100 hover:border-blue-100/50 hover:bg-[#F8FAFF]/50"
-                        }`}
+                          }`}
                       >
                         <div>
                           <div className="w-full aspect-video rounded-[10px] overflow-hidden bg-slate-900 relative mb-3">
@@ -411,7 +409,7 @@ export default function LearningWorkspace() {
                     )}
                   </p>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     handleNotesChange("");
                     toast.success("Notes cleared!");
@@ -421,7 +419,7 @@ export default function LearningWorkspace() {
                   Clear Notepad
                 </button>
               </div>
-              
+
               <textarea
                 value={savedNotes}
                 onChange={(e) => handleNotesChange(e.target.value)}
@@ -448,13 +446,13 @@ export default function LearningWorkspace() {
                   { time: "10:12", label: "Common Pitfalls & Debugging", desc: "Reviewing trace stacks, solving memory retention leaks, and optimizing resource payload constraints." },
                   { time: "14:30", label: "Summary & Practical Wrap-up", desc: "Deploying build artifacts, configuring production servers, and reviewing final takeaways." }
                 ].map((item, index) => (
-                  <div 
+                  <div
                     key={index}
                     onClick={() => toast.success(`Skipping to timestamp ${item.time}...`)}
                     className="relative group cursor-pointer hover:bg-gray-50/80 p-3.5 rounded-xl border border-transparent hover:border-gray-100 transition-all duration-300 animate-in fade-in duration-200"
                   >
                     <span className="absolute -left-[31px] top-[18px] w-4 h-4 rounded-full bg-white border-2 border-blue-500 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-50 transition-all" />
-                    
+
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-extrabold text-[12.5px] text-gray-900 group-hover:text-blue-600 transition-colors">
                         {item.label}
@@ -483,7 +481,7 @@ export default function LearningWorkspace() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {combinedResources.map((res: any, i: number) => (
-                  <div 
+                  <div
                     key={res.id || i}
                     className="p-4 rounded-2xl border border-gray-100 hover:border-blue-100/50 hover:bg-[#F8FAFF] transition-all duration-300 flex flex-col justify-between"
                   >
@@ -497,7 +495,7 @@ export default function LearningWorkspace() {
                       <h4 className="font-bold text-slate-800 text-xs tracking-tight line-clamp-1 mb-1">{res.name}</h4>
                       <p className="text-[11px] text-gray-400 font-semibold leading-relaxed mb-4">{res.desc}</p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
                         if (res.url) {
                           window.open(res.url, "_blank");
@@ -537,8 +535,8 @@ export default function LearningWorkspace() {
       </div>
       <div className="flex-1 min-h-0 relative">
         <div className="absolute inset-0">
-          <WorkspaceChatArea 
-            embeddedContext={`I am currently studying the course "${course.title}" on ${course.platform}. Please act as my expert learning tutor for this specific topic.`} 
+          <WorkspaceChatArea
+            embeddedContext={`I am currently studying the course "${course.title}" on ${course.platform}. Please act as my expert learning tutor for this specific topic.`}
             courseId={String(courseId)}
             activeVideoId={currentVideoId || (isPlaylist && playlistVideos.length > 0 ? playlistVideos[0].videoId : youtubeId) || undefined}
           />
@@ -553,7 +551,7 @@ export default function LearningWorkspace() {
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => router.back()}
               className="p-2 hover:bg-[#F0F4FF] rounded-xl transition-all text-gray-600 active:scale-95 duration-200"
               title="Go Back"
@@ -561,7 +559,7 @@ export default function LearningWorkspace() {
               <ArrowLeft size={18} />
             </button>
 
-            <button 
+            <button
               onClick={toggleSidebar}
               className="p-2 hover:bg-[#F0F4FF] rounded-xl transition-all text-gray-600 active:scale-95 duration-200"
               title={showSidebar ? "Close Sidebar" : "Open Sidebar"}
@@ -586,8 +584,8 @@ export default function LearningWorkspace() {
                 <div className="text-xs font-extrabold text-blue-600">{course.progressPercentage}% Complete</div>
               </div>
               <div className="w-24 bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className="bg-blue-600 h-full rounded-full transition-all duration-500" 
+                <div
+                  className="bg-blue-600 h-full rounded-full transition-all duration-500"
                   style={{ width: `${course.progressPercentage}%` }}
                 />
               </div>
@@ -595,14 +593,14 @@ export default function LearningWorkspace() {
 
             {/* Tab Actions */}
             <div className="flex items-center gap-2 border-l border-gray-100 pl-6">
-              <button 
+              <button
                 onClick={() => setActiveTab("notes")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'notes' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
               >
                 <FileText size={14} /> Notes
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => {
                   setShowTutor(true);
                   router.push(`/learning/${courseId}?msg=Based on this lesson, please prepare a 5-question multiple-choice quiz (MCQ) for me to test my understanding.`);
@@ -612,8 +610,8 @@ export default function LearningWorkspace() {
               >
                 <Award size={14} /> Quiz
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => {
                   setBookmarked(!bookmarked);
                   toast.success(bookmarked ? "Bookmark removed!" : "Course bookmarked successfully!");
@@ -626,14 +624,14 @@ export default function LearningWorkspace() {
 
             {/* System theme and profile */}
             <div className="flex items-center gap-3 border-l border-gray-100 pl-6">
-              <button 
+              <button
                 onClick={() => toast.info("Light mode is active.")}
                 className="p-2 text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 rounded-xl transition-all active:scale-95 duration-200"
               >
                 <Sun size={18} />
               </button>
-              
-              <div 
+
+              <div
                 onClick={() => router.push("/profile")}
                 className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-extrabold cursor-pointer hover:bg-blue-700 transition-all shadow-md shadow-blue-100 hover:shadow-lg active:scale-95 animate-in zoom-in duration-300"
                 title="Profile"
