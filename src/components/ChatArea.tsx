@@ -893,24 +893,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 {/* Footer / Input Area */}
                 <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-1.5 sm:pb-6 pt-1 sm:pt-2 bg-gradient-to-t from-white via-white to-transparent shrink-0">
                     <div className="max-w-4xl mx-auto flex flex-col gap-2">
-                        {messages.length === 0 && (
-                            <div className="hidden sm:flex overflow-x-auto no-scrollbar gap-2 px-1 pb-2">
-                                {[
-                                    { text: "Solve a Physics Doubt", classes: "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100/50 text-blue-700 shadow-sm hover:shadow-md hover:from-blue-100 hover:to-indigo-100" },
-                                    { text: "Start a Mock Exam", classes: "bg-gradient-to-r from-purple-50 to-fuchsia-50 border-purple-100/50 text-purple-700 shadow-sm hover:shadow-md hover:from-purple-100 hover:to-fuchsia-100" },
-                                    { text: "Analyze my Resume", classes: "bg-gradient-to-r from-orange-50 to-rose-50 border-orange-100/50 text-orange-700 shadow-sm hover:shadow-md hover:from-orange-100 hover:to-rose-100" },
-                                    { text: "Give Career Advice", classes: "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100/50 text-emerald-700 shadow-sm hover:shadow-md hover:from-emerald-100 hover:to-teal-100" }
-                                ].map((suggestion) => (
-                                    <button
-                                        key={suggestion.text}
-                                        onClick={() => handleSendMessage(suggestion.text)}
-                                        className={`whitespace-nowrap px-4 py-2 border rounded-[10px] text-[12px] font-semibold transition-all transform hover:-translate-y-0.5 ${suggestion.classes}`}
-                                    >
-                                        {suggestion.text}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
                         <ChatInput onSendMessage={handleSendMessage} onStopGenerate={() => abortControllerRef.current?.abort()} isLoading={isProcessing} />
                     </div>
                 </footer>
