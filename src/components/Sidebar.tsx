@@ -112,8 +112,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     <div
       className={`group relative flex items-center gap-0 pl-2 pr-1 py-1.5 rounded-lg cursor-pointer transition-colors duration-100 select-none ${
         isActive
-          ? "bg-gray-200/80 text-gray-900"
-          : "hover:bg-gray-100/80 text-gray-700"
+          ? "bg-primary/10 text-primary"
+          : "hover:bg-primary/5 text-gray-700"
       }`}
       onClick={() => !renaming && onOpen(convo.id)}
     >
@@ -315,7 +315,7 @@ const Sidebar = () => {
 
   const sidebarClasses = isMobile
     ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300`
-    : `h-screen bg-[#f9f9f9] border-r border-gray-200/60 flex flex-col relative z-30 transition-all duration-300 ease-in-out select-none ${
+    : `h-screen bg-white border-r border-gray-200/60 flex flex-col relative z-30 transition-all duration-300 ease-in-out select-none ${
         isLearningWorkspace
           ? showSidebar
             ? "w-[260px]"
@@ -343,11 +343,11 @@ const Sidebar = () => {
       onClick={() => handleNavClick(to)}
       className={`w-full flex items-center gap-2.5 pl-2 pr-2 py-1.5 rounded-lg transition-colors duration-100 text-left ${
         active
-          ? "bg-gray-200/80 text-gray-900 font-medium"
-          : "text-gray-700 hover:bg-gray-100/80 font-normal"
+          ? "bg-primary/10 text-primary font-medium"
+          : "text-gray-700 hover:bg-primary/5 font-normal"
       }`}
     >
-      <span className={`flex-shrink-0 ${active ? "text-gray-900" : "text-gray-500"}`}>
+      <span className={`flex-shrink-0 ${active ? "text-primary" : "text-gray-500"}`}>
         {icon}
       </span>
       {isExpanded && (
@@ -368,7 +368,7 @@ const Sidebar = () => {
       <div
         className={`${
           isMobile
-            ? "fixed left-0 top-0 h-full w-[260px] bg-[#f9f9f9] z-50 border-r border-gray-200 flex flex-col"
+            ? "fixed left-0 top-0 h-full w-[260px] bg-white z-50 border-r border-gray-200 flex flex-col"
             : "flex flex-col h-full"
         }`}
       >
@@ -426,7 +426,7 @@ const Sidebar = () => {
         </div>
 
         {/* ── New Chat ── */}
-        <div className={`flex-shrink-0 mb-1 ${isExpanded ? "px-2" : "px-1.5"}`}>
+        <div className={`flex-shrink-0 mt-2 mb-1 ${isExpanded ? "px-2" : "px-1.5"}`}>
           {isExpanded ? (
             <button
               onClick={handleNewChat}
