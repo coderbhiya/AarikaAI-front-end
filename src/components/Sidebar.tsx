@@ -3,13 +3,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   MessageSquare,
-  User,
+  SquarePen,
   Briefcase,
   LogOut,
   X,
-  Bell,
   Settings,
-  PlusCircle,
   BookOpen,
   Sparkles,
   Megaphone,
@@ -18,45 +16,30 @@ import {
   Pin,
   Archive,
   MoreHorizontal,
-  ChevronDown,
-  ChevronRight,
   PanelLeftClose,
   PanelLeft,
-  Info,
-  Clock,
   Pencil,
   Check,
-  Trophy,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import BrainLogo from "./BrainLogo";
 import { getEnabledFeatures } from "@/services/settingsService";
-import { getConversations, searchConversations, updateConversation, Conversation } from "@/services/conversationService";
+import {
+  getConversations,
+  searchConversations,
+  updateConversation,
+  Conversation,
+} from "@/services/conversationService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-}
-
-function groupConversationsByDate(convos: Conversation[]): { label: string; items: Conversation[] }[] {
+function groupConversationsByDate(
+  convos: Conversation[]
+): { label: string; items: Conversation[] }[] {
   const now = new Date();
   const today: Conversation[] = [];
   const yesterday: Conversation[] = [];
@@ -75,12 +58,12 @@ function groupConversationsByDate(convos: Conversation[]): { label: string; item
   const groups: { label: string; items: Conversation[] }[] = [];
   if (today.length) groups.push({ label: "Today", items: today });
   if (yesterday.length) groups.push({ label: "Yesterday", items: yesterday });
-  if (thisWeek.length) groups.push({ label: "This Week", items: thisWeek });
-  if (older.length) groups.push({ label: "Earlier", items: older });
+  if (thisWeek.length) groups.push({ label: "Previous 7 Days", items: thisWeek });
+  if (older.length) groups.push({ label: "Older", items: older });
   return groups;
 }
 
-// ─── Conversation Item ───────────────────────────────────────────────────────
+// ─── Conversation Item ────────────────────────────────────────────────────────
 
 interface ConversationItemProps {
   convo: Conversation;
@@ -91,7 +74,14 @@ interface ConversationItemProps {
   onRename: (id: string, newTitle: string) => void;
 }
 
-const ConversationItem: React.FC<ConversationItemProps> = ({ convo, isActive, onOpen, onPin, onArchive, onRename }) => {
+const ConversationItem: React.FC<ConversationItemProps> = ({
+  convo,
+  isActive,
+  onOpen,
+  onPin,
+  onArchive,
+  onRename,
+}) => {
   const [showMenu, setShowMenu] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameVal, setRenameVal] = useState(convo.title);
@@ -120,19 +110,20 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ convo, isActive, on
 
   return (
     <div
-      className={`group relative flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 select-none ${isActive ? "bg-primary/10 border border-primary/15" : "hover:bg-gray-50 border border-transparent"
-        }`}
+      className={`group relative flex items-center gap-0 pl-2 pr-1 py-1.5 rounded-lg cursor-pointer transition-colors duration-100 select-none ${
+        isActive
+          ? "bg-gray-200/80 text-gray-900"
+          : "hover:bg-gray-100/80 text-gray-700"
+      }`}
       onClick={() => !renaming && onOpen(convo.id)}
     >
-      {/* Icon */}
-      <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? "bg-primary/20 text-primary" : "bg-gray-100 text-gray-400"}`}>
-        <MessageSquare size={14} />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
+      {/* Title / Rename input */}
+      <div className="flex-1 min-w-0 flex items-center">
         {renaming ? (
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex items-center gap-1 w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
             <input
               ref={inputRef}
               value={renameVal}
@@ -141,124 +132,77 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ convo, isActive, on
                 if (e.key === "Enter") handleRenameSubmit();
                 if (e.key === "Escape") setRenaming(false);
               }}
-              className="flex-1 text-[12px] font-semibold bg-white border border-primary/30 rounded-md px-2 py-0.5 outline-none text-[#202124]"
+              className="w-full text-[13px] bg-white border border-gray-300 rounded px-2 py-0.5 outline-none text-gray-900"
             />
             <button
               onClick={handleRenameSubmit}
-              className="p-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20"
+              className="p-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors flex-shrink-0"
             >
               <Check size={12} />
             </button>
           </div>
         ) : (
-          <p className={`text-[12.5px] font-semibold truncate leading-tight ${isActive ? "text-primary" : "text-[#1f2937]"}`}>
-            {convo.isPinned && <span className="mr-1 text-amber-500">📌</span>}
+          <span className="text-[13px] truncate leading-snug">
+            {convo.isPinned && (
+              <span className="mr-1 text-amber-500 text-[11px]">📌</span>
+            )}
             {convo.title || "Untitled conversation"}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between mt-0.5 gap-1">
-          <p className="text-[11px] text-gray-400 truncate flex-1 leading-tight font-medium">
-            {convo.lastMessage
-              ? convo.lastMessage.replace(/\[.*?\].*?\[\/.*?\]/g, "[Card]").substring(0, 42)
-              : `${convo.messageCount || 0} messages`}
-          </p>
-          <span className="text-[10px] text-gray-300 flex-shrink-0 font-medium">
-            {formatRelativeTime(convo.updatedAt)}
           </span>
-        </div>
+        )}
       </div>
 
-      {/* Three-dot menu */}
-      <div
-        className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-        ref={menuRef}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+      {/* 3-dot action menu — visible on hover */}
+      {!renaming && (
+        <div
+          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-1"
+          ref={menuRef}
+          onClick={(e) => e.stopPropagation()}
         >
-          <MoreHorizontal size={14} />
-        </button>
-
-        {showMenu && (
-          <div className="absolute right-2 top-8 z-50 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 w-40 text-[12px]">
-            <button
-              onClick={() => { setRenaming(true); setShowMenu(false); }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-gray-50 text-gray-700 transition-colors"
-            >
-              <Pencil size={12} /> Rename
-            </button>
-            <button
-              onClick={() => { onPin(convo.id, !convo.isPinned); setShowMenu(false); }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-gray-50 text-gray-700 transition-colors"
-            >
-              <Pin size={12} /> {convo.isPinned ? "Unpin" : "Pin"}
-            </button>
-            <div className="border-t border-gray-50 my-1" />
-            <button
-              onClick={() => { onArchive(convo.id); setShowMenu(false); }}
-              className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-red-50 text-red-500 transition-colors"
-            >
-              <Archive size={12} /> Archive
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ─── Nav Item ────────────────────────────────────────────────────────────────
-
-interface SidebarItemProps {
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  to?: string;
-  onClick?: () => void;
-  badge?: string;
-}
-
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, to, onClick, badge }) => {
-  const navigate = useRouter();
-  const { toggleSidebar, showSidebar } = useAuth();
-  const isMobile = useIsMobile();
-
-  const handleClick = () => {
-    if (to) {
-      navigate.push(to);
-      if (isMobile) toggleSidebar();
-    } else if (onClick) {
-      onClick();
-    }
-  };
-
-  return (
-    <div
-      className={`group flex items-center ${(!isMobile && !showSidebar) ? "justify-center px-0" : "justify-between px-3.5"} w-full py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${active ? "bg-primary/10 text-primary" : "text-[#444746] hover:bg-gray-100"
-        }`}
-      onClick={handleClick}
-    >
-      <div className="flex items-center gap-3">
-        <div className={`transition-colors ${active ? "text-primary" : "text-gray-400 group-hover:text-[#202124]"}`}>
-          {icon}
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1 rounded-md hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+          {showMenu && (
+            <div className="absolute right-1 top-8 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-36 text-[12px]">
+              <button
+                onClick={() => {
+                  setRenaming(true);
+                  setShowMenu(false);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-gray-50 text-gray-700"
+              >
+                <Pencil size={12} /> Rename
+              </button>
+              <button
+                onClick={() => {
+                  onPin(convo.id, !convo.isPinned);
+                  setShowMenu(false);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-gray-50 text-gray-700"
+              >
+                <Pin size={12} /> {convo.isPinned ? "Unpin" : "Pin"}
+              </button>
+              <div className="border-t border-gray-100 my-1" />
+              <button
+                onClick={() => {
+                  onArchive(convo.id);
+                  setShowMenu(false);
+                }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-red-50 text-red-500"
+              >
+                <Archive size={12} /> Archive
+              </button>
+            </div>
+          )}
         </div>
-        {((!isMobile && showSidebar) || isMobile) && (
-          <span className={`text-[14px] font-medium transition-colors whitespace-nowrap ${active ? "text-primary font-semibold" : "group-hover:text-[#202124]"}`}>
-            {label}
-          </span>
-        )}
-      </div>
-      {((!isMobile && showSidebar) || isMobile) && badge && (
-        <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>
       )}
     </div>
   );
 };
 
-// ─── Main Sidebar ────────────────────────────────────────────────────────────
+// ─── Main Sidebar ─────────────────────────────────────────────────────────────
 
 const Sidebar = () => {
   const isMobile = useIsMobile();
@@ -285,11 +229,16 @@ const Sidebar = () => {
 
   React.useEffect(() => {
     let active = true;
-    getEnabledFeatures().then((flags) => { if (active) setFeatures(flags); }).catch(() => { });
-    return () => { active = false; };
+    getEnabledFeatures()
+      .then((flags) => {
+        if (active) setFeatures(flags);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Fetch all conversations
   const { data: conversationsData } = useQuery({
     queryKey: ["conversations"],
     queryFn: () => getConversations(1, 100),
@@ -302,13 +251,13 @@ const Sidebar = () => {
   const unpinnedConvos = conversations.filter((c) => !c.isPinned);
   const grouped = groupConversationsByDate(unpinnedConvos);
 
-  // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateConversation(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["conversations"] }),
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      updateConversation(id, data),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["conversations"] }),
   });
 
-  // Search
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     if (!searchQuery.trim()) {
@@ -327,10 +276,11 @@ const Sidebar = () => {
         setIsSearching(false);
       }
     }, 400);
-    return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
   }, [searchQuery]);
 
-  // Invalidate conversations list whenever a new message is sent
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["conversations"] });
   }, [activeThreadId]);
@@ -354,122 +304,238 @@ const Sidebar = () => {
     if (isMobile) toggleSidebar();
   };
 
+  const handleNavClick = (to: string) => {
+    navigate.push(to);
+    if (isMobile) toggleSidebar();
+  };
+
   const isOnChatPage = pathname === "/chat" || pathname?.startsWith("/chat");
   const isLearningWorkspace = pathname?.startsWith("/learning");
+  const isExpanded = showSidebar || isMobile;
 
   const sidebarClasses = isMobile
     ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300`
-    : `h-screen bg-white border-r border-gray-100 flex flex-col relative z-30 transition-all duration-300 ease-in-out ${isLearningWorkspace
-      ? showSidebar ? "w-64" : "w-0 border-r-0 overflow-hidden"
-      : showSidebar ? "w-64" : "w-[72px]"
-    }`;
+    : `h-screen bg-[#f9f9f9] border-r border-gray-200/60 flex flex-col relative z-30 transition-all duration-300 ease-in-out select-none ${
+        isLearningWorkspace
+          ? showSidebar
+            ? "w-[260px]"
+            : "w-0 border-r-0 overflow-hidden"
+          : showSidebar
+          ? "w-[260px]"
+          : "w-[56px]"
+      }`;
 
   const displayConversations = searchResults !== null ? searchResults : null;
-  const showChatHistory = showSidebar || isMobile;
+
+  // ── Nav link item (same visual weight as a history item) ──
+  const NavLink = ({
+    to,
+    icon,
+    label,
+    active,
+  }: {
+    to: string;
+    icon: React.ReactNode;
+    label: string;
+    active: boolean;
+  }) => (
+    <button
+      onClick={() => handleNavClick(to)}
+      className={`w-full flex items-center gap-2.5 pl-2 pr-2 py-1.5 rounded-lg transition-colors duration-100 text-left ${
+        active
+          ? "bg-gray-200/80 text-gray-900 font-medium"
+          : "text-gray-700 hover:bg-gray-100/80 font-normal"
+      }`}
+    >
+      <span className={`flex-shrink-0 ${active ? "text-gray-900" : "text-gray-500"}`}>
+        {icon}
+      </span>
+      {isExpanded && (
+        <span className="text-[13px] truncate">{label}</span>
+      )}
+    </button>
+  );
 
   return (
     <div className={sidebarClasses}>
       {isMobile && showSidebar && (
-        <div className="fixed inset-0 bg-black/5 backdrop-blur-sm z-40" onClick={toggleSidebar} />
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-xs z-40"
+          onClick={toggleSidebar}
+        />
       )}
 
-      <div className={`${isMobile ? "fixed left-0 top-0 h-full w-72 bg-white z-50 border-r border-gray-100 flex flex-col" : "flex flex-col h-full"}`}>
-
+      <div
+        className={`${
+          isMobile
+            ? "fixed left-0 top-0 h-full w-[260px] bg-[#f9f9f9] z-50 border-r border-gray-200 flex flex-col"
+            : "flex flex-col h-full"
+        }`}
+      >
         {/* ── Header ── */}
-        <div className={`p-4 flex items-center ${showSidebar ? "justify-between" : "justify-center px-0"} relative flex-shrink-0`}>
-          {(!isMobile && !showSidebar) ? (
-            <div className="w-10 h-10 flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => navigate.push("/chat")}>
-              <BrainLogo size={40} />
-            </div>
+        <div
+          className={`flex items-center ${
+            isExpanded ? "justify-between px-3" : "justify-center px-0"
+          } pt-3 pb-2 flex-shrink-0`}
+        >
+          {isExpanded ? (
+            <>
+              {/* Logo + Brand */}
+              <div
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => navigate.push("/chat")}
+              >
+                <div className="w-7 h-7 flex items-center justify-center overflow-hidden shrink-0">
+                  <BrainLogo size={28} />
+                </div>
+                <span className="text-[14px] font-semibold text-gray-900 tracking-tight">
+                  Aarika.AI
+                </span>
+              </div>
+              {/* Collapse toggle */}
+              <div className="flex items-center gap-1">
+                {!isMobile && (
+                  <button
+                    onClick={toggleSidebar}
+                    className="p-1.5 rounded-lg hover:bg-gray-200/70 text-gray-500 hover:text-gray-800 transition-colors"
+                    title="Collapse sidebar"
+                  >
+                    <PanelLeftClose size={17} />
+                  </button>
+                )}
+                {isMobile && (
+                  <button
+                    onClick={toggleSidebar}
+                    className="p-1.5 rounded-lg hover:bg-gray-200/70 text-gray-600"
+                  >
+                    <X size={17} />
+                  </button>
+                )}
+              </div>
+            </>
           ) : (
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate.push("/chat")}>
-              <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
-                <BrainLogo size={40} />
-              </div>
-              <div>
-                <h1 className="text-base font-semibold text-[#202124] tracking-tight leading-none mb-0.5">Aarika.AI</h1>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Strategic Intel</p>
-              </div>
-            </div>
-          )}
-          {isMobile && (
-            <button onClick={toggleSidebar} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-              <X size={18} />
+            /* Collapsed: just expand button */
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg hover:bg-gray-200/70 text-gray-600 transition-colors"
+              title="Expand sidebar"
+            >
+              <PanelLeft size={17} />
             </button>
           )}
         </div>
 
-        {/* ── New Chat Button ── */}
-        <div className={`px-3 mb-3 flex-shrink-0 ${(!isMobile && !showSidebar) ? "px-2" : ""}`}>
-          <button
-            className={`w-full flex items-center ${(!isMobile && !showSidebar) ? "justify-center p-3" : "gap-2.5 px-4 py-2.5"} rounded-xl bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all duration-200 shadow-sm font-semibold text-[13px]`}
-            onClick={handleNewChat}
-          >
-            <PlusCircle size={16} className="flex-shrink-0" />
-            {showChatHistory && <span className="whitespace-nowrap">New Chat</span>}
-          </button>
+        {/* ── New Chat ── */}
+        <div className={`flex-shrink-0 mb-1 ${isExpanded ? "px-2" : "px-1.5"}`}>
+          {isExpanded ? (
+            <button
+              onClick={handleNewChat}
+              className="w-full flex items-center gap-2.5 pl-2 pr-2 py-1.5 rounded-lg bg-white border border-gray-200/80 hover:bg-gray-50 transition-colors text-gray-800 text-[13px] font-medium shadow-2xs group"
+            >
+              <SquarePen size={16} className="text-gray-500 group-hover:text-gray-800 transition-colors flex-shrink-0" />
+              <span>New chat</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleNewChat}
+              className="w-8 h-8 mx-auto flex items-center justify-center rounded-lg hover:bg-gray-200/70 text-gray-600 transition-colors"
+              title="New chat"
+            >
+              <SquarePen size={17} />
+            </button>
+          )}
         </div>
 
-        {/* ── Scrollable body ── */}
-        <div className="flex-1 overflow-y-auto scrollbar-none px-2 flex flex-col gap-1 min-h-0">
+        {/* ── Unified Scrollable Body ── */}
+        <div className="flex-1 overflow-y-auto scrollbar-none min-h-0 flex flex-col px-2">
 
-          {/* ── Navigation Items ── */}
-          <div className="space-y-0.5 mb-3">
-            <SidebarItem to="/chat" icon={<MessageSquare size={18} />} label="Intelligence Chat" active={isOnChatPage && !activeThreadId} />
-            {features.communityModuleEnabled && (
-              <SidebarItem to="/community" icon={<Users size={18} />} label="Community" active={pathname === "/community"} />
-            )}
+          {/* ── Feature Navigation (ChatGPT-style: plain items, same weight as history) ── */}
+          <div className="space-y-0.5 pt-1">
+            <NavLink
+              to="/chat"
+              icon={<MessageSquare size={16} />}
+              label="Chat"
+              active={isOnChatPage && !activeThreadId}
+            />
             {features.learningModuleEnabled && (
-              <SidebarItem to="/dashboard/learning" icon={<BookOpen size={18} />} label="My Learning" active={pathname === "/dashboard/learning"} />
+              <NavLink
+                to="/dashboard/learning"
+                icon={<BookOpen size={16} />}
+                label="My Learning"
+                active={pathname === "/dashboard/learning"}
+              />
+            )}
+            {features.communityModuleEnabled && (
+              <NavLink
+                to="/community"
+                icon={<Users size={16} />}
+                label="Community"
+                active={pathname === "/community"}
+              />
             )}
             {features.jobRecommendationsEnabled && (
-              <SidebarItem to="/jobs" icon={<Briefcase size={18} />} label="Mission Hunt" active={pathname === "/jobs"} />
+              <NavLink
+                to="/jobs"
+                icon={<Briefcase size={16} />}
+                label="Mission Hunt"
+                active={pathname === "/jobs"}
+              />
             )}
-
             {(user?.role === "admin" || user?.role === "super_admin") && (
-              <SidebarItem to="/admin/marketing" icon={<Megaphone size={18} />} label="Marketing" active={pathname === "/admin/marketing"} />
+              <NavLink
+                to="/admin/marketing"
+                icon={<Megaphone size={16} />}
+                label="Marketing"
+                active={pathname === "/admin/marketing"}
+              />
             )}
           </div>
 
-          {/* ── Chat History (only when expanded) ── */}
-          {showChatHistory && (
-            <div className="flex flex-col min-h-0 flex-1">
-              {/* Divider + label */}
-              <div className="flex items-center gap-2 px-1 mb-2">
-                <div className="flex-1 h-px bg-gray-100" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Chat History</span>
-                <div className="flex-1 h-px bg-gray-100" />
-              </div>
+          {/* ── Thin separator before chat history ── */}
+          {isExpanded && (
+            <div className="my-3 border-t border-gray-200/70" />
+          )}
 
-              {/* Search bar */}
+          {/* ── Chat History — flows directly below nav items ── */}
+          {isExpanded && (
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Search */}
               <div className="relative mb-2">
-                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search
+                  size={13}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
                 <input
                   type="text"
                   placeholder="Search chats..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-7 pr-3 py-1.5 text-[12px] bg-gray-50 border border-gray-100 rounded-lg outline-none focus:border-primary/30 focus:bg-white transition-all placeholder-gray-400 text-[#1f2937] font-medium"
+                  className="w-full pl-7 pr-7 py-1 text-[12.5px] bg-gray-200/40 border border-transparent focus:border-gray-300 focus:bg-white rounded-lg outline-none transition-all text-gray-800 placeholder-gray-400"
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
                     <X size={11} />
                   </button>
                 )}
               </div>
 
-              {/* List */}
-              <div className="flex-1 overflow-y-auto scrollbar-none space-y-0.5 pr-0.5">
+              {/* Conversation list */}
+              <div className="flex-1 overflow-y-auto scrollbar-none space-y-0.5 pb-2">
                 {isSearching ? (
-                  <div className="flex items-center justify-center py-6 gap-2">
-                    <div className="w-3.5 h-3.5 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-                    <span className="text-[11px] text-gray-400 font-medium">Searching...</span>
+                  <div className="flex items-center justify-center py-4 gap-2">
+                    <div className="w-3 h-3 border-2 border-gray-400 border-t-gray-700 rounded-full animate-spin" />
+                    <span className="text-[11.5px] text-gray-500">
+                      Searching...
+                    </span>
                   </div>
                 ) : displayConversations !== null ? (
                   displayConversations.length === 0 ? (
-                    <div className="text-center py-6">
-                      <p className="text-[12px] text-gray-400 font-medium">No chats found</p>
-                    </div>
+                    <p className="text-center text-[12px] text-gray-400 py-4">
+                      No chats found
+                    </p>
                   ) : (
                     displayConversations.map((c) => (
                       <ConversationItem
@@ -477,27 +543,29 @@ const Sidebar = () => {
                         convo={c}
                         isActive={activeThreadId === c.id}
                         onOpen={handleOpenConversation}
-                        onPin={(id, pinned) => updateMutation.mutate({ id, data: { isPinned: pinned } })}
-                        onArchive={(id) => updateMutation.mutate({ id, data: { isArchived: true } })}
-                        onRename={(id, title) => updateMutation.mutate({ id, data: { title } })}
+                        onPin={(id, pinned) =>
+                          updateMutation.mutate({ id, data: { isPinned: pinned } })
+                        }
+                        onArchive={(id) =>
+                          updateMutation.mutate({ id, data: { isArchived: true } })
+                        }
+                        onRename={(id, title) =>
+                          updateMutation.mutate({ id, data: { title } })
+                        }
                       />
                     ))
                   )
                 ) : conversations.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-2">
-                      <MessageSquare size={18} className="text-gray-300" />
-                    </div>
-                    <p className="text-[12px] text-gray-400 font-medium">No conversations yet</p>
-                    <p className="text-[11px] text-gray-300 mt-0.5">Start a new chat to begin</p>
-                  </div>
+                  <p className="text-center text-[12px] text-gray-400 py-6">
+                    No conversations yet
+                  </p>
                 ) : (
                   <>
                     {/* Pinned */}
                     {pinnedConvos.length > 0 && (
-                      <div className="mb-2">
-                        <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest px-1 mb-1 flex items-center gap-1">
-                          <Pin size={9} /> Pinned
+                      <div className="mb-1">
+                        <p className="text-[11px] font-semibold text-amber-600 px-2 py-1.5 flex items-center gap-1">
+                          <Pin size={10} /> Pinned
                         </p>
                         {pinnedConvos.map((c) => (
                           <ConversationItem
@@ -505,18 +573,30 @@ const Sidebar = () => {
                             convo={c}
                             isActive={activeThreadId === c.id}
                             onOpen={handleOpenConversation}
-                            onPin={(id, pinned) => updateMutation.mutate({ id, data: { isPinned: pinned } })}
-                            onArchive={(id) => updateMutation.mutate({ id, data: { isArchived: true } })}
-                            onRename={(id, title) => updateMutation.mutate({ id, data: { title } })}
+                            onPin={(id, pinned) =>
+                              updateMutation.mutate({
+                                id,
+                                data: { isPinned: pinned },
+                              })
+                            }
+                            onArchive={(id) =>
+                              updateMutation.mutate({
+                                id,
+                                data: { isArchived: true },
+                              })
+                            }
+                            onRename={(id, title) =>
+                              updateMutation.mutate({ id, data: { title } })
+                            }
                           />
                         ))}
                       </div>
                     )}
 
-                    {/* Date-grouped */}
+                    {/* Date groups */}
                     {grouped.map((group) => (
-                      <div key={group.label} className="mb-2">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-1">
+                      <div key={group.label} className="mb-1">
+                        <p className="text-[11px] font-semibold text-gray-400 px-2 py-1.5">
                           {group.label}
                         </p>
                         {group.items.map((c) => (
@@ -525,9 +605,21 @@ const Sidebar = () => {
                             convo={c}
                             isActive={activeThreadId === c.id}
                             onOpen={handleOpenConversation}
-                            onPin={(id, pinned) => updateMutation.mutate({ id, data: { isPinned: pinned } })}
-                            onArchive={(id) => updateMutation.mutate({ id, data: { isArchived: true } })}
-                            onRename={(id, title) => updateMutation.mutate({ id, data: { title } })}
+                            onPin={(id, pinned) =>
+                              updateMutation.mutate({
+                                id,
+                                data: { isPinned: pinned },
+                              })
+                            }
+                            onArchive={(id) =>
+                              updateMutation.mutate({
+                                id,
+                                data: { isArchived: true },
+                              })
+                            }
+                            onRename={(id, title) =>
+                              updateMutation.mutate({ id, data: { title } })
+                            }
                           />
                         ))}
                       </div>
@@ -539,53 +631,80 @@ const Sidebar = () => {
           )}
         </div>
 
-        {/* ── Footer: User + Logout ── */}
-        <div className={`p-3 border-t border-gray-50 mt-auto flex-shrink-0 ${(!isMobile && !showSidebar) ? "px-2" : ""}`}>
+        {/* ── Footer: User Profile ── */}
+        <div
+          className={`flex-shrink-0 p-2 border-t border-gray-200/50 ${
+            !isExpanded ? "px-1" : ""
+          }`}
+        >
           <Popover>
             <PopoverTrigger asChild>
-              <div className={`flex items-center ${(!isMobile && !showSidebar) ? "justify-center p-2" : "gap-3 p-3"} rounded-xl bg-gray-50 border border-gray-100 transition-all hover:bg-white hover:border-primary/20 cursor-pointer group`}>
-                <div className="w-8 h-8 flex-shrink-0 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm overflow-hidden text-primary font-bold text-sm">
-                  {user?.photoURL ? <img src={user.photoURL} alt="" className="w-full h-full object-cover" /> : user?.displayName?.[0] || "U"}
+              <div
+                className={`flex items-center ${
+                  !isExpanded
+                    ? "justify-center p-1.5"
+                    : "gap-2.5 px-2 py-1.5"
+                } rounded-lg hover:bg-gray-200/70 transition-colors cursor-pointer group`}
+              >
+                <div className="w-7 h-7 flex-shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs overflow-hidden">
+                  {user?.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    user?.displayName?.[0] || "U"
+                  )}
                 </div>
-                {((!isMobile && showSidebar) || isMobile) && (
+                {isExpanded && (
                   <>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-[#202124] truncate group-hover:text-primary transition-colors">{user?.displayName || "User"}</p>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-tighter truncate">Premium Access</p>
-                    </div>
-                    <MoreHorizontal size={14} className="text-gray-400 group-hover:text-primary transition-colors flex-shrink-0" />
+                    <p className="flex-1 min-w-0 text-[13px] font-medium text-gray-900 truncate leading-tight">
+                      {user?.displayName || "User"}
+                    </p>
+                    <MoreHorizontal
+                      size={14}
+                      className="text-gray-400 group-hover:text-gray-700 transition-colors flex-shrink-0"
+                    />
                   </>
                 )}
               </div>
             </PopoverTrigger>
             <PopoverContent
               side="top"
-              align={(!isMobile && !showSidebar) ? "center" : "start"}
-              className="p-2 rounded-xl shadow-lg border-gray-100 mb-2"
-              style={{ width: "var(--radix-popover-trigger-width)" }}
+              align={!isExpanded ? "center" : "start"}
+              className="p-1.5 rounded-xl shadow-lg border border-gray-200/70 bg-white mb-2 w-48"
             >
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5 text-[12.5px]">
                 <button
-                  onClick={() => { navigate.push("/profile"); if (isMobile) toggleSidebar(); }}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-primary rounded-lg transition-colors text-left"
+                  onClick={() => {
+                    navigate.push("/profile");
+                    if (isMobile) toggleSidebar();
+                  }}
+                  className="flex items-center gap-2.5 w-full px-2.5 py-1.5 font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors text-left"
                 >
-                  <Settings size={14} className="text-gray-400" />
+                  <Settings size={14} className="text-gray-500" />
                   Settings & Profile
                 </button>
                 <button
-                  onClick={() => { navigate.push("/subscription"); if (isMobile) toggleSidebar(); }}
-                  className="flex items-center justify-between w-full px-3 py-2 text-[13px] font-medium text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors text-left group"
+                  onClick={() => {
+                    navigate.push("/subscription");
+                    if (isMobile) toggleSidebar();
+                  }}
+                  className="flex items-center justify-between w-full px-2.5 py-1.5 font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors text-left"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Sparkles size={14} className="text-amber-500 group-hover:animate-pulse" />
+                    <Sparkles size={14} className="text-amber-500" />
                     Upgrade Plan
                   </div>
-                  <span className="bg-amber-100 text-amber-600 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Pro</span>
+                  <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                    Pro
+                  </span>
                 </button>
                 <div className="h-px bg-gray-100 my-1 mx-1" />
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
+                  className="flex items-center gap-2.5 w-full px-2.5 py-1.5 font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors text-left"
                 >
                   <LogOut size={14} />
                   Log out
