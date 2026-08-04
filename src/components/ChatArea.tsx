@@ -769,11 +769,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                             <div className="flex flex-col items-center justify-start min-h-[75vh] px-2 pt-6 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out w-full">
 
                                 {/* Concentric Logo Rings */}
-                                <div className="relative mb-8 w-32 h-32 flex items-center justify-center mt-4">
+                                <div className="relative mb-8 w-36 h-36 flex items-center justify-center mt-4">
                                     <div className="absolute inset-[-20px] rounded-full border border-gray-200/40 shadow-[0_0_40px_-10px_rgba(0,0,0,0.03)]"></div>
                                     <div className="absolute inset-[-4px] rounded-full border border-gray-200/60"></div>
-                                    <div className="absolute inset-3 rounded-full border border-gray-200/80 flex items-center justify-center bg-white shadow-sm z-10">
-                                        <BrainLogo size={56} className="opacity-100" />
+                                    <div className="absolute inset-2 rounded-full border border-gray-200/80 flex items-center justify-center bg-white shadow-sm z-10">
+                                        <BrainLogo size={84} className="opacity-100" />
                                     </div>
                                     {/* Decorative scattered dots */}
                                     <div className="absolute top-0 -left-6 w-1.5 h-1.5 rounded-sm bg-blue-500 rotate-45"></div>
