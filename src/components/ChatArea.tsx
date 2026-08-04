@@ -793,38 +793,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                     Your AI Career Companion is ready to help you grow.
                                 </p>
 
-                                {isMobile && mobileBannerUrl && (
-                                    <div className="w-full max-w-sm aspect-video rounded-2xl overflow-hidden mb-6 shadow-sm border border-gray-100 bg-gray-50 flex items-center justify-center">
-                                        <img src={mobileBannerUrl} alt="Welcome Banner" className="w-full h-full object-cover" />
-                                    </div>
-                                )}
-
                                 {/* Action Cards — Slim ChatGPT-style horizontal rows */}
-                                {!(isMobile && mobileBannerUrl) && (
-                                    <div className="flex flex-col gap-2 w-full max-w-xl px-2 md:px-0">
-                                        {[
-                                            { label: "Doubt Solving", desc: "Instant help with your academic questions", icon: <Lightbulb size={16} />, color: "text-purple-600", bg: "bg-purple-50", msg: "I have a doubt, can you help me solve it?" },
-                                            { label: "Exam Prep", desc: "Structured plans & mock tests", icon: <FileText size={16} />, color: "text-rose-500", bg: "bg-rose-50", msg: "Help me prepare for my upcoming exams" },
-                                            { label: "Resume Build", desc: "ATS-friendly resume analysis", icon: <Code size={16} />, color: "text-blue-600", bg: "bg-blue-50", msg: "Can you help me build and review my resume?" },
-                                            { label: "Career Guide", desc: "Map out your dream career path", icon: <Compass size={16} />, color: "text-emerald-600", bg: "bg-emerald-50", msg: "I need career guidance and a roadmap" },
-                                        ].map((item) => (
-                                            <div
-                                                key={item.label}
-                                                onClick={() => handleSendMessage(item.msg)}
-                                                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-white hover:bg-primary/5 hover:border-primary/20 cursor-pointer transition-all duration-200 group shadow-2xs"
-                                            >
-                                                <div className={`w-8 h-8 rounded-lg ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
-                                                    {item.icon}
-                                                </div>
-                                                <div className="flex-1 min-w-0 text-left">
-                                                    <p className="text-[13px] font-semibold text-gray-800 group-hover:text-primary transition-colors leading-tight">{item.label}</p>
-                                                    <p className="text-[11.5px] text-gray-400 truncate leading-tight mt-0.5">{item.desc}</p>
-                                                </div>
-                                                <ArrowRight size={14} className="text-gray-300 group-hover:text-primary/60 transition-colors flex-shrink-0" />
+                                <div className="flex flex-col gap-2 w-full max-w-xl px-2 md:px-0">
+                                    {[
+                                        { label: "Doubt Solving", desc: "Instant help with your academic questions", icon: <Lightbulb size={16} />, color: "text-purple-600", bg: "bg-purple-50", msg: "I have a doubt, can you help me solve it?" },
+                                        { label: "Exam Prep", desc: "Structured plans & mock tests", icon: <FileText size={16} />, color: "text-rose-500", bg: "bg-rose-50", msg: "Help me prepare for my upcoming exams" },
+                                        { label: "Resume Build", desc: "ATS-friendly resume analysis", icon: <Code size={16} />, color: "text-blue-600", bg: "bg-blue-50", msg: "Can you help me build and review my resume?" },
+                                        { label: "Career Guide", desc: "Map out your dream career path", icon: <Compass size={16} />, color: "text-emerald-600", bg: "bg-emerald-50", msg: "I need career guidance and a roadmap" },
+                                    ].map((item) => (
+                                        <div
+                                            key={item.label}
+                                            onClick={() => handleSendMessage(item.msg)}
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-white hover:bg-primary/5 hover:border-primary/20 cursor-pointer transition-all duration-200 group shadow-2xs"
+                                        >
+                                            <div className={`w-8 h-8 rounded-lg ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
+                                                {item.icon}
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            <div className="flex-1 min-w-0 text-left">
+                                                <p className="text-[13px] font-semibold text-gray-800 group-hover:text-primary transition-colors leading-tight">{item.label}</p>
+                                                <p className="text-[11.5px] text-gray-400 truncate leading-tight mt-0.5">{item.desc}</p>
+                                            </div>
+                                            <ArrowRight size={14} className="text-gray-300 group-hover:text-primary/60 transition-colors flex-shrink-0" />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ) : (
                             <MessageList
