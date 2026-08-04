@@ -174,7 +174,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             />
 
             {/* Bottom Utilities Row */}
-            <div className="flex items-center justify-between border-t border-gray-200/40 mt-1 pt-1 sm:mt-1.5 sm:pt-1.5">
+            <div className="flex items-center justify-between mt-1 pt-0.5 sm:mt-1.5 sm:pt-0.5">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {fileInputShow && (
                   <button
