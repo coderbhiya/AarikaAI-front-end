@@ -712,19 +712,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                             </button>
                         </div>
 
-                        {/* Top Header Gamification Stats */}
-                        {myStreak && (
-                            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                                <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shadow-sm">
-                                    <Flame size={12} className="text-orange-500 fill-orange-500 shrink-0" />
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-700">{myStreak.learningStreaks || 0}</span>
-                                </div>
-                                <div className="hidden sm:flex items-center gap-1 bg-blue-50 border border-blue-100 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg shadow-sm">
-                                    <Star size={12} className="text-blue-500 fill-blue-500 shrink-0" />
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-gray-700">{myStreak.consistencyScore || 0}</span>
-                                </div>
-                            </div>
-                        )}
 
                         {!isMobile && (
                             <div className="flex items-center gap-1.5 mr-2 shrink-0">
@@ -769,7 +756,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                             <div className="flex flex-col items-center justify-start min-h-[75vh] px-2 pt-6 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out w-full">
 
                                 {/* Concentric Logo Rings */}
-                                <div className="relative mb-8 w-36 h-36 flex items-center justify-center mt-4">
+                                <div className="relative mb-6 w-32 h-32 flex items-center justify-center mt-4">
                                     <div className="absolute inset-[-20px] rounded-full border border-gray-200/40 shadow-[0_0_40px_-10px_rgba(0,0,0,0.03)]"></div>
                                     <div className="absolute inset-[-4px] rounded-full border border-gray-200/60"></div>
                                     <div className="absolute inset-2 rounded-full border border-gray-200/80 flex items-center justify-center bg-white shadow-sm z-10">
