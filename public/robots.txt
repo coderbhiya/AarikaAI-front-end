@@ -41,4 +41,4 @@ User-agent: facebookexternalhit
 Allow: /
 
 # Sitemap
-Sitemap: https://aarikaai.com/sitemap.xml
+Sitemap: https://aarikaai.in/sitemap.xml

@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL && !process.env.NEXT_PUBLIC_FRONTEND_URL.includes('localhost')
     ? process.env.NEXT_PUBLIC_FRONTEND_URL
-    : 'https://aarikaai.com';
+    : 'https://aarikaai.in';
 
   const currentDate = new Date().toISOString();
 
