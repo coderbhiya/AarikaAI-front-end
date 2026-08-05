@@ -6,6 +6,7 @@ export interface User {
   photoURL: string | null;
   phone?: string;
   role?: string;
+  onboardingCompleted?: boolean;
   UserProfile?: any;
   credits?: number;
   hasSharedOnLinkedIn?: boolean;

@@ -1,3 +1,33 @@
+# www.robotstxt.org/
+# AarikaAI SEO Optimized Robots.txt
+
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /jobs
+Allow: /open-jobs
+Allow: /reviews
+Allow: /privacy
+Allow: /terms
+Allow: /updates-faq
+Allow: /api-docs
+
+# Disallow private user & system routes from indexing
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /chat/
+Disallow: /profile/
+Disallow: /journey/
+Disallow: /learning/
+Disallow: /skill-score/
+Disallow: /notifications/
+Disallow: /subscription/
+Disallow: /otp-verification/
+Disallow: /phone-verification/
+Disallow: /forgot-password/
+Disallow: /api/
+
+# Crawler-specific directives
 User-agent: Googlebot
 Allow: /
 
@@ -10,5 +40,5 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+# Sitemap
+Sitemap: https://aarikaai.com/sitemap.xml

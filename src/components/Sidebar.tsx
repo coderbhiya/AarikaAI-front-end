@@ -341,13 +341,18 @@ const Sidebar = () => {
   }) => (
     <button
       onClick={() => handleNavClick(to)}
-      className={`w-full flex items-center gap-2.5 pl-2 pr-2 py-1.5 rounded-lg transition-colors duration-100 text-left ${
+      title={!isExpanded ? label : undefined}
+      className={`transition-colors duration-100 ${
+        isExpanded
+          ? "w-full flex items-center gap-2.5 pl-2 pr-2 py-1.5 rounded-lg text-left"
+          : "w-8 h-8 mx-auto flex items-center justify-center rounded-lg"
+      } ${
         active
           ? "bg-primary/10 text-primary font-medium"
           : "text-gray-700 hover:bg-primary/5 font-normal"
       }`}
     >
-      <span className={`flex-shrink-0 ${active ? "text-primary" : "text-gray-500"}`}>
+      <span className={`flex-shrink-0 flex items-center justify-center ${active ? "text-primary" : "text-gray-500"}`}>
         {icon}
       </span>
       {isExpanded && (
@@ -417,7 +422,7 @@ const Sidebar = () => {
             /* Collapsed: just expand button */
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-lg hover:bg-gray-200/70 text-gray-600 transition-colors"
+              className="w-8 h-8 mx-auto flex items-center justify-center rounded-lg hover:bg-gray-200/70 text-gray-600 transition-colors"
               title="Expand sidebar"
             >
               <PanelLeft size={17} />
@@ -430,9 +435,9 @@ const Sidebar = () => {
           {isExpanded ? (
             <button
               onClick={handleNewChat}
-              className="w-full flex items-center gap-2.5 pl-2 pr-2 py-1.5 rounded-lg bg-white border border-gray-200/80 hover:bg-gray-50 transition-colors text-gray-800 text-[13px] font-medium shadow-2xs group"
+              className="w-full flex items-center gap-2.5 pl-2 pr-2 py-1.5 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors text-primary text-[13px] font-medium group"
             >
-              <SquarePen size={16} className="text-gray-500 group-hover:text-gray-800 transition-colors flex-shrink-0" />
+              <SquarePen size={16} className="text-primary/70 group-hover:text-primary transition-colors flex-shrink-0" />
               <span>New chat</span>
             </button>
           ) : (
@@ -510,7 +515,7 @@ const Sidebar = () => {
                   placeholder="Search chats..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-7 pr-7 py-1 text-[12.5px] bg-gray-200/40 border border-transparent focus:border-gray-300 focus:bg-white rounded-lg outline-none transition-all text-gray-800 placeholder-gray-400"
+                  className="w-full pl-7 pr-7 py-1 text-[12.5px] bg-primary/5 border border-primary/10 focus:border-primary/25 focus:bg-white rounded-lg outline-none transition-all text-gray-800 placeholder-gray-400"
                 />
                 {searchQuery && (
                   <button

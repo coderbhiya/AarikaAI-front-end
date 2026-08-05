@@ -20,6 +20,9 @@ export const metadata = {
   icons: {
     icon: "/aarika-logo.png",
   },
+  verification: {
+    google: "LMqIHSUalKuHNObh-56LN54ReMCefeMvyPW9aVkcJXo",
+  },
 };
 
 export const viewport = {
@@ -38,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="google-site-verification" content="LMqIHSUalKuHNObh-56LN54ReMCefeMvyPW9aVkcJXo" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

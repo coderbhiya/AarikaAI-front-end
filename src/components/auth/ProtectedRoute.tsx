@@ -6,13 +6,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "../Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+import { OnboardingFlow } from "./OnboardingFlow";
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAuth = true }) => {
-  const { isAuthenticated, loading, profileLoaded, user, showSidebar } = useAuth();
+  const { isAuthenticated, loading, profileLoaded, user, showSidebar, syncProfile } = useAuth();
   const isMobile = useIsMobile();
   const pathname = usePathname();
 
@@ -29,14 +31,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
     return <Navigate to="/" replace />;
   }
 
-  // DISABLED: Phone verification redirect — SMS credits nahi hain abhi
-  // Jab credits ho jayein tab uncomment karna
-  // if (profileLoaded && isAuthenticated && !user?.phone && pathname !== "/phone-verification" && pathname !== "/otp-verification") {
-  //   if (pathname === "/") {
-  //     return null;
-  //   }
-  //   return <Navigate to="/phone-verification" replace />;
-  // }
+  // Option A: Trigger 15-second Micro-Onboarding if user hasn't completed onboarding yet
+  if (profileLoaded && isAuthenticated && user && user.onboardingCompleted === false) {
+    return <OnboardingFlow onComplete={() => syncProfile()} />;
+  }
 
   // If route doesn't require authentication and user is authenticated
   if (!requireAuth && isAuthenticated) {

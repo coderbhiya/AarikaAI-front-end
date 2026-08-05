@@ -112,6 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           photoURL: backendUser.photoURL,
           phone: backendUser.phone,
           role: backendUser.role,
+          onboardingCompleted: backendUser.onboardingCompleted,
           UserProfile: backendUser.UserProfile || backendUser.userProfile,
           credits: backendUser.credits,
           hasSharedOnLinkedIn: backendUser.hasSharedOnLinkedIn,
