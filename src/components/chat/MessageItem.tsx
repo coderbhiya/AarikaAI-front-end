@@ -20,6 +20,11 @@ import ExamSimulatorCard from "./cards/ExamSimulatorCard";
 import CompanyTestCard from "./cards/CompanyTestCard";
 import GeneratedResumeCard from "./cards/GeneratedResumeCard";
 import DiagramCard from "./cards/DiagramCard";
+import StudyGuideCard from "./cards/StudyGuideCard";
+import FAQCard from "./cards/FAQCard";
+import BriefingCard from "./cards/BriefingCard";
+import CitationInspectorModal, { CitationData } from "./CitationInspectorModal";
+import { Bookmark } from "lucide-react";
 
 interface CourseCardProps {
   title: string;
@@ -35,6 +40,7 @@ interface MessageItemProps {
   message: Message;
   onSendMessage?: (text: string) => void;
   onEditMessage?: (messageId: string | number, newText: string) => void;
+  onPinNote?: (title: string, content: string) => void;
 }
 
 const formatFileSize = (bytes: number) => {
@@ -52,10 +58,11 @@ const getFileIcon = (fileType: string) => {
   return <FileIcon size={16} className="text-gray-400" />;
 };
 
-const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEditMessage }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEditMessage, onPinNote }) => {
   const isUser = message.role === "user";
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.message ?? "");
+  const [selectedCitation, setSelectedCitation] = useState<CitationData | null>(null);
 
   // Bug #1 fix: sync editText when the message prop changes (e.g. after a re-render
   // following a successful edit — without this, the textarea shows stale pre-edit text)
@@ -420,6 +427,36 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       );
     }
 
+    const studyGuideData = extractJsonData("STUDY_GUIDE_CARD");
+    if (studyGuideData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-3xl">
+          {studyGuideData.cleanText && <Markdown text={studyGuideData.cleanText} />}
+          <StudyGuideCard {...studyGuideData.data} />
+        </div>
+      );
+    }
+
+    const faqData = extractJsonData("FAQ_CARD");
+    if (faqData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-3xl">
+          {faqData.cleanText && <Markdown text={faqData.cleanText} />}
+          <FAQCard {...faqData.data} />
+        </div>
+      );
+    }
+
+    const briefingData = extractJsonData("BRIEFING_CARD");
+    if (briefingData) {
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-3xl">
+          {briefingData.cleanText && <Markdown text={briefingData.cleanText} />}
+          <BriefingCard {...briefingData.data} />
+        </div>
+      );
+    }
+
     // ── DIAGRAM CARD (Mermaid.js) ──────────────────────────────────────────────
     const diagramData = extractJsonData("DIAGRAM_CARD");
     if (diagramData) {
@@ -570,20 +607,26 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
                     hostname = cite.source || "Web Search";
                   }
                   return (
-                    <a
+                    <button
                       key={index}
-                      href={cite.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-primary/5 text-gray-700 hover:text-primary border border-gray-100 hover:border-primary/20 shadow-sm transition-all duration-300 active:scale-95 group/cite max-w-full"
+                      onClick={() => {
+                        setSelectedCitation({
+                          number: index + 1,
+                          title: cite.title || "Web Search Source",
+                          url: cite.url,
+                          snippet: cite.snippet || cite.text || cite.content,
+                          sourceType: cite.url ? "web" : "document"
+                        });
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 border border-gray-100 hover:border-indigo-200 shadow-sm transition-all duration-300 active:scale-95 group/cite max-w-full text-left cursor-pointer"
                     >
-                      <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-gray-100 text-[10px] font-bold text-gray-500 group-hover/cite:bg-primary/10 group-hover/cite:text-primary transition-colors shrink-0">
-                        {index + 1}
+                      <span className="flex items-center justify-center w-4.5 h-4.5 rounded-full bg-indigo-50 text-[10px] font-bold text-indigo-600 group-hover/cite:bg-indigo-100 transition-colors shrink-0">
+                        [{index + 1}]
                       </span>
                       <span className="truncate max-w-[140px] shrink-0">{cite.title}</span>
-                      <span className="text-[10px] text-gray-400 font-normal group-hover/cite:text-primary/60 truncate min-w-[30px]">({hostname})</span>
-                      <ExternalLink size={10} className="text-gray-300 group-hover/cite:text-primary transition-colors shrink-0" />
-                    </a>
+                      <span className="text-[10px] text-gray-400 font-normal group-hover/cite:text-indigo-600 truncate min-w-[30px]">({hostname})</span>
+                      <ExternalLink size={10} className="text-gray-300 group-hover/cite:text-indigo-600 transition-colors shrink-0" />
+                    </button>
                   );
                 })}
               </div>
@@ -670,10 +713,39 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
               >
                 <Share size={16} />
               </button>
+
+              <button
+                className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                title="Pin to Notes Studio"
+                onClick={() => {
+                  const title = message.message ? message.message.substring(0, 30) + "..." : "Saved Note";
+                  if (onPinNote) {
+                    onPinNote(title, message.message || "");
+                  } else {
+                    const existing = JSON.parse(localStorage.getItem("aarika_pinned_notes") || "[]");
+                    const newNote = {
+                      id: `note_${Date.now()}`,
+                      title: title,
+                      content: message.message || "",
+                      createdAt: new Date().toLocaleDateString()
+                    };
+                    localStorage.setItem("aarika_pinned_notes", JSON.stringify([newNote, ...existing]));
+                    toast.success("Pinned to AarikaBookLM Notes!");
+                  }
+                }}
+              >
+                <Bookmark size={16} />
+              </button>
             </div>
           )}
         </div>
       </div>
+
+      <CitationInspectorModal
+        isOpen={!!selectedCitation}
+        citation={selectedCitation}
+        onClose={() => setSelectedCitation(null)}
+      />
     </div>
   );
 };

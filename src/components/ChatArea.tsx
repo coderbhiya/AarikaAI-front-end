@@ -21,6 +21,8 @@ import { ProfileSyncModal } from "./profile/ProfileSyncModal";
 import { sendChatMessage } from "@/services/chatService";
 import { getMobileBanner } from "@/services/settingService";
 import { pingStreak } from "@/services/gamificationService";
+import PinnedNotesDrawer, { PinnedNote } from "./chat/PinnedNotesDrawer";
+import { Bookmark } from "lucide-react";
 
 // Bug #7 fix: sanitize AI-generated SVG to prevent XSS via <script>, onload, foreignObject, etc.
 const sanitizeSvg = (svgMarkup: string): string => {
@@ -391,6 +393,34 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const [isPersonalized, setIsPersonalized] = useState<boolean>(true);
     const [mobileBannerUrl, setMobileBannerUrl] = useState<string | null>(null);
     const [myStreak, setMyStreak] = useState<any>(null);
+    const [isNotesDrawerOpen, setIsNotesDrawerOpen] = useState(false);
+    const [pinnedNotes, setPinnedNotes] = useState<PinnedNote[]>(() => {
+        if (typeof window === "undefined") return [];
+        try {
+            return JSON.parse(localStorage.getItem("aarika_pinned_notes") || "[]");
+        } catch {
+            return [];
+        }
+    });
+
+    const handlePinNote = (title: string, content: string) => {
+        const newNote: PinnedNote = {
+            id: `note_${Date.now()}`,
+            title,
+            content,
+            createdAt: new Date().toLocaleDateString()
+        };
+        const updated = [newNote, ...pinnedNotes];
+        setPinnedNotes(updated);
+        localStorage.setItem("aarika_pinned_notes", JSON.stringify(updated));
+        toast.success("Pinned to AarikaBookLM Notes!");
+    };
+
+    const handleDeleteNote = (id: string) => {
+        const updated = pinnedNotes.filter(n => n.id !== id);
+        setPinnedNotes(updated);
+        localStorage.setItem("aarika_pinned_notes", JSON.stringify(updated));
+    };
 
     useEffect(() => {
         pingStreak().then(res => setMyStreak(res.data)).catch(() => { });
@@ -713,6 +743,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                         </div>
 
 
+                        {/* Pinned Notes Studio Button */}
+                        <button
+                            type="button"
+                            onClick={() => setIsNotesDrawerOpen(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 hover:bg-amber-100 transition-colors shadow-2xs text-xs font-medium shrink-0"
+                            title="Open Pinned Notebook Notes"
+                        >
+                            <Bookmark size={14} className="fill-amber-600 text-amber-600" />
+                            <span className="hidden sm:inline">Notes ({pinnedNotes.length})</span>
+                        </button>
+
                         {!isMobile && (
                             <div className="flex items-center gap-1.5 mr-2 shrink-0">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -813,6 +854,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                         : messages
                                 }
                                 onSendMessage={handleSendMessage}
+                                onPinNote={handlePinNote}
                                 onEditMessage={async (messageId: string | number, newText: string) => {
                                     try {
                                         const numId = Number(messageId);
@@ -972,6 +1014,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     </div>
                 </div>
             )}
+
+            <PinnedNotesDrawer
+                isOpen={isNotesDrawerOpen}
+                notes={pinnedNotes}
+                onClose={() => setIsNotesDrawerOpen(false)}
+                onDeleteNote={handleDeleteNote}
+            />
         </div>
     );
 };

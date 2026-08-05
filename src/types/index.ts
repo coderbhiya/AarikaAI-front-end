@@ -36,6 +36,8 @@ export interface Message {
   FileAttachments?: FileAttachment[] | null;
   citations?: any[] | null;
   artifact?: any;
+  tempId?: string;
+  timestamp?: number;
   createdAt: string | Date;
 }
 
