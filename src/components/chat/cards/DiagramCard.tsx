@@ -78,34 +78,89 @@ function applyStyles(container: HTMLDivElement | null) {
   svg.style.cssText = `display: block; width: 100%; max-width: ${targetMaxWidth}px; height: auto; margin: 0 auto; transition: all 0.2s ease;`;
 }
 
+function sanitizeMermaid(code: string): string {
+  if (!code) return "";
+  let clean = code
+    .replace(/\\\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/`/g, "")
+    .trim();
+
+  if (!/^(graph|flowchart|mindmap|sequenceDiagram|gantt|pie|erDiagram|classDiagram|stateDiagram|timeline)/i.test(clean)) {
+    clean = "graph TD\n" + clean;
+  }
+
+  // Sanitize unquoted node label special characters:
+  clean = clean.replace(/\[([^\]\n]+)\]/g, (match, text) => {
+    if (text.startsWith('"') && text.endsWith('"')) return match;
+    const sanitizedText = text.replace(/[\(\)\{\}\[\]"']/g, " ").replace(/\s+/g, " ").trim();
+    return `[${sanitizedText}]`;
+  });
+
+  return clean;
+}
+
+function parseVisualSteps(code: string): string[] {
+  const steps: string[] = [];
+  const lines = code.split("\n");
+  for (const line of lines) {
+    if (line.includes("classDef") || line.startsWith("class ")) continue;
+    const matches = line.match(/(?:\[|\(|\{)([^\]\)\}\n]+)(?:\]|\)|\})/g);
+    if (matches) {
+      for (const m of matches) {
+        const cleaned = m.replace(/^[\[\(\{]+|[\]\)\}]+$/g, "").trim();
+        if (cleaned && !cleaned.toLowerCase().startsWith("graph") && !steps.includes(cleaned)) {
+          steps.push(cleaned);
+        }
+      }
+    }
+  }
+  return steps;
+}
+
 const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, mermaid: mermaidCode }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const idRef = useRef("mmd-" + (++_cnt));
+  const idRef = useRef("mmd-" + Math.random().toString(36).substring(2, 9));
 
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [svgHtml, setSvgHtml] = useState("");
   const [zoom, setZoom] = useState(1);
 
-  const rawCode = (mermaidCode ?? "")
-    .replace(/\\\\n/g, "\n")
-    .replace(/\\n/g, "\n")
-    .trim();
+  const rawCode = sanitizeMermaid(mermaidCode);
+  const fallbackSteps = parseVisualSteps(rawCode);
 
   useEffect(() => {
     if (!rawCode) return;
     let gone = false;
+    setError(false);
+    
+    // Generate unique ID per render attempt to avoid DOM ID collisions
+    const currentId = "mmd-" + Math.random().toString(36).substring(2, 9);
+    
     getMermaid()
-      .then((m) => m.render(idRef.current, rawCode))
+      .then((m) => m.render(currentId, rawCode))
       .then((result: any) => {
         if (gone) return;
         const svg = result?.svg ?? result;
         if (typeof svg === "string") setSvgHtml(svg);
       })
       .catch((e: any) => {
-        if (!gone) setError(e?.message || "Render error");
+        if (!gone) {
+          console.warn("[DiagramCard] Mermaid render error, attempting simple fallback:", e?.message);
+          const simplifiedCode = rawCode.replace(/classDef[\s\S]*$/gi, "").trim();
+          getMermaid()
+            .then((m) => m.render(currentId + "-fb", simplifiedCode))
+            .then((res: any) => {
+              const svg = res?.svg ?? res;
+              if (typeof svg === "string" && !gone) setSvgHtml(svg);
+            })
+            .catch(() => {
+              if (!gone) setError(true);
+            });
+        }
       });
     return () => { gone = true; };
   }, [rawCode]);
@@ -201,7 +256,20 @@ const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, me
           {/* Centered Clean SVG Body */}
           <div className="w-full flex justify-center items-center py-2 px-1 overflow-x-auto min-h-[120px] max-h-[360px] scrollbar-thin">
             {error ? (
-              <div className="text-xs text-red-500 p-2 font-medium">Failed to render diagram syntax</div>
+              <div className="w-full flex flex-col items-center gap-2 py-3 px-2">
+                <div className="flex flex-wrap items-center justify-center gap-2 max-w-full">
+                  {fallbackSteps.map((step, sIdx) => (
+                    <React.Fragment key={sIdx}>
+                      <div className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-medium shadow-xs">
+                        {step}
+                      </div>
+                      {sIdx < fallbackSteps.length - 1 && (
+                        <span className="text-indigo-400 font-bold text-xs">➔</span>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
             ) : !svgHtml ? (
               <div className="flex items-center gap-2 text-xs text-slate-400 py-4 font-medium animate-pulse">
                 <span>Generating diagram...</span>
