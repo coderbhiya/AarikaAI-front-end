@@ -14,6 +14,14 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname === '/terms' ||
     request.nextUrl.pathname === '/updates-faq' ||
     request.nextUrl.pathname === '/reviews' ||
+    request.nextUrl.pathname === '/jobs' ||
+    request.nextUrl.pathname === '/open-jobs' ||
+    request.nextUrl.pathname === '/community' ||
+    request.nextUrl.pathname === '/api-docs' ||
+    request.nextUrl.pathname === '/sitemap.xml' ||
+    request.nextUrl.pathname === '/robots.txt' ||
+    request.nextUrl.pathname.endsWith('.xml') ||
+    request.nextUrl.pathname.endsWith('.txt') ||
     request.nextUrl.pathname.startsWith('/api') ||
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname === '/favicon.ico';
@@ -37,6 +45,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Match all routes except static assets, API routes, images, etc.
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // Match all routes except static assets, API routes, images, sitemap, robots, etc.
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|sitemap\\.xml|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|xml|txt)$).*)'],
 };
