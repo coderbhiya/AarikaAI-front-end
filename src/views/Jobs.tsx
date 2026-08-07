@@ -315,13 +315,6 @@ const Jobs = () => {
                 ))}
               </select>
             </div>
-
-            <button
-              onClick={() => applyFilters(null)}
-              className="p-1.5 bg-primary text-white rounded-md text-xs font-bold shrink-0 hover:bg-primary/90 transition-colors"
-            >
-              Search
-            </button>
           </div>
         </div>
 
