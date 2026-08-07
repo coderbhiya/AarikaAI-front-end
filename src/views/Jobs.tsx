@@ -628,19 +628,19 @@ const Jobs = () => {
 
       {/* Mobile Footer for pagination if mobile */}
       {isMobile && !loading && jobs.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-between z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pl-16 pr-4 py-3 flex items-center justify-between z-40 shadow-lg">
           <button
             onClick={() => changePage(pagination.page - 1)}
             disabled={pagination.page === 1}
-            className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-bold disabled:opacity-30"
+            className="px-3.5 py-2 rounded-full bg-gray-100 text-gray-700 text-xs font-bold disabled:opacity-30 active:scale-95 transition-all"
           >
             Previous
           </button>
-          <span className="text-sm font-bold text-gray-800">{pagination.page} / {pagination.totalPages}</span>
+          <span className="text-xs font-extrabold text-gray-800 tracking-tight">{pagination.page} / {pagination.totalPages}</span>
           <button
             onClick={() => changePage(pagination.page + 1)}
             disabled={pagination.page === pagination.totalPages}
-            className="px-4 py-2 rounded-full bg-primary text-white text-sm font-bold disabled:opacity-30"
+            className="px-4 py-2 rounded-full bg-primary text-white text-xs font-bold disabled:opacity-30 active:scale-95 transition-all shadow-sm"
           >
             Next
           </button>
