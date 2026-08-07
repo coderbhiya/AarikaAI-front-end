@@ -351,7 +351,7 @@ export default function LearningWorkspace() {
                     const isPlaying = video.videoId === (currentVideoId || youtubeId);
                     return (
                       <div
-                        key={video.videoId || i}
+                        key={`${video.videoId || "vid"}-${i}`}
                         onClick={() => {
                           if (video.videoId) {
                             setCurrentVideoId(video.videoId);
