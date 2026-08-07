@@ -254,16 +254,17 @@ const Jobs = () => {
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[#f3f2ef] relative overflow-hidden">
       {/* Search Header (LinkedIn Style) */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-8 py-2 md:py-3 bg-white border-b border-gray-200 w-full shadow-sm">
-        <div className="flex items-center gap-4 flex-1">
+      <header className="sticky top-0 z-50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between px-3 md:px-8 py-2 md:py-3 bg-white border-b border-gray-200 w-full shadow-sm gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1">
           <button
             onClick={toggleSidebar}
-            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
+            title="Toggle Sidebar"
           >
             <Menu size={20} />
           </button>
 
-          <div className="hidden md:flex flex-1 max-w-2xl items-center gap-2 bg-[#edf3f8] px-4 py-1.5 rounded-md border border-transparent focus-within:border-gray-400 focus-within:bg-white transition-all relative">
+          <div className="flex flex-1 max-w-2xl items-center gap-2 bg-[#edf3f8] px-3 md:px-4 py-1.5 rounded-lg border border-transparent focus-within:border-gray-400 focus-within:bg-white transition-all relative">
             <Search size={18} className="text-gray-500 shrink-0" />
             <div className="flex-1 relative flex items-center h-8">
               <input
@@ -278,12 +279,12 @@ const Jobs = () => {
                     applyFilters(null);
                   }
                 }}
-                placeholder="Search by title, skills, or company"
-                className="w-full bg-transparent border-none outline-none text-sm text-gray-800 font-medium"
+                placeholder="Search jobs, skills, companies..."
+                className="w-full bg-transparent border-none outline-none text-xs sm:text-sm text-gray-800 font-medium"
                 autoComplete="off"
               />
               {showSuggestions && suggestions.length > 0 && (
-                <div ref={dropdownRef} className="absolute top-[calc(100%+10px)] left-[-30px] right-[-30px] bg-white border border-gray-200 rounded-lg shadow-xl z-[100] overflow-hidden py-2 max-h-[300px] overflow-y-auto">
+                <div ref={dropdownRef} className="absolute top-[calc(100%+10px)] left-[-15px] right-[-15px] sm:left-[-30px] sm:right-[-30px] bg-white border border-gray-200 rounded-lg shadow-xl z-[100] overflow-hidden py-2 max-h-[300px] overflow-y-auto">
                   {suggestions.map((suggestion, index) => (
                     <div
                       key={index}
@@ -297,24 +298,31 @@ const Jobs = () => {
                 </div>
               )}
             </div>
-            <div className="h-6 w-px bg-gray-300 mx-2 shrink-0" />
-            <MapPin size={18} className="text-gray-500" />
-            <select
-              name="location"
-              value={filters.location}
-              onChange={handleFilterChange}
-              className="bg-transparent border-none outline-none text-sm text-gray-800 font-medium cursor-pointer"
-            >
-              <option value="">Any Location</option>
-              {availableFilters.locations.map((loc) => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
-          </div>
 
-          <button onClick={applyFilters} className="md:hidden p-2 text-primary">
-            <Search size={22} />
-          </button>
+            <div className="hidden sm:block h-6 w-px bg-gray-300 mx-1 shrink-0" />
+
+            <div className="hidden sm:flex items-center gap-1">
+              <MapPin size={16} className="text-gray-500 shrink-0" />
+              <select
+                name="location"
+                value={filters.location}
+                onChange={handleFilterChange}
+                className="bg-transparent border-none outline-none text-xs sm:text-sm text-gray-800 font-medium cursor-pointer max-w-[110px]"
+              >
+                <option value="">Any Location</option>
+                {availableFilters.locations.map((loc) => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => applyFilters(null)}
+              className="p-1.5 bg-primary text-white rounded-md text-xs font-bold shrink-0 hover:bg-primary/90 transition-colors"
+            >
+              Search
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 ml-4">
