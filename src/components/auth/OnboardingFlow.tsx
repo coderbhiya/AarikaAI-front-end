@@ -122,26 +122,27 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const userName = user?.displayName || user?.name || "there";
 
   return (
-    <div className="w-screen h-screen overflow-y-auto bg-slate-50 dark:bg-slate-950 flex flex-col fixed inset-0 z-50 select-none">
-      
-      {/* HEADER */}
-      <header className="h-[60px] flex items-center justify-between px-6 lg:px-12 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-extrabold text-sm shadow-sm">
-            A
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-50 dark:bg-slate-950 select-none">
+      <div className="min-h-[100dvh] flex flex-col">
+        {/* HEADER */}
+        <header className="h-[60px] flex items-center justify-between px-6 lg:px-12 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-extrabold text-sm shadow-sm">
+              A
+            </div>
+            <span className="font-extrabold text-lg text-slate-900 dark:text-white tracking-tight">
+              Aarika<span className="text-blue-600">.AI</span>
+            </span>
           </div>
-          <span className="font-extrabold text-lg text-slate-900 dark:text-white tracking-tight">
-            Aarika<span className="text-blue-600">.AI</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          <span>15-Second Personalization</span>
-        </div>
-      </header>
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span className="hidden sm:inline">15-Second Personalization</span>
+            <span className="sm:hidden">Personalization</span>
+          </div>
+        </header>
 
-      {/* MAIN CONTAINER */}
-      <div className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
+        {/* MAIN CONTAINER */}
+        <div className="flex-1 w-full max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
         <div className="space-y-6">
           
           {/* TITLE BANNER */}
@@ -303,6 +304,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         </div>
 
       </div>
+    </div>
     </div>
   );
 }
