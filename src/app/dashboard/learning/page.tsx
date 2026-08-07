@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { BookOpen, PlayCircle, PlusCircle, Search, Play, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { BookOpen, PlayCircle, PlusCircle, Search, Play, Check, Menu } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 
 export default function MyLearningDashboard() {
   const router = useRouter();
+  const { toggleSidebar } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,26 +44,43 @@ export default function MyLearningDashboard() {
     <ProtectedRoute>
       <div className="flex-1 overflow-hidden flex flex-col h-full bg-[#F8F9FA]">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-white px-8 shadow-sm z-10">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-              <BookOpen className="text-primary" size={24} /> My Learning
-            </h1>
+        <header className="flex flex-col sm:flex-row min-h-16 shrink-0 items-start sm:items-center justify-between border-b bg-white px-4 md:px-8 py-3 sm:py-0 shadow-sm z-10 gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleSidebar}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                title="Toggle Sidebar"
+              >
+                <Menu size={20} />
+              </button>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <BookOpen className="text-primary" size={22} /> My Learning
+              </h1>
+            </div>
+
+            <button
+              onClick={() => router.push("/chat?msg=Recommend%20me%20some%20courses")}
+              className="sm:hidden flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm"
+            >
+              <PlusCircle size={14} /> Explore
+            </button>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-initial w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
                 placeholder="Search courses..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-64 transition-all"
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
             <button
               onClick={() => router.push("/chat?msg=Recommend%20me%20some%20courses")}
-              className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
+              className="hidden sm:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
             >
               <PlusCircle size={16} /> Explore
             </button>
@@ -69,7 +88,7 @@ export default function MyLearningDashboard() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-gray-200">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 scrollbar-thin scrollbar-thumb-gray-200">
           <div className="max-w-6xl mx-auto">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64">

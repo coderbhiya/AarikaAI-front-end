@@ -23,6 +23,7 @@ export default function LearningWorkspace() {
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"about" | "playlist" | "notes" | "transcript" | "resources">("about");
+  const [mobileTab, setMobileTab] = useState<"lesson" | "tutor">("lesson");
   const [playlistVideos, setPlaylistVideos] = useState<any[]>([]);
   const [playlistLoading, setPlaylistLoading] = useState(false);
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
@@ -265,12 +266,12 @@ export default function LearningWorkspace() {
         </div>
 
         {/* Tab Selection */}
-        <div className="flex border-b border-gray-100 gap-6 mt-6">
+        <div className="flex border-b border-gray-100 gap-4 sm:gap-6 mt-4 sm:mt-6 overflow-x-auto no-scrollbar whitespace-nowrap px-1">
           {(["about", "playlist", "notes", "transcript", "resources"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all ${activeTab === tab ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
+              className={`pb-3 text-xs font-black uppercase tracking-wider relative transition-all flex-shrink-0 ${activeTab === tab ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
                 }`}
             >
               {tab}
@@ -549,11 +550,11 @@ export default function LearningWorkspace() {
     <ProtectedRoute>
       <div className="flex-1 overflow-hidden flex flex-col h-full bg-[#F8FAFF]">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6">
-          <div className="flex items-center gap-4">
+        <header className="flex min-h-14 sm:h-16 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-3 sm:px-6 py-2 sm:py-0 shadow-sm gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-[#F0F4FF] rounded-xl transition-all text-gray-600 active:scale-95 duration-200"
+              className="p-1.5 sm:p-2 hover:bg-[#F0F4FF] rounded-xl transition-all text-gray-600 active:scale-95 duration-200 flex-shrink-0"
               title="Go Back"
             >
               <ArrowLeft size={18} />
@@ -561,14 +562,17 @@ export default function LearningWorkspace() {
 
             <button
               onClick={toggleSidebar}
-              className="p-2 hover:bg-[#F0F4FF] rounded-xl transition-all text-gray-600 active:scale-95 duration-200"
+              className="p-1.5 sm:p-2 hover:bg-[#F0F4FF] rounded-xl transition-all text-gray-600 active:scale-95 duration-200 flex-shrink-0"
               title={showSidebar ? "Close Sidebar" : "Open Sidebar"}
             >
               <Menu size={18} />
             </button>
-            <div>
-              <h1 className="text-sm font-extrabold text-gray-900 tracking-tight">{course.title}</h1>
-              <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+
+            <div className="min-w-0">
+              <h1 className="text-xs sm:text-sm font-extrabold text-gray-900 tracking-tight truncate max-w-[150px] xs:max-w-[220px] sm:max-w-md">
+                {course.title}
+              </h1>
+              <p className="text-[10px] sm:text-[11px] text-gray-400 font-semibold uppercase tracking-wider flex items-center gap-1 mt-0.5">
                 <span className="text-blue-600">{course.platform}</span>
                 <span>•</span>
                 <span>{course.status}</span>
@@ -576,9 +580,9 @@ export default function LearningWorkspace() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 sm:gap-6 flex-shrink-0">
             {/* Progress indicator */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-3">
               <div className="text-right">
                 <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Course Progress</div>
                 <div className="text-xs font-extrabold text-blue-600">{course.progressPercentage}% Complete</div>
@@ -592,23 +596,27 @@ export default function LearningWorkspace() {
             </div>
 
             {/* Tab Actions */}
-            <div className="flex items-center gap-2 border-l border-gray-100 pl-6">
+            <div className="flex items-center gap-1 sm:gap-2 border-l border-gray-100 pl-2 sm:pl-6">
               <button
-                onClick={() => setActiveTab("notes")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'notes' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                onClick={() => {
+                  setMobileTab("lesson");
+                  setActiveTab("notes");
+                }}
+                className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'notes' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
               >
-                <FileText size={14} /> Notes
+                <FileText size={14} /> <span className="hidden sm:inline">Notes</span>
               </button>
 
               <button
                 onClick={() => {
                   setShowTutor(true);
+                  setMobileTab("tutor");
                   router.push(`/learning/${courseId}?msg=Based on this lesson, please prepare a 5-question multiple-choice quiz (MCQ) for me to test my understanding.`);
                   toast.success("AI Quiz triggered! Generating questions...");
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"
               >
-                <Award size={14} /> Quiz
+                <Award size={14} /> <span className="hidden sm:inline">Quiz</span>
               </button>
 
               <button
@@ -616,21 +624,14 @@ export default function LearningWorkspace() {
                   setBookmarked(!bookmarked);
                   toast.success(bookmarked ? "Bookmark removed!" : "Course bookmarked successfully!");
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bookmarked ? 'bg-amber-50 text-amber-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bookmarked ? 'bg-amber-50 text-amber-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
               >
-                <Bookmark size={14} className={bookmarked ? "fill-amber-500 stroke-amber-500" : ""} /> Bookmark
+                <Bookmark size={14} className={bookmarked ? "fill-amber-500 stroke-amber-500" : ""} /> <span className="hidden sm:inline">Bookmark</span>
               </button>
             </div>
 
             {/* System theme and profile */}
-            <div className="flex items-center gap-3 border-l border-gray-100 pl-6">
-              <button
-                onClick={() => toast.info("Light mode is active.")}
-                className="p-2 text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 rounded-xl transition-all active:scale-95 duration-200"
-              >
-                <Sun size={18} />
-              </button>
-
+            <div className="hidden sm:flex items-center gap-3 border-l border-gray-100 pl-6">
               <div
                 onClick={() => router.push("/profile")}
                 className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-extrabold cursor-pointer hover:bg-blue-700 transition-all shadow-md shadow-blue-100 hover:shadow-lg active:scale-95 animate-in zoom-in duration-300"
@@ -642,22 +643,52 @@ export default function LearningWorkspace() {
           </div>
         </header>
 
-        {/* Content Container */}
-        {showTutor ? (
-          <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-            <ResizablePanel defaultSize={70} minSize={40} className="bg-white flex flex-col h-full">
-              {leftPanelContent}
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={30} minSize={25} className="bg-white flex flex-col h-full border-l border-gray-100">
-              {rightPanelContent}
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : (
-          <div className="flex-1 min-h-0 bg-white flex flex-col h-full">
-            {leftPanelContent}
+        {/* Mobile View Switcher Tab Bar (< md breakpoint) */}
+        <div className="md:hidden flex border-b border-gray-200 bg-white px-2 py-1 shadow-xs">
+          <button
+            onClick={() => setMobileTab("lesson")}
+            className={`flex-1 py-2 text-xs font-bold flex items-center justify-center gap-2 rounded-lg transition-colors ${
+              mobileTab === "lesson" ? "bg-blue-50 text-blue-600" : "text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            <Video size={14} /> Lesson & Content
+          </button>
+          <button
+            onClick={() => setMobileTab("tutor")}
+            className={`flex-1 py-2 text-xs font-bold flex items-center justify-center gap-2 rounded-lg transition-colors ${
+              mobileTab === "tutor" ? "bg-blue-50 text-blue-600" : "text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            <MessageCircle size={14} /> AI Tutor Chat
+          </button>
+        </div>
+
+        {/* Content Container (Mobile View vs Desktop Resizable Panels) */}
+        <div className="flex-1 min-h-0 relative">
+          {/* Mobile Layout (< md) */}
+          <div className="md:hidden h-full flex flex-col">
+            {mobileTab === "lesson" ? leftPanelContent : rightPanelContent}
           </div>
-        )}
+
+          {/* Desktop Layout (>= md) */}
+          <div className="hidden md:block h-full">
+            {showTutor ? (
+              <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0 h-full">
+                <ResizablePanel defaultSize={70} minSize={40} className="bg-white flex flex-col h-full">
+                  {leftPanelContent}
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={30} minSize={25} className="bg-white flex flex-col h-full border-l border-gray-100">
+                  {rightPanelContent}
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            ) : (
+              <div className="flex-1 min-h-0 bg-white flex flex-col h-full">
+                {leftPanelContent}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </ProtectedRoute>
   );
