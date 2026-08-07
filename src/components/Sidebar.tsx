@@ -479,12 +479,20 @@ const Sidebar = () => {
               />
             )}
             {features.jobRecommendationsEnabled && (
-              <NavLink
-                to="/jobs"
-                icon={<Briefcase size={16} />}
-                label="Mission Hunt"
-                active={pathname === "/jobs"}
-              />
+              <>
+                <NavLink
+                  to="/jobs"
+                  icon={<Briefcase size={16} />}
+                  label="Mission Hunt"
+                  active={pathname === "/jobs"}
+                />
+                <NavLink
+                  to="/agent"
+                  icon={<Sparkles size={16} />}
+                  label="Auto-Apply Agent"
+                  active={pathname === "/agent"}
+                />
+              </>
             )}
             {(user?.role === "admin" || user?.role === "super_admin") && (
               <NavLink
