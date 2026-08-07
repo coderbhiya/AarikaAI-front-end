@@ -463,7 +463,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             handleSendMessage(msg);
             const newParams = new URLSearchParams(searchParams.toString());
             newParams.delete("msg");
-            router.replace(`${window.location.pathname}?${newParams.toString()}`);
+            const queryString = newParams.toString();
+            const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
+            window.history.replaceState(null, "", newUrl);
         }
     }, [searchParams, isChatsLoading]);
 

@@ -75,20 +75,32 @@ export const PhoneVerification = () => {
   };
 
   const handleUpdatePhone = async () => {
-    let formattedPhone = phoneNumber.trim();
-    if (!formattedPhone.startsWith("+")) {
-      formattedPhone = `+91${formattedPhone}`;
-      setPhoneNumber(formattedPhone);
+    let cleaned = phoneNumber.trim();
+    let rawDigits = cleaned.replace(/[^\d]/g, "");
+    if (rawDigits.startsWith("91") && rawDigits.length === 12) {
+      rawDigits = rawDigits.slice(2);
     }
 
-    if (!formattedPhone || formattedPhone.length < 10) {
+    if (rawDigits.length !== 10) {
       toast({
         title: "Validation Error",
-        description: "Please provide a valid phone number with country code.",
+        description: `Mobile number must be exactly 10 digits (got ${rawDigits.length} digits).`,
         variant: "destructive",
       });
       return;
     }
+
+    if (!/^[6-9]\d{9}$/.test(rawDigits)) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid Indian mobile number starting with 6, 7, 8, or 9.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formattedPhone = `+91${rawDigits}`;
+    setPhoneNumber(formattedPhone);
 
     if (!user) {
       navigate.push("/");
@@ -239,9 +251,20 @@ export const PhoneVerification = () => {
                 <input
                   type="tel"
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-[#202124] text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all duration-300 placeholder:text-gray-400 h-11"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="98765 43210 (10 digits)"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  maxLength={13}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    let digits = val.replace(/[^\d]/g, "");
+                    if (digits.startsWith("91") && digits.length > 10) {
+                      digits = digits.slice(2);
+                    }
+                    if (digits.length > 10) {
+                      digits = digits.slice(0, 10);
+                    }
+                    setPhoneNumber(digits);
+                  }}
                 />
               </div>
             </div>
