@@ -91,8 +91,9 @@ export default function ToolsPage() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden font-sans">
-      {/* Sidebar Navigation */}
-      <Sidebar />
+      <React.Suspense fallback={<div className="w-64 border-r border-border/50 bg-background/95 h-full"></div>}>
+        <Sidebar />
+      </React.Suspense>
 
       {/* Main Tools Showcase Page Content */}
       <div className="flex-1 flex flex-col h-full overflow-y-auto scrollbar-none bg-muted/20 relative">
