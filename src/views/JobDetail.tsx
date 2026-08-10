@@ -69,8 +69,8 @@ const JobDetail = () => {
   const handleApply = async () => {
     if (hasApplied || applying) return;
 
-    if (jobData && !jobData.isCompanyJob && jobData.link) {
-      window.open(jobData.link, "_blank");
+    if (job && !job.isCompanyJob && job.link) {
+      window.open(job.link, "_blank");
       return;
     }
 
