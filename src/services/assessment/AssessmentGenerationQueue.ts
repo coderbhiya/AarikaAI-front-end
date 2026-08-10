@@ -20,7 +20,6 @@ export class AssessmentGenerationQueue {
   }
 
   public async prefetchQuestions(currentIndex: number) {
-    // Determine which questions need to be generated next
     for (let i = currentIndex; i < Math.min(currentIndex + this.PREFETCH_COUNT, this.blueprint.questions); i++) {
       if (this.getStatus(i) === "PENDING" || this.getStatus(i) === "FAILED") {
         this.queueQuestion(i);
@@ -38,7 +37,6 @@ export class AssessmentGenerationQueue {
 
   private queueQuestion(index: number) {
     if (this.getStatus(index) === "GENERATING" || this.getStatus(index) === "READY") return;
-    
     this.setStatus(index, "PENDING");
   }
 
@@ -48,7 +46,6 @@ export class AssessmentGenerationQueue {
 
     try {
       while (true) {
-        // Find the next highest priority question (lowest index that is pending)
         let nextIndex = -1;
         for (let i = 0; i < this.blueprint.questions; i++) {
           if (this.statusMap.get(i) === "PENDING") {
@@ -57,15 +54,40 @@ export class AssessmentGenerationQueue {
           }
         }
 
-        if (nextIndex === -1) break; // Queue is empty
+        if (nextIndex === -1) break;
 
         this.setStatus(nextIndex, "GENERATING");
 
         try {
-          // Determine topic and difficulty based on blueprint distribution (mock logic for now)
-          const topics = Object.keys(this.blueprint.distribution || {});
-          const topic = topics[nextIndex % topics.length] || "General";
-          const difficulty = "medium"; // You can improve this logic based on ratios
+          // Determine topic based on sequential section boundaries in blueprint.distribution
+          let topic = "General";
+          let accumulatedCount = 0;
+          const distributionEntries = Object.entries(this.blueprint.distribution || {});
+
+          for (const [sectionTopic, count] of distributionEntries) {
+            accumulatedCount += count;
+            if (nextIndex < accumulatedCount) {
+              topic = sectionTopic;
+              break;
+            }
+          }
+          if (distributionEntries.length > 0 && nextIndex >= accumulatedCount) {
+            topic = distributionEntries[distributionEntries.length - 1][0];
+          }
+
+          // Determine difficulty based on blueprint ratios
+          let difficulty = "medium";
+          const totalQs = this.blueprint.questions || 1;
+          const easyLimit = Math.round(totalQs * (this.blueprint.difficulty?.easy ? this.blueprint.difficulty.easy / totalQs : 0.3));
+          const hardLimit = totalQs - Math.round(totalQs * (this.blueprint.difficulty?.hard ? this.blueprint.difficulty.hard / totalQs : 0.2));
+
+          if (nextIndex < easyLimit) {
+            difficulty = "easy";
+          } else if (nextIndex >= hardLimit) {
+            difficulty = "hard";
+          } else {
+            difficulty = "medium";
+          }
 
           const question = await QuestionGenerationEngine.generateWithRetry(
             this.blueprint,
@@ -89,7 +111,6 @@ export class AssessmentGenerationQueue {
 
   private setStatus(index: number, status: QuestionStatus) {
     if (this.statusMap.get(index) === status) return;
-    
     this.statusMap.set(index, status);
     if (this.onStatusChange) {
       this.onStatusChange(index, status);

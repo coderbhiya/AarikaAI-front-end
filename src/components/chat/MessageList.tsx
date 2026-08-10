@@ -11,7 +11,7 @@ interface MessageListProps {
 
 const MessageList: React.FC<MessageListProps> = ({ messages, onSendMessage, onEditMessage, onPinNote }) => {
   return (
-    <div className="space-y-3 sm:space-y-4 md:space-y-6 w-full max-w-5xl mx-auto pb-4 px-2 sm:px-4">
+    <div className="space-y-2.5 sm:space-y-3 w-full max-w-5xl mx-auto pb-2 px-2 sm:px-4">
       {messages.map((message, index) => (
         <MessageItem
           key={message.id || message.tempId || `msg-${index}-${String(message.createdAt || index)}`}

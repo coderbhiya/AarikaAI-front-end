@@ -37,8 +37,21 @@ export interface Message {
   citations?: any[] | null;
   artifact?: any;
   tempId?: string;
+  selectedTool?: string;
   timestamp?: number;
   createdAt: string | Date;
+}
+
+export interface AITool {
+  id: string;
+  name: string;
+  shortName: string;
+  description: string;
+  category: "campus" | "resume" | "exam" | "analytics" | "career" | "study";
+  icon: string;
+  badge?: string;
+  placeholder: string;
+  samplePrompts: string[];
 }
 
 export interface ChatResponse {

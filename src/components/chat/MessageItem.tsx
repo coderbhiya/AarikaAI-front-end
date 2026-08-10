@@ -282,12 +282,20 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       );
     }
 
-    const examData = extractJsonData("EXAM_BLUEPRINT_CARD");
+    const examData = extractJsonData("EXAM_BLUEPRINT_CARD") || extractJsonData("EXAM_SIMULATOR_CARD");
     if (examData) {
+      const blueprintData: any = {
+        exam: examData.data.exam || examData.data.title || "Interactive Practice Exam",
+        subtitle: examData.data.subtitle || "Mock Assessment",
+        durationMinutes: examData.data.durationMinutes || 15,
+        questions: examData.data.questions || (examData.data.questionsList?.length || 10),
+        difficulty: examData.data.difficulty || { easy: 3, medium: 5, hard: 2 },
+        distribution: examData.data.distribution || { "Core Concepts": 5, "Applied Knowledge": 5 }
+      };
       return (
         <div className="flex flex-col gap-2 w-full max-w-2xl">
           {examData.cleanText && <Markdown text={examData.cleanText} />}
-          <ExamSimulatorCard blueprint={examData.data} />
+          <ExamSimulatorCard blueprint={blueprintData} />
           {renderFollowUpChips()}
         </div>
       );
@@ -387,7 +395,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       );
     }
 
-    const resumeBuilderData = extractJsonData("RESUME_BUILDER_CARD");
+    const resumeBuilderData = extractJsonData("RESUME_BUILDER_CARD") || extractJsonData("GENERATED_RESUME_CARD") || extractJsonData("ARTIFACT_resume_builder");
     if (resumeBuilderData) {
       return (
         <div className="flex flex-col gap-2 w-full max-w-4xl">
@@ -559,7 +567,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
 
   return (
     <div
-      className={`group animate-in fade-in slide-in-from-bottom-3 duration-700 ease-out mb-10 last:mb-0`}
+      className={`group animate-in fade-in slide-in-from-bottom-3 duration-700 ease-out mb-3 sm:mb-4 last:mb-0`}
     >
       <div className={`flex flex-col gap-1 sm:gap-2 w-full`}>
         {/* Avatar Section for AI */}

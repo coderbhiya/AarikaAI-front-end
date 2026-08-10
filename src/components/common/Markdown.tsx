@@ -12,17 +12,17 @@ const Markdown = ({ text }) => {
             components={{
                 // Headings
                 h1: ({ node, ...props }) => (
-                    <h1 className="text-2xl font-bold text-[#0f0f0f] mt-8 mb-4 tracking-tight" {...props} />
+                    <h1 className="text-2xl font-bold text-foreground mt-8 mb-4 tracking-tight" {...props} />
                 ),
                 h2: ({ node, ...props }) => (
-                    <h2 className="text-xl font-bold text-[#0f0f0f] mt-6 mb-3 tracking-tight" {...props} />
+                    <h2 className="text-xl font-bold text-foreground mt-6 mb-3 tracking-tight" {...props} />
                 ),
                 h3: ({ node, ...props }) => (
-                    <h3 className="text-[17px] font-bold text-[#0f0f0f] mt-5 mb-2 tracking-tight" {...props} />
+                    <h3 className="text-[17px] font-bold text-foreground mt-5 mb-2 tracking-tight" {...props} />
                 ),
 
                 // Paragraphs and links
-                p: ({ node, ...props }) => <p className="text-[#1A1A1A] text-[15.5px] leading-[1.7] mb-5 last:mb-0" {...props} />,
+                p: ({ node, ...props }) => <p className="text-foreground/90 text-[15.5px] leading-[1.7] mb-5 last:mb-0" {...props} />,
                 a: ({ node, ...props }) => (
                     <a
                         {...props}
@@ -33,12 +33,12 @@ const Markdown = ({ text }) => {
                 ),
 
                 // Bold text
-                strong: ({ node, ...props }) => <strong className="font-semibold text-[#0f0f0f]" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
 
                 // Blockquotes
                 blockquote: ({ node, ...props }) => (
                     <blockquote
-                        className="border-l-[3px] pl-4 italic border-gray-300 text-gray-500 py-1 my-5"
+                        className="border-l-[3px] pl-4 italic border-border text-muted-foreground py-1 my-5"
                         {...props}
                     />
                 ),
@@ -77,7 +77,7 @@ const Markdown = ({ text }) => {
                         </div>
                     ) : (
                         <code
-                            className="px-1.5 py-0.5 rounded-md bg-gray-100/80 border border-gray-200/50 text-[#1A1A1A] text-[13.5px] font-mono"
+                            className="px-1.5 py-0.5 rounded-md bg-muted/80 border border-border/50 text-foreground/90 text-[13.5px] font-mono"
                             {...props}
                         >
                             {children}
@@ -87,40 +87,40 @@ const Markdown = ({ text }) => {
 
                 // Lists
                 ul: ({ node, ...props }) => (
-                    <ul className="list-disc pl-5 text-[#1A1A1A] text-[15.5px] leading-[1.7] space-y-1 mb-5" {...props} />
+                    <ul className="list-disc pl-5 text-foreground/90 text-[15.5px] leading-[1.7] space-y-1 mb-5" {...props} />
                 ),
                 ol: ({ node, ...props }) => (
-                    <ol className="list-decimal pl-5 text-[#1A1A1A] text-[15.5px] leading-[1.7] space-y-1 mb-5" {...props} />
+                    <ol className="list-decimal pl-5 text-foreground/90 text-[15.5px] leading-[1.7] space-y-1 mb-5" {...props} />
                 ),
                 li: ({ node, ...props }) => <li className="pl-1" {...props} />,
 
                 // Tables (GFM)
                 table: ({ node, ...props }) => (
-                    <div className="overflow-x-auto my-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="overflow-x-auto my-6 rounded-xl border border-border shadow-sm">
                         <table
-                            className="min-w-full divide-y divide-slate-200"
+                            className="min-w-full divide-y divide-border"
                             {...props}
                         />
                     </div>
                 ),
                 thead: ({ node, ...props }) => (
-                    <thead className="bg-slate-50" {...props} />
+                    <thead className="bg-muted" {...props} />
                 ),
                 tbody: ({ node, ...props }) => (
                     <tbody
-                        className="divide-y divide-slate-100 bg-white"
+                        className="divide-y divide-border bg-background"
                         {...props}
                     />
                 ),
-                tr: ({ node, ...props }) => <tr className="hover:bg-slate-50/50 transition-colors" {...props} />,
+                tr: ({ node, ...props }) => <tr className="hover:bg-muted/50 transition-colors" {...props} />,
                 th: ({ node, ...props }) => (
                     <th
-                        className="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-slate-500"
+                        className="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
                         {...props}
                     />
                 ),
                 td: ({ node, ...props }) => (
-                    <td className="px-6 py-4 text-sm text-slate-900 leading-relaxed font-medium" {...props} />
+                    <td className="px-6 py-4 text-sm text-foreground leading-relaxed font-medium" {...props} />
                 ),
             }}
         >

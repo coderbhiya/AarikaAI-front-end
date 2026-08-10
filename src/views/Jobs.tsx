@@ -5,8 +5,9 @@ import axiosInstance from "@/lib/axios";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Search, MapPin, Briefcase, Filter, Menu, User, Bookmark, Building2,
-  Loader2, Trophy, Globe, Clock, Zap, Shield, DollarSign, CheckCircle2, IndianRupee, X
+  ArrowLeft, ArrowRight, Search, MapPin, Briefcase, Filter, Menu, User, Bookmark, Building2,
+  Loader2, Trophy, Globe, Clock, Zap, Shield, DollarSign, CheckCircle2, IndianRupee, X,
+  ChevronDown, SlidersHorizontal, Wifi, Star
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,6 +23,8 @@ const Jobs = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isPersonalized, setIsPersonalized] = useState(false);
+  const [hasResume, setHasResume] = useState(false);
   const [eligibility, setEligibility] = useState<any>({ canApply: true, message: "", lowProficiencySkills: [], notAttemptedSkills: [] });
 
   // Selection State
@@ -69,6 +72,8 @@ const Jobs = () => {
 
       const fetchedJobs = response.data.jobs;
       setJobs(fetchedJobs);
+      setIsPersonalized(!!response.data.isPersonalized);
+      setHasResume(!!response.data.hasResume);
       setEligibility({ canApply: true, message: "", lowProficiencySkills: [], notAttemptedSkills: [] });
       setPagination((prev) => ({
         ...prev,
@@ -165,6 +170,12 @@ const Jobs = () => {
 
   const handleApply = async () => {
     if (!selectedJob || hasApplied || applying) return;
+    
+    if (!selectedJob.isCompanyJob && selectedJob.link) {
+      window.open(selectedJob.link, "_blank");
+      return;
+    }
+
     setApplying(true);
     try {
       await axiosInstance.post(`/company/jobs/${selectedJob.id}/apply-aarika`);
@@ -252,196 +263,281 @@ const Jobs = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  // Quick filter pills
+  const quickFilters = [
+    { label: "Remote", value: "Remote" },
+    { label: "Full-time", value: "Full-time" },
+    { label: "Internship", value: "Internship" },
+    { label: "Contract", value: "Contract" },
+    { label: "Part-time", value: "Part-time" },
+  ];
+
+  const toggleQuickFilter = (value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      employmentType: prev.employmentType === value ? "" : value,
+    }));
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[#f3f2ef] relative overflow-hidden">
-      {/* Search Header (LinkedIn Style with Expandable Mobile Search) */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-3 md:px-8 py-2 md:py-3 bg-white border-b border-gray-200 w-full shadow-sm">
-        {isMobileSearchOpen ? (
-          /* Expanded Mobile Search Input Bar */
-          <div className="flex items-center gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-200">
-            <div className="flex-1 flex items-center gap-2 bg-[#edf3f8] px-3 py-1.5 rounded-lg border border-primary/20 relative">
-              <Search size={18} className="text-primary shrink-0" />
-              <input
-                ref={(el) => {
-                  if (el) el.focus();
-                }}
-                type="text"
-                name="search"
-                value={filters.search}
-                onChange={handleFilterChange}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    applyFilters(null);
-                    setIsMobileSearchOpen(false);
-                  }
-                }}
-                placeholder="Search jobs, skills, companies..."
-                className="w-full bg-transparent border-none outline-none text-sm text-gray-800 font-medium h-7"
-                autoComplete="off"
-              />
-              {filters.search && (
-                <button
-                  onClick={() => setFilters((prev) => ({ ...prev, search: "" }))}
-                  className="p-1 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={14} />
-                </button>
-              )}
 
-              {suggestions.length > 0 && (
-                <div ref={dropdownRef} className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-2xl z-[100] overflow-hidden py-1 max-h-[250px] overflow-y-auto">
-                  {suggestions.map((suggestion, index) => (
-                    <div
-                      key={index}
-                      className="px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-primary/5 hover:text-primary cursor-pointer flex items-center gap-2.5"
-                      onClick={() => {
-                        handleSuggestionClick(suggestion);
-                        setIsMobileSearchOpen(false);
-                      }}
-                    >
-                      <Search size={13} className="text-gray-400 shrink-0" />
-                      <span className="truncate">{suggestion}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+      {/* ── TOP HEADER ─────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
 
+        {/* Row 1: logo / search / profile */}
+        <div className="flex items-center gap-3 px-3 md:px-5 py-2.5">
+
+          {/* Sidebar toggle + brand */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setIsMobileSearchOpen(false)}
-              className="px-3 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors shrink-0"
+              onClick={toggleSidebar}
+              className="p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
+              title="Toggle Sidebar"
             >
-              Cancel
+              <Menu size={20} />
             </button>
+            <span className="hidden md:block text-[13px] font-bold text-primary tracking-tight">Aarika.AI</span>
           </div>
-        ) : (
-          /* Standard Header Bar (Mobile + Desktop) */
-          <>
-            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-              <button
-                onClick={toggleSidebar}
-                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0"
-                title="Toggle Sidebar"
-              >
-                <Menu size={20} />
-              </button>
 
-              <h2 className="md:hidden text-base font-bold text-gray-900 tracking-tight truncate">Mission Hunt</h2>
+          {/* Mobile page title */}
+          <h2 className="md:hidden text-sm font-bold text-gray-900 truncate flex-1">Mission Hunt</h2>
 
-              <div className="hidden md:flex flex-1 max-w-2xl items-center gap-2 bg-[#edf3f8] px-4 py-1.5 rounded-lg border border-transparent focus-within:border-gray-400 focus-within:bg-white transition-all relative">
-                <Search size={18} className="text-gray-500 shrink-0" />
-                <div className="flex-1 relative flex items-center h-8">
+          {/* Desktop Search bar — LinkedIn pill style */}
+          {isMobileSearchOpen ? (
+            <div className="flex items-center gap-2 flex-1 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="flex-1 flex items-center gap-2 bg-[#edf3f8] px-3 py-2 rounded-lg border border-primary/20 relative">
+                <Search size={16} className="text-primary shrink-0" />
+                <input
+                  ref={(el) => { if (el) el.focus(); }}
+                  type="text" name="search"
+                  value={filters.search}
+                  onChange={handleFilterChange}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { applyFilters(null); setIsMobileSearchOpen(false); } }}
+                  placeholder="Search jobs, skills, companies..."
+                  className="w-full bg-transparent border-none outline-none text-sm text-gray-800 font-medium"
+                  autoComplete="off"
+                />
+                {filters.search && (
+                  <button onClick={() => setFilters((p) => ({ ...p, search: "" }))} className="p-1 text-gray-400 hover:text-gray-600">
+                    <X size={14} />
+                  </button>
+                )}
+                {suggestions.length > 0 && (
+                  <div ref={dropdownRef} className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-2xl z-[100] overflow-hidden py-1 max-h-[240px] overflow-y-auto">
+                    {suggestions.map((s, i) => (
+                      <div key={i} className="px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-primary/5 hover:text-primary cursor-pointer flex items-center gap-2.5"
+                        onClick={() => { handleSuggestionClick(s); setIsMobileSearchOpen(false); }}>
+                        <Search size={12} className="text-gray-400 shrink-0" /><span className="truncate">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button onClick={() => setIsMobileSearchOpen(false)}
+                className="px-3 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors shrink-0">Cancel</button>
+            </div>
+          ) : (
+            <>
+              {/* Desktop search pill */}
+              <div className="hidden md:flex flex-1 max-w-xl items-center bg-[#edf3f8] rounded-full border border-transparent focus-within:border-blue-400 focus-within:bg-white focus-within:shadow-[0_0_0_2px_rgba(10,102,194,0.15)] transition-all relative">
+                <div className="flex items-center flex-1 px-4 py-2 gap-2">
+                  <Search size={16} className="text-gray-500 shrink-0" />
                   <input
                     ref={searchInputRef}
-                    type="text"
-                    name="search"
+                    type="text" name="search"
                     value={filters.search}
                     onChange={handleFilterChange}
                     onFocus={() => setShowSuggestions(true)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        applyFilters(null);
-                      }
-                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') applyFilters(null); }}
                     placeholder="Search jobs, skills, companies..."
-                    className="w-full bg-transparent border-none outline-none text-sm text-gray-800 font-medium"
+                    className="w-full bg-transparent border-none outline-none text-sm text-gray-700 font-medium placeholder:text-gray-400"
                     autoComplete="off"
                   />
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div ref={dropdownRef} className="absolute top-[calc(100%+10px)] left-[-30px] right-[-30px] bg-white border border-gray-200 rounded-lg shadow-xl z-[100] overflow-hidden py-2 max-h-[300px] overflow-y-auto">
-                      {suggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          className="px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary cursor-pointer flex items-center gap-3 transition-colors"
-                          onClick={() => handleSuggestionClick(suggestion)}
-                        >
-                          <Search size={14} className="text-gray-400 shrink-0" />
-                          <span className="font-medium truncate">{suggestion}</span>
-                        </div>
-                      ))}
-                    </div>
+                  {filters.search && (
+                    <button onClick={() => setFilters((p) => ({ ...p, search: "" }))} className="text-gray-400 hover:text-gray-600 shrink-0"><X size={14} /></button>
                   )}
                 </div>
 
-                <div className="h-6 w-px bg-gray-300 mx-1 shrink-0" />
+                <div className="h-5 w-px bg-gray-300 shrink-0" />
 
-                <div className="flex items-center gap-1">
-                  <MapPin size={16} className="text-gray-500 shrink-0" />
+                <div className="flex items-center gap-1 px-3 py-2 cursor-pointer hover:bg-white/60 rounded-r-full transition-colors shrink-0">
+                  <MapPin size={14} className="text-gray-500" />
                   <select
                     name="location"
                     value={filters.location}
                     onChange={handleFilterChange}
-                    className="bg-transparent border-none outline-none text-sm text-gray-800 font-medium cursor-pointer max-w-[110px]"
+                    className="bg-transparent border-none outline-none text-sm text-gray-700 font-medium cursor-pointer max-w-[120px] appearance-none"
                   >
                     <option value="">Any Location</option>
                     {availableFilters.locations.map((loc) => (
                       <option key={loc} value={loc}>{loc}</option>
                     ))}
                   </select>
+                  <ChevronDown size={12} className="text-gray-400 shrink-0" />
                 </div>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 ml-2 flex-shrink-0">
-              {/* Search Toggle Icon on Mobile */}
+                {/* Suggestions dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div ref={dropdownRef} className="absolute top-[calc(100%+10px)] left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-xl z-[100] overflow-hidden py-2 max-h-[300px] overflow-y-auto">
+                    <p className="px-4 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Suggestions</p>
+                    {suggestions.map((s, i) => (
+                      <div key={i}
+                        className="px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary cursor-pointer flex items-center gap-3 transition-colors"
+                        onClick={() => handleSuggestionClick(s)}>
+                        <Search size={13} className="text-gray-400 shrink-0" />
+                        <span className="font-medium truncate">{s}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right cluster */}
+              <div className="flex items-center gap-2 ml-auto shrink-0">
+                {/* Mobile search icon */}
+                <button onClick={() => setIsMobileSearchOpen(true)}
+                  className="md:hidden p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
+                  <Search size={20} />
+                </button>
+
+                <div className="hidden lg:flex flex-col items-end">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-widest leading-none">Premium Core</span>
+                  <span className="text-[13px] font-bold text-[#202124] leading-tight">Aarika Pro</span>
+                </div>
+
+                <button
+                  className="w-9 h-9 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                  onClick={() => navigate.push("/profile")}>
+                  <User size={17} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Row 2: Quick filter pills (LinkedIn-style) */}
+        <div className="flex items-center gap-2 px-3 md:px-5 pb-2.5 overflow-x-auto scrollbar-none">
+          {quickFilters.map((f) => {
+            const active = filters.employmentType === f.value;
+            return (
               <button
-                onClick={() => setIsMobileSearchOpen(true)}
-                className="md:hidden p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full transition-colors"
-                title="Search Jobs"
+                key={f.value}
+                onClick={() => toggleQuickFilter(f.value)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-[12px] font-semibold whitespace-nowrap transition-all ${
+                  active
+                    ? "bg-[#dce6f1] border-blue-400 text-[#0a66c2] shadow-[0_0_0_1px_rgba(10,102,194,0.35)]"
+                    : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
+                }`}
               >
-                <Search size={20} />
+                {active && <CheckCircle2 size={11} className="shrink-0" />}
+                {f.label}
               </button>
+            );
+          })}
 
-              <div className="hidden lg:flex flex-col items-end mr-2">
-                <span className="text-[11px] font-bold text-primary uppercase tracking-widest">Premium Core</span>
-                <span className="text-[13px] font-bold text-[#202124]">Aarika Pro</span>
-              </div>
-              <button className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all shadow-sm" onClick={() => navigate.push("/profile")}>
-                <User size={18} />
-              </button>
-            </div>
-          </>
-        )}
+          {/* Divider */}
+          <div className="h-5 w-px bg-gray-200 mx-1 shrink-0" />
+
+          {/* All Filters CTA */}
+          <button
+            onClick={resetFilters}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-gray-300 text-[12px] font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-400 whitespace-nowrap transition-all ml-auto shrink-0"
+          >
+            <SlidersHorizontal size={13} />
+            {(filters.search || filters.location || filters.employmentType) ? "Clear Filters" : "All Filters"}
+          </button>
+        </div>
       </header>
 
-      {/* Sub-header Filters */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-8 py-2 overflow-x-auto scrollbar-none hidden md:flex items-center gap-3">
-        {['Remote', 'Full-time', 'Entry level', 'Contract'].map((item) => (
-          <button
-            key={item}
-            className="px-4 py-1.5 rounded-full border border-gray-300 text-[13px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-500 transition-all whitespace-nowrap"
-          >
-            {item}
-          </button>
-        ))}
-        <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/20 text-[13px] font-bold text-primary hover:bg-primary/10 transition-all ml-auto">
-          <Filter size={14} />
-          All Filters
-        </button>
-      </div>
-
+      {/* ── BODY ──────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Pane: Job List */}
-        <div className="w-full md:w-[400px] lg:w-[480px] flex flex-col bg-white border-r border-gray-200 h-full overflow-hidden shrink-0">
-          <div className="px-4 py-4 border-b border-gray-100 bg-[#f9fafb]">
-            <h2 className="text-[17px] font-bold text-[#202124]">Top job picks for you</h2>
-            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-tight">Based on your neural mapping</p>
+        {/* ── LEFT PANE: Job List ──────────────────────────────────── */}
+        <div className="w-full md:w-[380px] lg:w-[460px] flex flex-col bg-white border-r border-gray-200 h-full overflow-hidden shrink-0">
+
+          {/* List header */}
+          <div className="px-4 py-3 border-b border-gray-100 bg-white">
+            {isPersonalized ? (
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-[15px] font-bold text-[#202124]">Top picks for you</h2>
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-sm">
+                      <Star size={8} fill="currentColor" /> AI Personalized
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-indigo-500 font-semibold mt-0.5">
+                    {hasResume ? "✓ Matched to your resume" : "✓ Matched to your profile"}
+                  </p>
+                </div>
+                <span className="text-[11px] text-gray-400 font-medium shrink-0">{pagination.total} jobs</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-[15px] font-bold text-[#202124]">Top job picks for you</h2>
+                  <p className="text-[11px] text-gray-400 font-medium mt-0.5">Based on your profile</p>
+                </div>
+                <span className="text-[11px] text-gray-400 font-medium">{pagination.total} jobs</span>
+              </div>
+            )}
           </div>
 
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
+          {/* Active filter chips */}
+          {(filters.search || filters.location || filters.employmentType) && (
+            <div className="flex items-center gap-1.5 px-4 py-2 bg-[#f8f9fa] border-b border-gray-100 overflow-x-auto scrollbar-none">
+              {filters.employmentType && (
+                <span className="flex items-center gap-1 px-2.5 py-1 bg-[#dce6f1] text-[#0a66c2] text-[11px] font-bold rounded-full border border-blue-200 whitespace-nowrap">
+                  {filters.employmentType}
+                  <button onClick={() => setFilters((p) => ({ ...p, employmentType: "" }))} className="hover:text-blue-800">
+                    <X size={10} />
+                  </button>
+                </span>
+              )}
+              {filters.location && (
+                <span className="flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-full border border-gray-200 whitespace-nowrap">
+                  <MapPin size={9} /> {filters.location}
+                  <button onClick={() => setFilters((p) => ({ ...p, location: "" }))} className="hover:text-gray-800">
+                    <X size={10} />
+                  </button>
+                </span>
+              )}
+              {filters.search && (
+                <span className="flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-full border border-gray-200 whitespace-nowrap">
+                  <Search size={9} /> &ldquo;{filters.search}&rdquo;
+                  <button onClick={() => setFilters((p) => ({ ...p, search: "" }))} className="hover:text-gray-800">
+                    <X size={10} />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Job cards */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
             {loading && jobs.length === 0 ? (
-              <div className="space-y-4 p-4">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="h-24 bg-gray-50 rounded-lg animate-pulse" />
+              <div className="space-y-0 divide-y divide-gray-100">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="p-4 flex gap-3">
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg animate-pulse shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 bg-gray-100 rounded animate-pulse w-3/4" />
+                      <div className="h-3 bg-gray-100 rounded animate-pulse w-1/2" />
+                      <div className="h-3 bg-gray-100 rounded animate-pulse w-1/3" />
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : jobs.length === 0 ? (
               <div className="p-12 text-center">
-                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Briefcase size={24} className="text-gray-300" />
+                <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Briefcase size={22} className="text-gray-300" />
                 </div>
-                <h3 className="text-lg font-bold text-[#202124]">No jobs found</h3>
-                <p className="text-gray-500 text-sm">Adjust your filters and try again.</p>
+                <h3 className="text-base font-bold text-[#202124]">No jobs found</h3>
+                <p className="text-gray-400 text-sm mt-1">Try adjusting your filters.</p>
+                <button onClick={resetFilters} className="mt-4 px-4 py-1.5 text-xs font-bold text-primary border border-primary/30 rounded-full hover:bg-primary/5 transition-all">
+                  Clear filters
+                </button>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -449,58 +545,94 @@ const Jobs = () => {
                   <div
                     key={job.id}
                     onClick={() => handleJobClick(job)}
-                    className={`p-4 cursor-pointer transition-all border-l-4 hover:bg-[#f3f2ef]/50 ${!isMobile && selectedJob?.id === job.id
-                        ? "bg-[#edf3f8] border-primary"
-                        : "bg-white border-transparent"
-                      }`}
+                    className={`p-4 cursor-pointer transition-all border-l-[3px] group ${
+                      !isMobile && selectedJob?.id === job.id
+                        ? "bg-[#edf3f8] border-[#0a66c2]"
+                        : "bg-white border-transparent hover:bg-[#f9fafb] hover:border-gray-200"
+                    }`}
                   >
                     <div className="flex gap-3">
-                      <div className="shrink-0 w-14 h-14 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-primary font-bold text-xl uppercase shadow-sm">
-                        {job.company?.charAt(0)}
+                      {/* Company logo / initial */}
+                      <div className="shrink-0 w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shadow-sm">
+                        {job.companyLogo ? (
+                          <img src={job.companyLogo} alt={job.company} className="w-full h-full object-contain p-1" onError={(e: any) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                        ) : null}
+                        <span className={`${job.companyLogo ? 'hidden' : 'flex'} w-full h-full items-center justify-center text-primary font-bold text-lg uppercase`}>
+                          {job.company?.charAt(0)}
+                        </span>
                       </div>
+
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-[15px] font-bold text-primary truncate hover:underline leading-tight underline-offset-2">
+                        <h3 className={`text-[14px] font-bold leading-snug truncate transition-colors ${
+                          !isMobile && selectedJob?.id === job.id ? "text-[#0a66c2]" : "text-[#202124] group-hover:text-[#0a66c2]"
+                        }`}>
                           {job.title}
                         </h3>
-                        <p className="text-[13px] text-[#202124] font-medium leading-tight mt-1">{job.company}</p>
-                        <p className="text-[12px] text-gray-500 font-medium mt-1">{job.location || 'Remote'}</p>
+                        <p className="text-[12px] text-gray-600 font-medium leading-tight mt-0.5 truncate">{job.company}</p>
+                        <p className="text-[11px] text-gray-400 font-medium mt-0.5 flex items-center gap-1 truncate">
+                          <MapPin size={10} className="shrink-0" />{job.location || 'Remote'}
+                        </p>
 
-                        <div className="flex items-center gap-2 mt-3 text-[11px] font-bold">
-                          <span className="text-emerald-600 px-1.5 py-0.5 bg-emerald-50 rounded">
+                        {/* Meta row */}
+                        <div className="flex items-center flex-wrap gap-1.5 mt-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            job.employmentType?.toLowerCase().includes('remote')
+                              ? 'bg-teal-50 text-teal-700 border-teal-200'
+                              : job.employmentType?.toLowerCase().includes('intern')
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-green-50 text-green-700 border-green-100'
+                          }`}>
                             {job.employmentType || 'Full-time'}
                           </span>
+
                           {job.department && (
-                            <>
-                              <span className="text-gray-400">•</span>
-                              <span className="text-blue-500 truncate max-w-[120px]">{job.department}</span>
-                            </>
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded border border-blue-100 truncate max-w-[100px]">{job.department}</span>
                           )}
-                          <span className="text-gray-400">•</span>
-                          <span className="text-gray-500">{formatDate(job.postedDate)}</span>
+
+                          <span className="text-[10px] text-gray-400 font-medium ml-auto shrink-0">{formatDate(job.postedDate)}</span>
                         </div>
+
+                        {/* Match badge */}
+                        {isPersonalized && job.matchPercentage != null && (
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1 rounded-full bg-gray-100 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    job.matchPercentage >= 75 ? 'bg-green-500' :
+                                    job.matchPercentage >= 50 ? 'bg-amber-400' : 'bg-gray-300'
+                                  }`}
+                                  style={{ width: `${job.matchPercentage}%` }}
+                                />
+                              </div>
+                              <span className={`text-[10px] font-bold shrink-0 ${
+                                job.matchPercentage >= 75 ? 'text-green-600' :
+                                job.matchPercentage >= 50 ? 'text-amber-600' : 'text-gray-400'
+                              }`}>{job.matchPercentage}% match</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
 
-                {/* Pagination in list */}
-                <div className="p-4 flex items-center justify-between bg-gray-50">
+                {/* Pagination */}
+                <div className="p-3 flex items-center justify-between bg-[#f9fafb] border-t border-gray-100">
                   <button
                     onClick={() => changePage(pagination.page - 1)}
                     disabled={pagination.page === 1}
-                    className="p-1.5 rounded-full hover:bg-gray-100 disabled:opacity-20 transition-all"
+                    className="flex items-center gap-1 px-3 py-1.5 text-[12px] font-semibold text-gray-600 rounded-full hover:bg-gray-200 disabled:opacity-30 transition-all"
                   >
-                    <ArrowLeft size={16} />
+                    <ArrowLeft size={13} /> Prev
                   </button>
-                  <span className="text-[12px] font-bold text-gray-500">
-                    {pagination.page} / {pagination.totalPages}
-                  </span>
+                  <span className="text-[12px] font-bold text-gray-500">{pagination.page} / {pagination.totalPages || 1}</span>
                   <button
                     onClick={() => changePage(pagination.page + 1)}
                     disabled={pagination.page === pagination.totalPages}
-                    className="p-1.5 rounded-full hover:bg-gray-100 disabled:opacity-20 transition-all rotate-180"
+                    className="flex items-center gap-1 px-3 py-1.5 text-[12px] font-semibold text-gray-600 rounded-full hover:bg-gray-200 disabled:opacity-30 transition-all"
                   >
-                    <ArrowLeft size={16} />
+                    Next <ArrowRight size={13} />
                   </button>
                 </div>
               </div>

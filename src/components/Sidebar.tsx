@@ -20,6 +20,13 @@ import {
   PanelLeft,
   Pencil,
   Check,
+  Wrench,
+  Building2,
+  FileText,
+  GraduationCap,
+  BarChart3,
+  MapPin,
+  ChevronRight,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -34,6 +41,16 @@ import {
 } from "@/services/conversationService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AI_TOOLS } from "@/lib/tools";
+
+const toolIconMap: Record<string, React.ReactNode> = {
+  Building2: <Building2 size={15} className="text-blue-500" />,
+  FileText: <FileText size={15} className="text-emerald-500" />,
+  GraduationCap: <GraduationCap size={15} className="text-purple-500" />,
+  BarChart3: <BarChart3 size={15} className="text-amber-500" />,
+  MapPin: <MapPin size={15} className="text-rose-500" />,
+  BookOpen: <BookOpen size={15} className="text-cyan-500" />,
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -113,7 +130,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       className={`group relative flex items-center gap-0 pl-2 pr-1 py-1.5 rounded-lg cursor-pointer transition-colors duration-100 select-none ${
         isActive
           ? "bg-primary/10 text-primary"
-          : "hover:bg-primary/5 text-gray-700"
+          : "hover:bg-primary/5 text-muted-foreground"
       }`}
       onClick={() => !renaming && onOpen(convo.id)}
     >
@@ -132,11 +149,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                 if (e.key === "Enter") handleRenameSubmit();
                 if (e.key === "Escape") setRenaming(false);
               }}
-              className="w-full text-[13px] bg-white border border-gray-300 rounded px-2 py-0.5 outline-none text-gray-900"
+              className="w-full text-[13px] bg-background border border-border rounded px-2 py-0.5 outline-none text-foreground"
             />
             <button
               onClick={handleRenameSubmit}
-              className="p-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors flex-shrink-0"
+              className="p-1 rounded bg-gray-200 text-muted-foreground hover:bg-gray-300 transition-colors flex-shrink-0"
             >
               <Check size={12} />
             </button>
@@ -160,18 +177,18 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         >
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-1 rounded-md hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors"
+            className="p-1 rounded-md hover:bg-gray-200 text-gray-500 hover:text-foreground transition-colors"
           >
             <MoreHorizontal size={14} />
           </button>
           {showMenu && (
-            <div className="absolute right-1 top-8 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-36 text-[12px]">
+            <div className="absolute right-1 top-8 z-50 bg-background border border-border rounded-xl shadow-lg py-1 w-36 text-[12px]">
               <button
                 onClick={() => {
                   setRenaming(true);
                   setShowMenu(false);
                 }}
-                className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-gray-50 text-gray-700"
+                className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-muted text-muted-foreground"
               >
                 <Pencil size={12} /> Rename
               </button>
@@ -180,11 +197,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                   onPin(convo.id, !convo.isPinned);
                   setShowMenu(false);
                 }}
-                className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-gray-50 text-gray-700"
+                className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-muted text-muted-foreground"
               >
                 <Pin size={12} /> {convo.isPinned ? "Unpin" : "Pin"}
               </button>
-              <div className="border-t border-gray-100 my-1" />
+              <div className="border-t border-border my-1" />
               <button
                 onClick={() => {
                   onArchive(convo.id);
@@ -212,10 +229,12 @@ const Sidebar = () => {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const activeThreadId = searchParams.get("threadId");
+  const activeToolParam = searchParams.get("tool");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Conversation[] | null>(null);
+  const [toolsPopoverOpen, setToolsPopoverOpen] = useState(false);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const [features, setFeatures] = useState({
@@ -300,6 +319,7 @@ const Sidebar = () => {
   };
 
   const handleNewChat = () => {
+    queryClient.setQueryData(["chats", "default"], []);
     navigate.push("/chat");
     if (isMobile) toggleSidebar();
   };
@@ -309,13 +329,18 @@ const Sidebar = () => {
     if (isMobile) toggleSidebar();
   };
 
+  const handleToolSelect = (toolId: string) => {
+    setToolsPopoverOpen(false);
+    handleNavClick(`/chat?tool=${toolId}`);
+  };
+
   const isOnChatPage = pathname === "/chat" || pathname?.startsWith("/chat");
   const isLearningWorkspace = pathname?.startsWith("/learning");
   const isExpanded = showSidebar || isMobile;
 
   const sidebarClasses = isMobile
     ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300`
-    : `h-screen bg-white border-r border-gray-200/60 flex flex-col relative z-30 transition-all duration-300 ease-in-out select-none ${
+    : `h-screen bg-background border-r border-border/60 flex flex-col relative z-30 transition-all duration-300 ease-in-out select-none ${
         isLearningWorkspace
           ? showSidebar
             ? "w-[260px]"
@@ -349,7 +374,7 @@ const Sidebar = () => {
       } ${
         active
           ? "bg-primary/10 text-primary font-medium"
-          : "text-gray-700 hover:bg-primary/5 font-normal"
+          : "text-muted-foreground hover:bg-primary/5 font-normal"
       }`}
     >
       <span className={`flex-shrink-0 flex items-center justify-center ${active ? "text-primary" : "text-gray-500"}`}>
@@ -373,7 +398,7 @@ const Sidebar = () => {
       <div
         className={`${
           isMobile
-            ? "fixed left-0 top-0 h-full w-[260px] bg-white z-50 border-r border-gray-200 flex flex-col"
+            ? "fixed left-0 top-0 h-full w-[260px] bg-background z-50 border-r border-border flex flex-col"
             : "flex flex-col h-full"
         }`}
       >
@@ -393,7 +418,7 @@ const Sidebar = () => {
                 <div className="w-7 h-7 flex items-center justify-center overflow-hidden shrink-0">
                   <BrainLogo size={28} />
                 </div>
-                <span className="text-[14px] font-semibold text-gray-900 tracking-tight">
+                <span className="text-[14px] font-semibold text-foreground tracking-tight">
                   Aarika.AI
                 </span>
               </div>
@@ -402,7 +427,7 @@ const Sidebar = () => {
                 {!isMobile && (
                   <button
                     onClick={toggleSidebar}
-                    className="p-1.5 rounded-lg hover:bg-gray-200/70 text-gray-500 hover:text-gray-800 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-gray-200/70 text-gray-500 hover:text-foreground transition-colors"
                     title="Collapse sidebar"
                   >
                     <PanelLeftClose size={17} />
@@ -454,14 +479,22 @@ const Sidebar = () => {
         {/* ── Unified Scrollable Body ── */}
         <div className="flex-1 overflow-y-auto scrollbar-none min-h-0 flex flex-col px-2">
 
-          {/* ── Feature Navigation (ChatGPT-style: plain items, same weight as history) ── */}
+          {/* ── Primary Feature Navigation (Single "AI Tools" Item, same weight as Chat/Mission Hunt) ── */}
           <div className="space-y-0.5 pt-1">
             <NavLink
               to="/chat"
               icon={<MessageSquare size={16} />}
               label="Chat"
-              active={isOnChatPage && !activeThreadId}
+              active={isOnChatPage && !activeThreadId && !activeToolParam}
             />
+
+            <NavLink
+              to="/tools"
+              icon={<Wrench size={16} />}
+              label="AI Tools"
+              active={pathname === "/tools" || !!activeToolParam}
+            />
+
             {features.learningModuleEnabled && (
               <NavLink
                 to="/dashboard/learning"
@@ -506,7 +539,7 @@ const Sidebar = () => {
 
           {/* ── Thin separator before chat history ── */}
           {isExpanded && (
-            <div className="my-3 border-t border-gray-200/70" />
+            <div className="my-3 border-t border-border/70" />
           )}
 
           {/* ── Chat History — flows directly below nav items ── */}
@@ -523,7 +556,7 @@ const Sidebar = () => {
                   placeholder="Search chats..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-7 pr-7 py-1 text-[12.5px] bg-primary/5 border border-primary/10 focus:border-primary/25 focus:bg-white rounded-lg outline-none transition-all text-gray-800 placeholder-gray-400"
+                  className="w-full pl-7 pr-7 py-1 text-[12.5px] bg-primary/5 border border-primary/10 focus:border-primary/25 focus:bg-background rounded-lg outline-none transition-all text-foreground placeholder-gray-400"
                 />
                 {searchQuery && (
                   <button
@@ -646,7 +679,7 @@ const Sidebar = () => {
 
         {/* ── Footer: User Profile ── */}
         <div
-          className={`flex-shrink-0 p-2 border-t border-gray-200/50 ${
+          className={`flex-shrink-0 p-2 border-t border-border/50 ${
             !isExpanded ? "px-1" : ""
           }`}
         >
@@ -672,12 +705,12 @@ const Sidebar = () => {
                 </div>
                 {isExpanded && (
                   <>
-                    <p className="flex-1 min-w-0 text-[13px] font-medium text-gray-900 truncate leading-tight">
+                    <p className="flex-1 min-w-0 text-[13px] font-medium text-foreground truncate leading-tight">
                       {user?.displayName || "User"}
                     </p>
                     <MoreHorizontal
                       size={14}
-                      className="text-gray-400 group-hover:text-gray-700 transition-colors flex-shrink-0"
+                      className="text-gray-400 group-hover:text-muted-foreground transition-colors flex-shrink-0"
                     />
                   </>
                 )}
@@ -686,7 +719,7 @@ const Sidebar = () => {
             <PopoverContent
               side="top"
               align={!isExpanded ? "center" : "start"}
-              className="p-1.5 rounded-xl shadow-lg border border-gray-200/70 bg-white mb-2 w-48"
+              className="p-1.5 rounded-xl shadow-lg border border-border/70 bg-background mb-2 w-48"
             >
               <div className="flex flex-col gap-0.5 text-[12.5px]">
                 <button
@@ -694,7 +727,7 @@ const Sidebar = () => {
                     navigate.push("/profile");
                     if (isMobile) toggleSidebar();
                   }}
-                  className="flex items-center gap-2.5 w-full px-2.5 py-1.5 font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors text-left"
+                  className="flex items-center gap-2.5 w-full px-2.5 py-1.5 font-medium text-muted-foreground hover:bg-gray-100 rounded-md transition-colors text-left"
                 >
                   <Settings size={14} className="text-gray-500" />
                   Settings & Profile
@@ -704,7 +737,7 @@ const Sidebar = () => {
                     navigate.push("/subscription");
                     if (isMobile) toggleSidebar();
                   }}
-                  className="flex items-center justify-between w-full px-2.5 py-1.5 font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors text-left"
+                  className="flex items-center justify-between w-full px-2.5 py-1.5 font-medium text-muted-foreground hover:bg-gray-100 rounded-md transition-colors text-left"
                 >
                   <div className="flex items-center gap-2.5">
                     <Sparkles size={14} className="text-amber-500" />

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { 
+import {
   CheckCircle2, ChevronRight, ChevronLeft, ChevronDown, Trash2, Clock, MoreVertical,
-  Flag, AlertCircle, BookOpen, Calculator, FileText, 
+  Flag, AlertCircle, BookOpen, Calculator, FileText,
   Info, Pause, Play, Maximize2, Menu, Loader2, Award, Sparkles, TrendingUp
 } from 'lucide-react';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
@@ -28,18 +28,18 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   // Create or retrieve adapter
   const adapterRef = useRef<AssessmentRuntimeAdapter | null>(null);
   const [renderTrigger, forceRender] = useState(0);
-  
+
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [qStatus, setQStatus] = useState<GenStatus>('PENDING');
 
   useEffect(() => {
     if (!adapterRef.current) {
-      const cleanExamSlug = (blueprint.exam || 'practice_exam').replace(/\s+/g, '_').toLowerCase();
-      const sessionId = `exam_${cleanExamSlug}_${blueprint.questions}`;
+      const cleanExamSlug = (blueprint.exam || 'practice_exam').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const sessionId = `exam_${cleanExamSlug}_${Date.now()}_${blueprint.questions}`;
       adapterRef.current = new AssessmentRuntimeAdapter(blueprint, sessionId, (idx, status) => {
         // When status updates, re-render if it's the current question
         forceRender(prev => prev + 1);
@@ -48,7 +48,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   }, [blueprint]);
 
   const adapter = adapterRef.current;
-  
+
   // Keep active question index in sync
   useEffect(() => {
     if (adapter) {
@@ -70,8 +70,8 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const answersRef = useRef(answers);
   const [statuses, setStatuses] = useState<Record<number, QuestionStatus>>(() => {
     const initial: Record<number, QuestionStatus> = {};
-    for(let i = 0; i < blueprint.questions; i++) {
-        initial[i] = 'not_visited';
+    for (let i = 0; i < blueprint.questions; i++) {
+      initial[i] = 'not_visited';
     }
     initial[0] = 'not_attempted';
     return initial;
@@ -112,10 +112,10 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
     // JEE, NEET, GATE, SSC, Banking & Prelims are ALWAYS MCQs!
     if (
-      examLower.includes("jee") || 
-      examLower.includes("neet") || 
-      examLower.includes("gate") || 
-      examLower.includes("ssc") || 
+      examLower.includes("jee") ||
+      examLower.includes("neet") ||
+      examLower.includes("gate") ||
+      examLower.includes("ssc") ||
       examLower.includes("banking") ||
       examLower.includes("prelims") ||
       examLower.includes("nqt")
@@ -185,14 +185,14 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
     }
 
     let startIndex = 0;
-    const result: Array<{subject: string, count: number, startIndex: number}> = [];
+    const result: Array<{ subject: string, count: number, startIndex: number }> = [];
     for (const [subject, count] of Object.entries(blueprint.distribution)) {
       if (count > 0) {
         result.push({ subject, count, startIndex });
         startIndex += count;
       }
     }
-    
+
     // Add remaining as 'General' if there are any
     if (startIndex < blueprint.questions) {
       result.push({ subject: "General", count: blueprint.questions - startIndex, startIndex });
@@ -216,12 +216,12 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const handleSaveAndNext = () => {
     if (!currentQuestion) return;
     const hasAnswered = !!answers[activeQuestionIdx];
-    
+
     setStatuses(prev => ({
       ...prev,
       [activeQuestionIdx]: hasAnswered ? 'answered' : 'not_attempted'
     }));
-    
+
     goToNextQuestion();
   };
 
@@ -256,9 +256,19 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
         const allQuestions = adapter.getAllLoadedQuestions?.() ?? [];
         const currentAnswers = answersRef.current;
         const currentStatuses = statusesRef.current;
+        const getSectionSubject = (index: number) => {
+          let acc = 0;
+          for (const [subj, count] of Object.entries(blueprint.distribution || {})) {
+            acc += count;
+            if (index < acc) return subj;
+          }
+          const keys = Object.keys(blueprint.distribution || {});
+          return keys[keys.length - 1] || 'General';
+        };
+
         const answersPayload = allQuestions.map((q: Question, idx: number) => ({
           questionId: q._id ?? null,
-          subject: Object.keys(blueprint.distribution || {})[idx % Math.max(1, Object.keys(blueprint.distribution || {}).length)] || 'General',
+          subject: getSectionSubject(idx),
           selectedAnswer: currentAnswers[idx] ?? null,
           correctAnswer: q.correctAnswer,
           isCorrect: currentAnswers[idx] === q.correctAnswer,
@@ -309,7 +319,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
         }
       });
       const scorePct = Math.round((correct / (allQs.length || blueprint.questions || 1)) * 100);
-      
+
       // Save attempt in backend
       axiosInstance.post('/company-assessment/submit', {
         companyName: blueprint.exam?.split(' ')[0] || "Standard",
@@ -359,7 +369,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
     const submittedScreen = (
       <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-in fade-in duration-300">
         <div className="bg-white border border-gray-100/80 rounded-3xl shadow-2xl max-w-3xl w-full text-center overflow-hidden relative p-6 md:p-8 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-          
+
           {/* Ambient Decorative Blur */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
@@ -387,21 +397,19 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
           <div className="flex items-center justify-center gap-2 mb-4 shrink-0 bg-gray-100 p-1 rounded-xl max-w-md mx-auto w-full">
             <button
               onClick={() => setActiveResultTab('overview')}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                activeResultTab === 'overview'
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeResultTab === 'overview'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               Performance Overview
             </button>
             <button
               onClick={() => setActiveResultTab('solutions')}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                activeResultTab === 'solutions'
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeResultTab === 'solutions'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               View Answer Key & Solutions
             </button>
@@ -413,7 +421,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
               <>
                 {/* Analytics Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  
+
                   {/* Score */}
                   <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-100/30 border border-emerald-100 text-left shadow-2xs">
                     <div className="flex items-center justify-between mb-2">
@@ -533,16 +541,16 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
               </div>
             )}
           </div>
-          
+
           <div className="mt-4 pt-3 border-t border-gray-100 shrink-0 flex items-center justify-between gap-3">
-            <button 
+            <button
               onClick={() => window.print()}
               className="px-5 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs rounded-xl transition-all border border-blue-200 flex items-center gap-2"
             >
               <Award className="w-4 h-4 text-blue-600" />
               <span>Download PDF Diagnostic Report</span>
             </button>
-            <button 
+            <button
               onClick={onClose}
               className="px-8 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/95 text-white font-bold rounded-xl shadow-lg shadow-primary/25 active:scale-[0.98] transition-all text-xs flex items-center gap-2"
             >
@@ -563,11 +571,11 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       {/* DESKTOP HEADER */}
       <div className="hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-6 shrink-0 shadow-sm z-10">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setIsPaletteOpen(!isPaletteOpen)} 
+          <button
+            onClick={() => setIsPaletteOpen(!isPaletteOpen)}
             className="p-2 hover:bg-gray-100 rounded-[5px] text-gray-600 transition-colors"
           >
-             <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
             <BrainLogo size={36} />
@@ -586,11 +594,10 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                 <button
                   key={qIdx}
                   onClick={() => jumpToQuestion(qIdx)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    activeQuestionIdx === qIdx
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeQuestionIdx === qIdx
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   <span>Problem {qIdx + 1}</span>
                   {statuses[qIdx] === 'answered' && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
@@ -599,7 +606,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-[5px] text-sm font-medium text-gray-600 hover:bg-gray-50">
             <Info className="w-4 h-4" /> Instructions
@@ -607,7 +614,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-[5px] text-sm font-medium text-gray-600 hover:bg-gray-50">
             <AlertCircle className="w-4 h-4" /> Report an Issue
           </button>
-          <button 
+          <button
             onClick={() => setIsSubmitted(true)}
             className="px-5 py-2 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-[5px] text-sm font-bold transition-colors"
           >
@@ -619,165 +626,163 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       {/* MOBILE HEADER */}
       <div className="flex md:hidden sticky top-0 bg-white h-14 items-center justify-between px-4 shrink-0 shadow-sm z-50 border-b border-gray-200">
         <button onClick={() => setIsSubmitted(true)} className="flex items-center text-primary text-sm font-semibold">
-           <ChevronLeft className="w-5 h-5" /> Exit Exam
+          <ChevronLeft className="w-5 h-5" /> Exit Exam
         </button>
         <div className="flex flex-col items-center">
-           <h1 className="font-bold text-gray-900 text-sm leading-tight flex items-center gap-1">{blueprint.exam}</h1>
-           <p className="text-[10px] text-gray-500">Mock Test</p>
+          <h1 className="font-bold text-gray-900 text-sm leading-tight flex items-center gap-1">{blueprint.exam}</h1>
+          <p className="text-[10px] text-gray-500">Mock Test</p>
         </div>
         <button onClick={handleMarkForReview} className="text-primary flex items-center gap-1 text-sm font-semibold">
-           <Flag className="w-4 h-4" /> Mark
+          <Flag className="w-4 h-4" /> Mark
         </button>
       </div>
 
       {/* MAIN CONTENT GRID */}
       <div className="flex-1 flex flex-col md:flex-row relative pb-20 md:pb-0 md:min-h-0">
-        
+
         {/* MOBILE SCROLLABLE CONTENT */}
         <div className="md:hidden flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-             {/* Info Card */}
-             <div className="bg-white rounded-[5px] p-4 shadow-sm border border-gray-100 flex flex-col">
-                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                     <div className="flex flex-col w-[30%] border-r border-gray-100 pr-2">
-                         <div className="flex items-center gap-1 text-gray-500 text-[10px] font-medium mb-1"><Clock className="w-3.5 h-3.5" /> Time Left</div>
-                         <div className={`text-xl font-black tracking-tight ${timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-gray-900'}`}>{formatTime(timeLeft)}</div>
-                         <div className="w-full h-1 bg-gray-100 rounded-full mt-2 overflow-hidden">
-                           <div className={`h-full transition-all ${timeLeft < 300 ? 'bg-red-500' : 'bg-primary'}`} style={{ width: `${(timeLeft / ((blueprint.durationMinutes || 120) * 60)) * 100}%` }} />
-                         </div>
-                     </div>
-                     <div className="flex justify-between flex-1 pl-2">
-                        <div className="flex flex-col items-center">
-                           <span className="text-[10px] text-gray-500 font-medium">Questions</span>
-                           <span className="font-bold text-gray-900 text-sm">{blueprint.questions}</span>
-                        </div>
-                        <div className="flex flex-col items-center border-l border-gray-100 pl-2">
-                           <span className="text-[10px] text-gray-500 font-medium">Attempted</span>
-                           <span className="font-bold text-gray-900 text-sm">{stats.answered}</span>
-                        </div>
-                        <div className="flex flex-col items-center border-l border-gray-100 pl-2">
-                           <span className="text-[10px] text-gray-500 font-medium">Marks</span>
-                           <span className="font-bold text-gray-900 text-sm">2.0</span>
-                        </div>
-                        <div className="flex flex-col items-center border-l border-gray-100 pl-2">
-                           <span className="text-[10px] text-gray-500 font-medium">Negative</span>
-                           <span className="font-bold text-gray-900 text-sm">0.66</span>
-                        </div>
-                     </div>
-                 </div>
-                 <div className="flex items-center justify-center gap-4 pt-3 text-[10px] font-medium text-gray-500">
-                     <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-green-500"/> Answered ({stats.answered})</div>
-                     <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-orange-500"/> Review ({stats.review})</div>
-                     <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gray-200"/> Not Attempted ({stats.notAttempted})</div>
-                 </div>
-             </div>
+          {/* Info Card */}
+          <div className="bg-white rounded-[5px] p-4 shadow-sm border border-gray-100 flex flex-col">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex flex-col w-[30%] border-r border-gray-100 pr-2">
+                <div className="flex items-center gap-1 text-gray-500 text-[10px] font-medium mb-1"><Clock className="w-3.5 h-3.5" /> Time Left</div>
+                <div className={`text-xl font-black tracking-tight ${timeLeft < 300 ? 'text-red-500 animate-pulse' : 'text-gray-900'}`}>{formatTime(timeLeft)}</div>
+                <div className="w-full h-1 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                  <div className={`h-full transition-all ${timeLeft < 300 ? 'bg-red-500' : 'bg-primary'}`} style={{ width: `${(timeLeft / ((blueprint.durationMinutes || 120) * 60)) * 100}%` }} />
+                </div>
+              </div>
+              <div className="flex justify-between flex-1 pl-2">
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-gray-500 font-medium">Questions</span>
+                  <span className="font-bold text-gray-900 text-sm">{blueprint.questions}</span>
+                </div>
+                <div className="flex flex-col items-center border-l border-gray-100 pl-2">
+                  <span className="text-[10px] text-gray-500 font-medium">Attempted</span>
+                  <span className="font-bold text-gray-900 text-sm">{stats.answered}</span>
+                </div>
+                <div className="flex flex-col items-center border-l border-gray-100 pl-2">
+                  <span className="text-[10px] text-gray-500 font-medium">Marks</span>
+                  <span className="font-bold text-gray-900 text-sm">2.0</span>
+                </div>
+                <div className="flex flex-col items-center border-l border-gray-100 pl-2">
+                  <span className="text-[10px] text-gray-500 font-medium">Negative</span>
+                  <span className="font-bold text-gray-900 text-sm">0.66</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-4 pt-3 text-[10px] font-medium text-gray-500">
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-green-500" /> Answered ({stats.answered})</div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-orange-500" /> Review ({stats.review})</div>
+              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gray-200" /> Not Attempted ({stats.notAttempted})</div>
+            </div>
+          </div>
 
-             {/* Question Card */}
-             <div className="bg-white rounded-[5px] p-5 shadow-sm border border-gray-100 min-h-[300px]">
-                 <div className="flex items-center justify-between mb-4">
-                     <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900">Q. {activeQuestionIdx + 1}</span>
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-bold text-[10px] rounded border border-blue-100">+2.0</span>
-                        <span className="px-2 py-0.5 bg-red-50 text-red-600 font-bold text-[10px] rounded border border-red-100">-0.66</span>
-                     </div>
-                     <div className="flex items-center gap-2">
-                         <button onClick={() => setLanguage('Hi')} className="border border-gray-200 rounded px-2 py-0.5 text-xs font-bold text-gray-600">हिं</button>
-                         <button className="text-gray-500"><MoreVertical className="w-4 h-4"/></button>
-                     </div>
-                 </div>
-                 
-                 {qStatus === 'GENERATING' || qStatus === 'PENDING' ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-                      <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
-                      <p className="text-sm font-medium">Generating Question...</p>
-                    </div>
-                 ) : qStatus === 'FAILED' ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-                      <AlertCircle className="w-8 h-8 mb-4 text-red-500" />
-                      <p className="text-sm font-medium text-red-600 mb-4">Failed to load question</p>
-                      <button 
-                        onClick={() => adapter?.retryQuestion(activeQuestionIdx)}
-                        className="px-4 py-2 bg-primary text-white rounded font-medium text-sm"
+          {/* Question Card */}
+          <div className="bg-white rounded-[5px] p-5 shadow-sm border border-gray-100 min-h-[300px]">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-gray-900">Q. {activeQuestionIdx + 1}</span>
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-bold text-[10px] rounded border border-blue-100">+2.0</span>
+                <span className="px-2 py-0.5 bg-red-50 text-red-600 font-bold text-[10px] rounded border border-red-100">-0.66</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setLanguage('Hi')} className="border border-gray-200 rounded px-2 py-0.5 text-xs font-bold text-gray-600">हिं</button>
+                <button className="text-gray-500"><MoreVertical className="w-4 h-4" /></button>
+              </div>
+            </div>
+
+            {qStatus === 'GENERATING' || qStatus === 'PENDING' ? (
+              <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+                <Loader2 className="w-8 h-8 animate-spin mb-4 text-primary" />
+                <p className="text-sm font-medium">Generating Question...</p>
+              </div>
+            ) : qStatus === 'FAILED' ? (
+              <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+                <AlertCircle className="w-8 h-8 mb-4 text-red-500" />
+                <p className="text-sm font-medium text-red-600 mb-4">Failed to load question</p>
+                <button
+                  onClick={() => adapter?.retryQuestion(activeQuestionIdx)}
+                  className="px-4 py-2 bg-primary text-white rounded font-medium text-sm"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : currentQuestion ? (
+              <>
+                <p className="text-[15px] text-gray-900 font-medium leading-relaxed whitespace-pre-wrap mb-6">
+                  {currentQuestion.question}
+                </p>
+                <div className="flex flex-col gap-3">
+                  {currentQuestion.options.map((opt, oIdx) => {
+                    const label = String.fromCharCode(65 + oIdx);
+                    const isSelected = answers[activeQuestionIdx] === opt;
+                    return (
+                      <button
+                        key={oIdx}
+                        onClick={() => handleOptionSelect(opt)}
+                        className={`flex items-center text-left w-full py-3 px-3 rounded-[5px] border transition-all ${isSelected
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                          }`}
                       >
-                        Retry
+                        <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
+                          }`}>
+                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="flex items-center gap-3 flex-1">
+                          <span className="font-bold text-gray-900 text-sm">{label}.</span>
+                          <span className="text-gray-800 text-sm leading-snug">{opt}</span>
+                        </div>
                       </button>
-                    </div>
-                 ) : currentQuestion ? (
-                    <>
-                      <p className="text-[15px] text-gray-900 font-medium leading-relaxed whitespace-pre-wrap mb-6">
-                        {currentQuestion.question}
-                      </p>
-                      <div className="flex flex-col gap-3">
-                        {currentQuestion.options.map((opt, oIdx) => {
-                          const label = String.fromCharCode(65 + oIdx);
-                          const isSelected = answers[activeQuestionIdx] === opt;
-                          return (
-                            <button
-                              key={oIdx}
-                              onClick={() => handleOptionSelect(opt)}
-                              className={`flex items-center text-left w-full py-3 px-3 rounded-[5px] border transition-all ${
-                                isSelected 
-                                  ? 'border-primary bg-primary/5' 
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                            >
-                              <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${
-                                isSelected ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
-                              }`}>
-                                {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                              </div>
-                              <div className="flex items-center gap-3 flex-1">
-                                <span className="font-bold text-gray-900 text-sm">{label}.</span>
-                                <span className="text-gray-800 text-sm leading-snug">{opt}</span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                 ) : null}
-             </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
+          </div>
 
-             {/* Question Palette Inline */}
-             <div className="bg-white rounded-[5px] p-4 shadow-sm border border-gray-100 mt-2 mb-4">
-                 <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-bold text-sm text-gray-900">Question Palette</h4>
-                    <button className="text-primary text-xs font-semibold">View All</button>
-                 </div>
-                 <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
-                   {Array.from({length: blueprint.questions}).map((_, qIdx) => {
-                      const qStatus = statuses[qIdx];
-                      const isCurrent = activeQuestionIdx === qIdx;
-                      
-                      let bgClass = "bg-white border-gray-200 text-gray-600";
-                      if (qStatus === 'answered') bgClass = "bg-green-100 border-green-500 text-green-700";
-                      else if (qStatus === 'review') bgClass = "bg-orange-100 border-orange-500 text-orange-700";
-                      else if (qStatus === 'not_attempted') bgClass = "bg-gray-100 border-gray-300 text-gray-700";
-                      
-                      return (
-                        <button
-                          key={qIdx}
-                          onClick={() => jumpToQuestion(qIdx)}
-                          className={`w-full aspect-square rounded-[5px] flex items-center justify-center text-[10px] font-bold border ${bgClass} ${isCurrent ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                        >
-                          {qIdx + 1}
-                        </button>
-                      );
-                   })}
-                 </div>
-             </div>
+          {/* Question Palette Inline */}
+          <div className="bg-white rounded-[5px] p-4 shadow-sm border border-gray-100 mt-2 mb-4">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-bold text-sm text-gray-900">Question Palette</h4>
+              <button className="text-primary text-xs font-semibold">View All</button>
+            </div>
+            <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+              {Array.from({ length: blueprint.questions }).map((_, qIdx) => {
+                const qStatus = statuses[qIdx];
+                const isCurrent = activeQuestionIdx === qIdx;
+
+                let bgClass = "bg-white border-gray-200 text-gray-600";
+                if (qStatus === 'answered') bgClass = "bg-green-100 border-green-500 text-green-700";
+                else if (qStatus === 'review') bgClass = "bg-orange-100 border-orange-500 text-orange-700";
+                else if (qStatus === 'not_attempted') bgClass = "bg-gray-100 border-gray-300 text-gray-700";
+
+                return (
+                  <button
+                    key={qIdx}
+                    onClick={() => jumpToQuestion(qIdx)}
+                    className={`w-full aspect-square rounded-[5px] flex items-center justify-center text-[10px] font-bold border ${bgClass} ${isCurrent ? 'border-primary bg-primary/10 text-primary' : ''}`}
+                  >
+                    {qIdx + 1}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* MOBILE BOTTOM ACTION BAR */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 flex gap-2 z-20">
-             <button onClick={goToPrevQuestion} disabled={activeQuestionIdx === 0} className="flex-1 flex justify-center items-center gap-1 py-3 border border-primary/20 text-primary rounded-[5px] font-semibold text-sm">
-                 <ChevronLeft className="w-4 h-4"/> Previous
-             </button>
-             <button onClick={handleClearResponse} disabled={!answers[activeQuestionIdx]} className="flex-1 flex justify-center items-center gap-1 py-3 border border-gray-200 text-gray-600 rounded-[5px] font-semibold text-sm">
-                 <Trash2 className="w-4 h-4"/> Clear
-             </button>
-             <button onClick={handleSaveAndNext} className="flex-[1.5] flex justify-center items-center gap-1 py-3 bg-primary text-white rounded-[5px] font-bold text-sm shadow-md">
-                 Save & Next <ChevronRight className="w-4 h-4"/>
-             </button>
+          <button onClick={goToPrevQuestion} disabled={activeQuestionIdx === 0} className="flex-1 flex justify-center items-center gap-1 py-3 border border-primary/20 text-primary rounded-[5px] font-semibold text-sm">
+            <ChevronLeft className="w-4 h-4" /> Previous
+          </button>
+          <button onClick={handleClearResponse} disabled={!answers[activeQuestionIdx]} className="flex-1 flex justify-center items-center gap-1 py-3 border border-gray-200 text-gray-600 rounded-[5px] font-semibold text-sm">
+            <Trash2 className="w-4 h-4" /> Clear
+          </button>
+          <button onClick={handleSaveAndNext} className="flex-[1.5] flex justify-center items-center gap-1 py-3 bg-primary text-white rounded-[5px] font-bold text-sm shadow-md">
+            Save & Next <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
 
@@ -800,7 +805,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
               </div>
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             <div className="space-y-6">
               {sections.map((section, sIdx) => (
@@ -810,16 +815,16 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                     <span className="text-xs font-semibold text-gray-400">{section.count} Qs</span>
                   </div>
                   <div className="grid grid-cols-5 gap-2">
-                    {Array.from({length: section.count}).map((_, offset) => {
+                    {Array.from({ length: section.count }).map((_, offset) => {
                       const qIdx = section.startIndex + offset;
                       const qStatus = statuses[qIdx];
                       const isCurrent = activeQuestionIdx === qIdx;
-                      
+
                       let bgClass = "bg-white border-gray-200 text-gray-600 hover:border-primary"; // not visited
                       if (qStatus === 'answered') bgClass = "bg-green-500 border-green-600 text-white hover:bg-green-600";
                       else if (qStatus === 'review') bgClass = "bg-orange-500 border-orange-600 text-white hover:bg-orange-600";
                       else if (qStatus === 'not_attempted') bgClass = "bg-gray-100 border-gray-300 text-gray-700 shadow-inner hover:bg-gray-200";
-                      
+
                       return (
                         <button
                           key={qIdx}
@@ -839,7 +844,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
         {/* CENTER PANEL - QUESTION DISPLAY (Desktop Only) */}
         <div className="hidden md:flex flex-1 flex-col bg-white overflow-hidden relative md:min-h-0">
-          
+
           <div className="flex-1 flex flex-col p-8 overflow-y-auto md:min-h-0">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Question {activeQuestionIdx + 1}</h2>
@@ -857,21 +862,21 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             </div>
 
             {qStatus === 'GENERATING' || qStatus === 'PENDING' ? (
-                <div className="flex flex-col items-center justify-center flex-1 text-gray-400">
-                  <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
-                  <p className="text-base font-medium">Generating Question...</p>
-                </div>
+              <div className="flex flex-col items-center justify-center flex-1 text-gray-400">
+                <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
+                <p className="text-base font-medium">Generating Question...</p>
+              </div>
             ) : qStatus === 'FAILED' ? (
-                <div className="flex flex-col items-center justify-center flex-1 text-gray-400">
-                  <AlertCircle className="w-10 h-10 mb-4 text-red-500" />
-                  <p className="text-base font-medium text-red-600 mb-4">Failed to load question</p>
-                  <button 
-                    onClick={() => adapter?.retryQuestion(activeQuestionIdx)}
-                    className="px-6 py-2 bg-primary text-white rounded-[5px] font-medium"
-                  >
-                    Retry
-                  </button>
-                </div>
+              <div className="flex flex-col items-center justify-center flex-1 text-gray-400">
+                <AlertCircle className="w-10 h-10 mb-4 text-red-500" />
+                <p className="text-base font-medium text-red-600 mb-4">Failed to load question</p>
+                <button
+                  onClick={() => adapter?.retryQuestion(activeQuestionIdx)}
+                  className="px-6 py-2 bg-primary text-white rounded-[5px] font-medium"
+                >
+                  Retry
+                </button>
+              </div>
             ) : currentQuestion ? (
               <div className="flex-1 flex flex-col h-full">
                 {!isCodingQuestion && !isDescriptiveQuestion && (
@@ -1023,15 +1028,13 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                         <button
                           key={oIdx}
                           onClick={() => handleOptionSelect(opt)}
-                          className={`flex items-center text-left py-3 px-4 rounded-[5px] border-2 transition-all ${
-                            isSelected 
-                              ? 'border-primary bg-primary/5 shadow-sm' 
+                          className={`flex items-center text-left py-3 px-4 rounded-[5px] border-2 transition-all ${isSelected
+                              ? 'border-primary bg-primary/5 shadow-sm'
                               : 'border-gray-200 bg-white'
-                          }`}
+                            }`}
                         >
-                          <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center mr-4 transition-colors ${
-                            isSelected ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
-                          }`}>
+                          <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center mr-4 transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
+                            }`}>
                             {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                           </div>
                           <div className="flex items-center gap-2 flex-1">
@@ -1063,7 +1066,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                 Clear Response
               </button>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <button
                 onClick={goToPrevQuestion}

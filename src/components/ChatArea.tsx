@@ -53,7 +53,7 @@ const renderArtifactPreview = (artifact: any) => {
     switch (type) {
         case "resume_builder": {
             return (
-                <div className="w-full h-full min-h-[450px] overflow-y-auto bg-gray-50 flex flex-col items-center py-4">
+                <div className="w-full h-full min-h-[450px] overflow-y-auto bg-muted flex flex-col items-center py-4">
                     <div className="w-full max-w-4xl px-2">
                         <GeneratedResumeCard data={data} />
                     </div>
@@ -64,7 +64,7 @@ const renderArtifactPreview = (artifact: any) => {
         case "document_builder": {
             const content = data.content || data.markdown || "";
             return (
-                <div className="w-full h-full min-h-[450px] border border-gray-150 rounded-2xl overflow-y-auto bg-white shadow-sm flex flex-col p-6 md:p-10">
+                <div className="w-full h-full min-h-[450px] border border-gray-150 rounded-2xl overflow-y-auto bg-background shadow-sm flex flex-col p-6 md:p-10">
                     <div className="prose prose-sm md:prose-base max-w-none prose-slate">
                         <Markdown text={content} />
                     </div>
@@ -94,8 +94,8 @@ const renderArtifactPreview = (artifact: any) => {
                 </html>
             `;
             return (
-                <div className="w-full h-full min-h-[450px] border border-gray-150 rounded-2xl overflow-hidden bg-white shadow-sm flex flex-col">
-                    <div className="bg-slate-100 px-4 py-2 border-b border-gray-200 flex items-center justify-between text-xs text-slate-500 font-semibold select-none">
+                <div className="w-full h-full min-h-[450px] border border-gray-150 rounded-2xl overflow-hidden bg-background shadow-sm flex flex-col">
+                    <div className="bg-slate-100 px-4 py-2 border-b border-border flex items-center justify-between text-xs text-slate-500 font-semibold select-none">
                         <span>Web Simulation</span>
                         <div className="flex gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
@@ -106,7 +106,7 @@ const renderArtifactPreview = (artifact: any) => {
                     <iframe
                         srcDoc={srcDoc}
                         title={artifact.title || "HTML Preview"}
-                        className="flex-1 w-full border-none bg-white"
+                        className="flex-1 w-full border-none bg-background"
                         sandbox="allow-scripts"
                     />
                 </div>
@@ -117,7 +117,7 @@ const renderArtifactPreview = (artifact: any) => {
             // Bug #7 fix: sanitize before injecting into DOM
             const svgMarkup = sanitizeSvg(data.svg || "");
             return (
-                <div className="flex flex-col items-center justify-center p-8 bg-white border border-gray-100 rounded-2xl w-full min-h-[350px] shadow-sm overflow-auto">
+                <div className="flex flex-col items-center justify-center p-8 bg-background border border-border rounded-2xl w-full min-h-[350px] shadow-sm overflow-auto">
                     <div
                         className="max-w-full max-h-[400px] flex items-center justify-center svg-preview-container"
                         dangerouslySetInnerHTML={{ __html: svgMarkup }}
@@ -128,8 +128,8 @@ const renderArtifactPreview = (artifact: any) => {
 
         case "code_snippet": {
             return (
-                <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-                    <div className="bg-slate-50 px-4 py-2 border-b border-gray-100 flex items-center justify-between text-xs text-slate-500 font-semibold select-none">
+                <div className="bg-background border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-slate-50 px-4 py-2 border-b border-border flex items-center justify-between text-xs text-slate-500 font-semibold select-none">
                         <span className="font-mono text-[11px]">{data.filename || "code_file"}</span>
                         <span className="uppercase text-[10px] tracking-wider">{data.language || "code"}</span>
                     </div>
@@ -143,7 +143,7 @@ const renderArtifactPreview = (artifact: any) => {
         case "career_roadmap": {
             const milestones = data.milestones || [];
             return (
-                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-6">
+                <div className="bg-background border border-border rounded-2xl p-6 shadow-sm space-y-6">
                     <div>
                         <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">Target Objective</h4>
                         <h3 className="text-lg font-bold text-slate-800 mt-1">{data.goal || "Career Roadmap Target"}</h3>
@@ -158,7 +158,7 @@ const renderArtifactPreview = (artifact: any) => {
                         {milestones.map((milestone: any, index: number) => (
                             <div key={index} className="relative">
                                 {/* Timeline Bullet node */}
-                                <div className="absolute -left-[33px] top-1.5 w-4 h-4 rounded-full border-2 border-primary bg-white flex items-center justify-center">
+                                <div className="absolute -left-[33px] top-1.5 w-4 h-4 rounded-full border-2 border-primary bg-background flex items-center justify-center">
                                     <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                                 </div>
 
@@ -209,7 +209,7 @@ const renderArtifactPreview = (artifact: any) => {
             const score = data.score || 70;
 
             return (
-                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-6">
+                <div className="bg-background border border-border rounded-2xl p-6 shadow-sm space-y-6">
                     {/* Score section */}
                     <div className="flex items-center gap-4 border-b border-gray-50 pb-5">
                         <div className="relative w-16 h-16 rounded-full border-4 border-primary/10 flex items-center justify-center font-bold text-primary text-lg">
@@ -274,7 +274,7 @@ const renderArtifactPreview = (artifact: any) => {
         case "interview_prep": {
             const questions = data.questions || [];
             return (
-                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-6">
+                <div className="bg-background border border-border rounded-2xl p-6 shadow-sm space-y-6">
                     <div>
                         <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">Prep Session</h4>
                         <h3 className="text-lg font-bold text-slate-800 mt-1">Mock Interview Q&A Cards</h3>
@@ -283,7 +283,7 @@ const renderArtifactPreview = (artifact: any) => {
 
                     <div className="space-y-3">
                         {questions.map((q: any, index: number) => (
-                            <details key={index} className="group border border-slate-100 rounded-xl bg-slate-50/50 p-4 transition-all duration-300 open:bg-white open:shadow-sm">
+                            <details key={index} className="group border border-slate-100 rounded-xl bg-slate-50/50 p-4 transition-all duration-300 open:bg-background open:shadow-sm">
                                 <summary className="flex items-center justify-between font-bold text-xs text-slate-800 cursor-pointer list-none select-none">
                                     <span className="pr-4 leading-relaxed">Q{index + 1}: {q.question}</span>
                                     <span className="text-gray-400 group-open:rotate-180 transition-transform duration-300">▼</span>
@@ -311,8 +311,8 @@ const renderArtifactPreview = (artifact: any) => {
             const styleName = (data.style || "Architecture Graphic").replace("_", " ");
 
             return (
-                <div className="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm space-y-6 flex flex-col items-center">
-                    <div className="w-full flex items-center justify-between border-b border-gray-100 pb-4">
+                <div className="bg-background border border-gray-150 rounded-2xl p-6 shadow-sm space-y-6 flex flex-col items-center">
+                    <div className="w-full flex items-center justify-between border-b border-border pb-4">
                         <div>
                             <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-md">
                                 {styleName}
@@ -333,7 +333,7 @@ const renderArtifactPreview = (artifact: any) => {
                     </div>
 
                     {imageUrl ? (
-                        <div className="w-full relative rounded-2xl overflow-hidden border border-gray-200 bg-slate-900 group shadow-lg">
+                        <div className="w-full relative rounded-2xl overflow-hidden border border-border bg-slate-900 group shadow-lg">
                             <img
                                 src={imageUrl}
                                 alt={promptText}
@@ -364,9 +364,9 @@ const renderArtifactPreview = (artifact: any) => {
 
         default: {
             return (
-                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                <div className="bg-background border border-border rounded-2xl p-6 shadow-sm">
                     <h3 className="text-xs font-bold text-slate-800 uppercase mb-4">Structured Data View</h3>
-                    <pre className="text-xs bg-gray-50 p-4 rounded-xl border border-gray-100 overflow-x-auto leading-relaxed font-mono">
+                    <pre className="text-xs bg-muted p-4 rounded-xl border border-border overflow-x-auto leading-relaxed font-mono">
                         {JSON.stringify(data, null, 2)}
                     </pre>
                 </div>
@@ -442,6 +442,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     // string "default" so that all hooks (query, onMutate, onSuccess, etc.)
     // reference the same bucket and there is no key split.
     const activeThreadKey = searchParams.get("threadId") || "default";
+    const [selectedTool, setSelectedTool] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        const toolParam = searchParams.get("tool");
+        if (toolParam) {
+            setSelectedTool(toolParam);
+        }
+    }, [searchParams]);
 
     const { data: messages = [], isLoading: isChatsLoading, isError, error } = useQuery({
         queryKey: ["chats", activeThreadKey],
@@ -506,7 +514,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     };
 
     const chatMutation = useMutation({
-        mutationFn: async ({ text, files, webSearch, engine, isPersonalized, threadId, isVisualIntel }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string; isPersonalized?: boolean; threadId?: string; isVisualIntel?: boolean }) => {
+        mutationFn: async ({ text, files, webSearch, engine, isPersonalized, threadId, isVisualIntel, selectedTool: toolToUse }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string; isPersonalized?: boolean; threadId?: string; isVisualIntel?: boolean; selectedTool?: string }) => {
             setStreamingReply("");
             setSearchProgress(isVisualIntel ? "Generating Visual Intel graphic with DALL-E 3..." : "Searching career trends...");
             const abortController = new AbortController();
@@ -521,11 +529,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     setSearchProgress(null);
                     setStreamingReply((prev) => (prev || "") + chunk.content);
                 }
-            }, abortController.signal, threadId, undefined, isPersonalized, isVisualIntel);
+            }, abortController.signal, threadId, undefined, isPersonalized, isVisualIntel, toolToUse);
         },
-        onMutate: async ({ text, files }) => {
-            await queryClient.cancelQueries({ queryKey: ["chats", activeThreadKey] });
-            const previousChats = queryClient.getQueryData<Message[]>(["chats", activeThreadKey]);
+        onMutate: async ({ text, files, threadId }) => {
+            const targetThreadKey = threadId || activeThreadKey;
+            await queryClient.cancelQueries({ queryKey: ["chats", targetThreadKey] });
+            const previousChats = queryClient.getQueryData<Message[]>(["chats", targetThreadKey]);
 
             const tempId = `temp-user-${Date.now()}`;
             const newUserMessage: Message = {
@@ -536,16 +545,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 createdAt: new Date().toISOString(),
             };
 
-            queryClient.setQueryData<Message[]>(["chats", activeThreadKey], (old) => [...(old || []), newUserMessage]);
-            return { previousChats, tempId };
+            queryClient.setQueryData<Message[]>(["chats", targetThreadKey], (old) => [...(old || []), newUserMessage]);
+            return { previousChats, tempId, targetThreadKey };
         },
-        onError: (err: any, newMessage, context) => {
-            queryClient.setQueryData(["chats", activeThreadKey], context?.previousChats);
+        onError: (err: any, variables, context) => {
+            const targetThreadKey = context?.targetThreadKey || activeThreadKey;
+            queryClient.setQueryData(["chats", targetThreadKey], context?.previousChats);
             setStreamingReply(null);
             setSearchProgress(null);
             toast.error(err?.message || "Transmission failed. Please retry.");
         },
         onSuccess: (result, variables, context) => {
+            const targetThreadKey = context.targetThreadKey || activeThreadKey;
             const aiMessage: Message = {
                 id: `temp-ai-${Date.now()}-${Math.random().toString(36).substring(7)}`,
                 message: result.reply || "",
@@ -556,7 +567,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 createdAt: new Date().toISOString(),
             };
 
-            queryClient.setQueryData<Message[]>(["chats", activeThreadKey], (old) => {
+            queryClient.setQueryData<Message[]>(["chats", targetThreadKey], (old) => {
                 const existing = old || [];
 
                 // Remove the optimistic user message (tempId) and any exact AI message match
@@ -596,7 +607,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             // Delay invalidation so the optimistic AI reply renders first before
             // the background refetch overwrites the cache.
             setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: ["chats", activeThreadKey] });
+                queryClient.invalidateQueries({ queryKey: ["chats", targetThreadKey] });
                 // Refresh sidebar conversation list so new threads appear immediately
                 queryClient.invalidateQueries({ queryKey: ["conversations"] });
             }, 1500);
@@ -629,7 +640,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         }
     };
 
-    const handleSendMessage = async (text: string, attachedFiles?: File[], webSearch?: boolean, engine?: string, isVisualIntel?: boolean) => {
+    const handleSendMessage = async (
+        text: string, 
+        attachedFiles?: File[], 
+        webSearch?: boolean, 
+        engine?: string, 
+        isVisualIntel?: boolean,
+        toolId?: string
+    ) => {
         let currentThreadId = searchParams.get("threadId");
         if (!currentThreadId || currentThreadId === "default") {
             currentThreadId = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -691,7 +709,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             finalText = `[Context: ${embeddedContext}]\n${finalText}`;
         }
 
-        chatMutation.mutate({ text: finalText, files: uploadedFiles, webSearch, engine, isPersonalized, threadId: currentThreadId ?? undefined, isVisualIntel });
+        const activeToolToUse = toolId || selectedTool;
+        chatMutation.mutate({ 
+            text: finalText, 
+            files: uploadedFiles, 
+            webSearch, 
+            engine, 
+            isPersonalized, 
+            threadId: currentThreadId ?? undefined, 
+            isVisualIntel,
+            selectedTool: activeToolToUse
+        });
     };
 
     const isProcessing = chatMutation.isPending || isUploading;
@@ -699,9 +727,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     return (
         <div className="flex-1 flex w-full h-full overflow-hidden">
             {/* Left/Main Chat Area */}
-            <div className={`flex flex-col h-full bg-white relative overflow-hidden transition-all duration-300 ${activeArtifact ? (isMobile ? 'w-full hidden' : 'w-1/2 border-r border-gray-200') : 'w-full'}`}>
+            <div className={`flex flex-col h-full bg-background relative overflow-hidden transition-all duration-300 ${activeArtifact ? (isMobile ? 'w-full hidden' : 'w-1/2 border-r border-border') : 'w-full'}`}>
                 {/* Header */}
-                <header className="sticky top-0 z-40 shrink-0 w-full flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-white/95 backdrop-blur-xl border-b border-gray-100/60">
+                <header className="sticky top-0 z-40 shrink-0 w-full flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-background/95 backdrop-blur-xl border-b border-border/60">
                     <div className="flex items-center gap-2 md:gap-3 shrink-0">
                         <button
                             onClick={toggleSidebar}
@@ -716,7 +744,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         {/* Personalized Mode Toggle */}
-                        <div className="flex items-center gap-1 sm:gap-2 bg-gray-50 border border-gray-100 px-2 sm:px-2.5 py-1 rounded-xl shadow-sm select-none shrink-0">
+                        <div className="flex items-center gap-1 sm:gap-2 bg-muted border border-border px-2 sm:px-2.5 py-1 rounded-xl shadow-sm select-none shrink-0">
                             <span className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                                 {isPersonalized ? (
                                     <>
@@ -738,7 +766,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 title="Toggle between Personalized mode and Generic academic mode"
                             >
                                 <span
-                                    className={`pointer-events-none inline-block h-3 sm:h-4 w-3 sm:w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isPersonalized ? "translate-x-3 sm:translate-x-4" : "translate-x-0"
+                                    className={`pointer-events-none inline-block h-3 sm:h-4 w-3 sm:w-4 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out ${isPersonalized ? "translate-x-3 sm:translate-x-4" : "translate-x-0"
                                         }`}
                                 />
                             </button>
@@ -769,10 +797,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     </div>
                 </header>
 
-
-
                 {/* Content Area */}
-                <main ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-2 sm:px-4 md:px-6 pt-3 md:pt-6 pb-36 sm:pb-32 md:pb-28">
+                <main ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scrollbar-none relative z-10 px-2 sm:px-4 md:px-6 pt-2 md:pt-4 pb-24 sm:pb-20 md:pb-16">
                     <div className="max-w-4xl mx-auto w-full">
                         {isError ? (
                             <div className="flex flex-col justify-center items-center h-[70vh] gap-4 p-8 text-center bg-red-50/50 rounded-3xl border border-red-100 animate-in fade-in zoom-in duration-500">
@@ -800,9 +826,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                                 {/* Concentric Logo Rings */}
                                 <div className="relative mb-6 w-32 h-32 flex items-center justify-center mt-4">
-                                    <div className="absolute inset-[-20px] rounded-full border border-gray-200/40 shadow-[0_0_40px_-10px_rgba(0,0,0,0.03)]"></div>
-                                    <div className="absolute inset-[-4px] rounded-full border border-gray-200/60"></div>
-                                    <div className="absolute inset-2 rounded-full border border-gray-200/80 flex items-center justify-center bg-white shadow-sm z-10">
+                                    <div className="absolute inset-[-20px] rounded-full border border-border/40 shadow-[0_0_40px_-10px_rgba(0,0,0,0.03)]"></div>
+                                    <div className="absolute inset-[-4px] rounded-full border border-border/60"></div>
+                                    <div className="absolute inset-2 rounded-full border border-border/80 flex items-center justify-center bg-background shadow-sm z-10">
                                         <BrainLogo size={84} className="opacity-100" />
                                     </div>
                                     {/* Decorative scattered dots */}
@@ -834,13 +860,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                         <div
                                             key={item.label}
                                             onClick={() => handleSendMessage(item.msg)}
-                                            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-white hover:bg-primary/5 hover:border-primary/20 cursor-pointer transition-all duration-200 group shadow-2xs"
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/20 cursor-pointer transition-all duration-200 group shadow-2xs"
                                         >
                                             <div className={`w-8 h-8 rounded-lg ${item.bg} ${item.color} flex items-center justify-center shrink-0`}>
                                                 {item.icon}
                                             </div>
                                             <div className="flex-1 min-w-0 text-left">
-                                                <p className="text-[13px] font-semibold text-gray-800 group-hover:text-primary transition-colors leading-tight">{item.label}</p>
+                                                <p className="text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{item.label}</p>
                                                 <p className="text-[11.5px] text-gray-400 truncate leading-tight mt-0.5">{item.desc}</p>
                                             </div>
                                             <ArrowRight size={14} className="text-gray-300 group-hover:text-primary/60 transition-colors flex-shrink-0" />
@@ -885,13 +911,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                         )}
 
                         {isProcessing && !streamingReply && (
-                            <div className="flex justify-start my-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                            <div className="flex justify-start my-2.5 animate-in fade-in slide-in-from-left-4 duration-300">
                                 <div className="flex items-center gap-3 px-1">
                                     <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10">
                                         <BrainLogo size={18} />
                                     </div>
                                     {searchProgress ? (
-                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-full shadow-sm">
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-full shadow-sm">
                                             <div className="w-3.5 h-3.5 border-2 border-primary/20 border-t-primary rounded-full animate-spin shrink-0" />
                                             <span className="text-[12px] font-semibold text-gray-500 animate-pulse select-none">
                                                 {searchProgress}
@@ -916,7 +942,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 {/* Footer / Input Area */}
                 <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-1.5 sm:pb-6 pt-1 sm:pt-2 bg-gradient-to-t from-white via-white to-transparent shrink-0">
                     <div className="max-w-4xl mx-auto flex flex-col gap-2">
-                        <ChatInput onSendMessage={handleSendMessage} onStopGenerate={() => abortControllerRef.current?.abort()} isLoading={isProcessing} />
+                        <ChatInput 
+                            onSendMessage={handleSendMessage} 
+                            onStopGenerate={() => abortControllerRef.current?.abort()} 
+                            isLoading={isProcessing} 
+                            selectedTool={selectedTool}
+                            onSelectTool={(toolId) => setSelectedTool(toolId)}
+                        />
                     </div>
                 </footer>
 
@@ -938,15 +970,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
             {/* Right/Workspace Area */}
             {activeArtifact && (
-                <div className={`flex flex-col h-full bg-white relative overflow-hidden border-l border-gray-200 transition-all duration-300 ${isMobile ? 'w-full absolute inset-0 z-50' : 'w-1/2'}`}>
+                <div className={`flex flex-col h-full bg-background relative overflow-hidden border-l border-border transition-all duration-300 ${isMobile ? 'w-full absolute inset-0 z-50' : 'w-1/2'}`}>
                     {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-[#f9fafb]">
+                    <div className="flex items-center justify-between p-4 border-b border-border bg-[#f9fafb]">
                         <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shadow-sm">
                                 <Sparkles size={16} />
                             </div>
                             <div>
-                                <h3 className="text-[14px] font-bold text-[#202124] truncate max-w-[150px] sm:max-w-[250px]">{activeArtifact.title || "Career Artifact"}</h3>
+                                <h3 className="text-[14px] font-bold text-foreground truncate max-w-[150px] sm:max-w-[250px]">{activeArtifact.title || "Career Artifact"}</h3>
                                 <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
                                     {activeArtifact.type?.replace("_", " ")} • v{activeArtifact.version || 1}
                                 </p>
@@ -958,8 +990,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 <button
                                     onClick={() => setWorkspaceTab("preview")}
                                     className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${workspaceTab === "preview"
-                                        ? "bg-white text-gray-900 shadow-sm"
-                                        : "text-gray-500 hover:text-gray-800"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-gray-500 hover:text-foreground"
                                         }`}
                                 >
                                     Preview
@@ -967,8 +999,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 <button
                                     onClick={() => setWorkspaceTab("code")}
                                     className={`px-3 py-1 text-[11px] font-bold rounded-md transition-all ${workspaceTab === "code"
-                                        ? "bg-white text-gray-900 shadow-sm"
-                                        : "text-gray-500 hover:text-gray-800"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-gray-500 hover:text-foreground"
                                         }`}
                                 >
                                     Code
@@ -977,7 +1009,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                             <button
                                 onClick={() => setActiveArtifact(null)}
-                                className="p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-full transition-colors active:scale-95"
+                                className="p-2 text-gray-400 hover:bg-gray-100 hover:text-muted-foreground rounded-full transition-colors active:scale-95"
                                 title="Close Workspace"
                             >
                                 <X size={16} />
@@ -1000,7 +1032,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                         );
                                         toast.success("Artifact copied to clipboard!");
                                     }}
-                                    className="absolute right-3 top-3 px-2 py-1 bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-bold rounded-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute right-3 top-3 px-2 py-1 bg-background/10 hover:bg-background/20 text-slate-300 text-[10px] font-bold rounded-md border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                     Copy Code
                                 </button>

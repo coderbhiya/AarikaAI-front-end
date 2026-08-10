@@ -68,6 +68,12 @@ const JobDetail = () => {
 
   const handleApply = async () => {
     if (hasApplied || applying) return;
+
+    if (jobData && !jobData.isCompanyJob && jobData.link) {
+      window.open(jobData.link, "_blank");
+      return;
+    }
+
     setApplying(true);
     try {
       await axiosInstance.post(`/company/jobs/${id}/apply-aarika`);
