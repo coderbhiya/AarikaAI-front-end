@@ -126,13 +126,6 @@ export default function ToolsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push("/chat")}
-              className="px-3.5 py-1.5 bg-primary text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5"
-            >
-              <Bot className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Open Chat</span>
-            </button>
             <button 
               className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all overflow-hidden shadow-sm shrink-0" 
               onClick={() => router.push("/profile")}
