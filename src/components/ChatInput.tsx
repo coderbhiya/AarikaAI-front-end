@@ -16,7 +16,8 @@ import {
   BookOpen,
   Wrench,
   ChevronRight,
-  Zap
+  Zap,
+  Search
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
@@ -70,6 +71,7 @@ const categoryBadgeStyles: Record<string, { bg: string; text: string; border: st
 };
 
 const iconMap: Record<string, React.ReactNode> = {
+  Search: <Search size={14} className="text-[#0a66c2]" />,
   Building2: <Building2 size={14} className="text-blue-500" />,
   FileText: <FileText size={14} className="text-emerald-500" />,
   GraduationCap: <GraduationCap size={14} className="text-purple-500" />,
@@ -222,6 +224,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           ))}
         </div>
       )}
+
 
       {/* Sleek Prompt Chips ABOVE Input in 1 Single Line */}
       {activeToolObj && activeToolObj.samplePrompts?.length > 0 && (

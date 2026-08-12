@@ -301,32 +301,36 @@ const Jobs = () => {
           </div>
 
           {/* Mobile page title */}
-          <h2 className="md:hidden text-sm font-bold text-gray-900 truncate flex-1">Mission Hunt</h2>
+          {!isMobileSearchOpen && (
+            <h2 className="md:hidden text-xs sm:text-sm font-bold text-gray-900 truncate max-w-[110px] sm:max-w-none">
+              Mission Hunt
+            </h2>
+          )}
 
-          {/* Desktop Search bar — LinkedIn pill style */}
+          {/* Mobile Search bar — LinkedIn pill style */}
           {isMobileSearchOpen ? (
-            <div className="flex items-center gap-2 flex-1 animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="flex-1 flex items-center gap-2 bg-[#edf3f8] px-3 py-2 rounded-lg border border-primary/20 relative">
-                <Search size={16} className="text-primary shrink-0" />
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="flex-1 min-w-0 flex items-center gap-1.5 bg-[#edf3f8] px-2.5 py-1.5 rounded-lg border border-primary/20 relative">
+                <Search size={15} className="text-primary shrink-0" />
                 <input
                   ref={(el) => { if (el) el.focus(); }}
                   type="text" name="search"
                   value={filters.search}
                   onChange={handleFilterChange}
                   onKeyDown={(e) => { if (e.key === 'Enter') { applyFilters(null); setIsMobileSearchOpen(false); } }}
-                  placeholder="Search jobs, skills, companies..."
-                  className="w-full bg-transparent border-none outline-none text-sm text-gray-800 font-medium"
+                  placeholder="Search jobs, skills..."
+                  className="w-full min-w-0 bg-transparent border-none outline-none text-xs sm:text-sm text-gray-800 font-medium"
                   autoComplete="off"
                 />
                 {filters.search && (
-                  <button onClick={() => setFilters((p) => ({ ...p, search: "" }))} className="p-1 text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setFilters((p) => ({ ...p, search: "" }))} className="p-0.5 text-gray-400 hover:text-gray-600 shrink-0">
                     <X size={14} />
                   </button>
                 )}
                 {suggestions.length > 0 && (
                   <div ref={dropdownRef} className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-2xl z-[100] overflow-hidden py-1 max-h-[240px] overflow-y-auto">
                     {suggestions.map((s, i) => (
-                      <div key={i} className="px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-primary/5 hover:text-primary cursor-pointer flex items-center gap-2.5"
+                      <div key={i} className="px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-primary/5 hover:text-primary cursor-pointer flex items-center gap-2"
                         onClick={() => { handleSuggestionClick(s); setIsMobileSearchOpen(false); }}>
                         <Search size={12} className="text-gray-400 shrink-0" /><span className="truncate">{s}</span>
                       </div>
@@ -335,7 +339,7 @@ const Jobs = () => {
                 )}
               </div>
               <button onClick={() => setIsMobileSearchOpen(false)}
-                className="px-3 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors shrink-0">Cancel</button>
+                className="px-2.5 py-1.5 text-xs font-bold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors shrink-0">Cancel</button>
             </div>
           ) : (
             <>
@@ -394,11 +398,11 @@ const Jobs = () => {
               </div>
 
               {/* Right cluster */}
-              <div className="flex items-center gap-2 ml-auto shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
                 {/* Mobile search icon */}
                 <button onClick={() => setIsMobileSearchOpen(true)}
-                  className="md:hidden p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
-                  <Search size={20} />
+                  className="md:hidden p-1.5 sm:p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
+                  <Search size={18} />
                 </button>
 
                 <div className="hidden lg:flex flex-col items-end">
@@ -407,9 +411,9 @@ const Jobs = () => {
                 </div>
 
                 <button
-                  className="w-9 h-9 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all shadow-sm shrink-0"
                   onClick={() => navigate.push("/profile")}>
-                  <User size={17} />
+                  <User size={16} />
                 </button>
               </div>
             </>

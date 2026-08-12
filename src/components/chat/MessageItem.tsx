@@ -261,15 +261,63 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       return null;
     };
 
-    // Dynamic Card Parsing
-    const jobData = extractJsonData("JOB_CARD");
-    if (jobData) {
-      return (
-        <div className="flex flex-col gap-2 w-full max-w-2xl">
-          {jobData.cleanText && <Markdown text={jobData.cleanText} />}
-          <JobCard {...jobData.data} />
-        </div>
-      );
+    // --- MULTI & SINGLE JOB CARD PARSING ---
+    const jobCardRegex = /\[JOB_CARD\]([\s\S]*?)(?:\[\/JOB_CARD\]|$)/gi;
+    const jobMatches = [...text.matchAll(jobCardRegex)];
+    if (jobMatches.length > 0) {
+      const parsedJobs: any[] = [];
+      for (const match of jobMatches) {
+        try {
+          let rawData = match[1].trim().replace(/```json|```/g, "").trim();
+          const firstBrace = rawData.indexOf("{");
+          const lastBrace = rawData.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            rawData = rawData.substring(firstBrace, lastBrace + 1);
+          }
+          if (rawData.startsWith("[")) {
+            const arr = JSON.parse(rawData);
+            if (Array.isArray(arr)) parsedJobs.push(...arr);
+          } else {
+            parsedJobs.push(JSON.parse(rawData));
+          }
+        } catch (err) {
+          console.warn("[MessageItem] Failed to parse one JOB_CARD block", err);
+        }
+      }
+
+      if (parsedJobs.length > 0) {
+        const cleanText = text.replace(jobCardRegex, "").trim();
+        const INITIAL_LIMIT = 7;
+        const [isExpanded, setIsExpanded] = React.useState(false);
+        const visibleJobs = isExpanded ? parsedJobs : parsedJobs.slice(0, INITIAL_LIMIT);
+        const hasMore = parsedJobs.length > INITIAL_LIMIT;
+
+        return (
+          <div className="flex flex-col gap-3 w-full max-w-3xl">
+            {cleanText && <Markdown text={cleanText} />}
+            <div className="flex flex-col gap-3 mt-2">
+              {visibleJobs.map((job, idx) => (
+                <JobCard key={idx} {...job} />
+              ))}
+            </div>
+
+            {hasMore && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-2 py-2.5 px-5 self-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-primary font-bold text-xs sm:text-sm hover:bg-primary/5 hover:border-primary/30 transition-all shadow-sm flex items-center gap-2 active:scale-95"
+              >
+                {isExpanded ? (
+                  <>Show Less ▲</>
+                ) : (
+                  <>View More Scraped Jobs ({parsedJobs.length - INITIAL_LIMIT} more) ▼</>
+                )}
+              </button>
+            )}
+
+            {renderFollowUpChips()}
+          </div>
+        );
+      }
     }
 
     const roadmapData = extractJsonData("ROADMAP_CARD");

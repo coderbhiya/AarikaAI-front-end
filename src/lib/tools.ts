@@ -2,6 +2,21 @@ import { AITool } from "@/types";
 
 export const AI_TOOLS: AITool[] = [
   {
+    id: "live_job_scraper",
+    name: "Live Job & HR Contact Scraper",
+    shortName: "Job Scraper",
+    description: "Live real-time web crawler for jobs, company HR emails, phone numbers & direct apply links",
+    category: "campus",
+    icon: "Search",
+    badge: "Live Scraper",
+    placeholder: "Search live jobs, HR contacts (e.g. Frontend developer freshers jobs in Indore with HR email)...",
+    samplePrompts: [
+      "Find frontend developer jobs in Indore with verified HR email IDs & phone numbers.",
+      "Scrape live tech companies hiring in Pune with HR contacts.",
+      "Find top MBA colleges in Indore with admission office emails."
+    ]
+  },
+  {
     id: "campus_prep",
     name: "Campus Placement Engine",
     shortName: "Campus Prep",
