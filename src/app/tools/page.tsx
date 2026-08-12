@@ -20,11 +20,14 @@ import {
   Compass,
   Layers,
   Bot,
+  Menu,
+  User,
 } from "lucide-react";
 import BrainLogo from "@/components/BrainLogo";
 import Sidebar from "@/components/Sidebar";
 import { AI_TOOLS } from "@/lib/tools";
 import { AITool } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 const toolIconMap: Record<string, React.ReactNode> = {
   Building2: <Building2 className="w-6 h-6 text-blue-500" />,
@@ -65,6 +68,7 @@ const CATEGORIES = [
 
 export default function ToolsPage() {
   const router = useRouter();
+  const { toggleSidebar } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -102,40 +106,38 @@ export default function ToolsPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-primary/10 via-purple-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
 
         {/* Top Sticky Header */}
-        <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border/60 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push("/chat")}>
-              <BrainLogo size={30} />
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                AarikaAI
-              </span>
-            </div>
-            <div className="w-px h-5 bg-border/80 mx-1 hidden sm:block" />
+        <header className="sticky top-0 z-40 flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-background/80 backdrop-blur-xl border-b border-border/60 w-full">
+          <div className="flex items-center gap-2 md:gap-3">
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 md:p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors active:scale-95"
+              title="Toggle Sidebar"
+            >
+              <Menu size={18} className="md:w-5 md:h-5" />
+            </button>
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-2xs">
-                <Wrench className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-sm font-bold tracking-tight text-foreground flex items-center gap-2 leading-none">
-                  <span>AI Tools & Feature Engines</span>
-                  <span className="text-[9.5px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full border border-primary/20">
-                    Catalogue
-                  </span>
-                </h1>
-                <p className="text-[11px] text-muted-foreground mt-0.5 hidden md:block">
-                  Specialized AI copilots for placements, exams, resumes & career mastery.
-                </p>
-              </div>
+              <span className="text-[16px] sm:text-[17px] font-semibold text-[#444746] tracking-tight flex items-center gap-1.5">
+                <span>AI Tools</span>
+                <span className="text-[9.5px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full border border-primary/20 shrink-0">
+                  Catalogue
+                </span>
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pr-14 md:pr-16">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/chat")}
-              className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
+              className="px-3.5 py-1.5 bg-primary text-white text-xs font-bold rounded-xl shadow-md shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5"
             >
-              <Bot className="w-4 h-4" />
-              <span>Open Chat</span>
+              <Bot className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Open Chat</span>
+            </button>
+            <button 
+              className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all overflow-hidden shadow-sm shrink-0" 
+              onClick={() => router.push("/profile")}
+            >
+              <User size={16} />
             </button>
           </div>
         </header>
