@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { createPortal } from "react-dom";
 import Sidebar from "@/components/Sidebar";
 import { 
@@ -93,7 +93,9 @@ export default function ExamSimulatorPage() {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      <Sidebar />
+      <Suspense fallback={null}>
+        <Sidebar />
+      </Suspense>
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Header */}
