@@ -42,6 +42,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AI_TOOLS } from "@/lib/tools";
+import { getDynamicNavigation } from "@/services/profileService";
 
 const toolIconMap: Record<string, React.ReactNode> = {
   Building2: <Building2 size={15} className="text-blue-500" />,
@@ -246,6 +247,11 @@ const Sidebar = () => {
     communityModuleEnabled: true,
   });
 
+  const [navConfig, setNavConfig] = useState({
+    showExamSimulator: false,
+    showPlacementPrep: true,
+  });
+
   React.useEffect(() => {
     let active = true;
     getEnabledFeatures()
@@ -253,6 +259,18 @@ const Sidebar = () => {
         if (active) setFeatures(flags);
       })
       .catch(() => {});
+
+    getDynamicNavigation()
+      .then((config) => {
+        if (active && config) {
+          setNavConfig({
+            showExamSimulator: !!config.showExamSimulator,
+            showPlacementPrep: !!config.showPlacementPrep,
+          });
+        }
+      })
+      .catch(() => {});
+
     return () => {
       active = false;
     };
@@ -494,6 +512,24 @@ const Sidebar = () => {
               label="AI Tools"
               active={pathname === "/tools" || !!activeToolParam}
             />
+
+            {navConfig.showExamSimulator && (
+              <NavLink
+                to="/exam-simulator"
+                icon={<GraduationCap size={16} />}
+                label="Exam Simulator"
+                active={pathname === "/exam-simulator"}
+              />
+            )}
+
+            {navConfig.showPlacementPrep && (
+              <NavLink
+                to="/placement-prep"
+                icon={<Briefcase size={16} />}
+                label="Placement Prep"
+                active={pathname === "/placement-prep"}
+              />
+            )}
 
             {features.learningModuleEnabled && (
               <NavLink

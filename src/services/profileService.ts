@@ -257,3 +257,13 @@ export const deleteCertification = async (id) => {
     throw error;
   }
 };
+
+export const getDynamicNavigation = async () => {
+  try {
+    const response = await axiosInstance.get(`/profile/navigation`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching dynamic navigation:", error);
+    return { showExamSimulator: false, showPlacementPrep: true };
+  }
+};

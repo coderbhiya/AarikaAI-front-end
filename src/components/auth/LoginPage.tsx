@@ -22,6 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   signInWithPopup,
   GoogleAuthProvider,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 import { useLinkedIn } from 'react-linkedin-login-oauth2';
 import { useToast } from "@/hooks/use-toast";
@@ -68,33 +69,60 @@ export const LoginPage: React.FC = () => {
 
     setIsLoading({ ...isLoading, email: true });
     try {
-      // Use our own backend login endpoint — custom-registered users exist only in our DB, not Firebase
-      const response = await axiosInstance.post("/auth/login", { email, password });
+      // 1. Try Firebase Email/Password Sign In first
+      console.log("Attempting Firebase Email/Password authentication...");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
+
+      // Verify the Firebase ID token with our backend
+      const response = await axiosInstance.post("/auth/verify-token", {
+        idToken: token,
+        userData: {
+          email: userCredential.user.email,
+          name: userCredential.user.displayName || email.split("@")[0],
+        }
+      });
 
       if (response.data.success) {
-        const userData = {
-          email,
-          displayName: email.split("@")[0],
-        };
-        login(userData, response.data.token);
-
+        login(response.data.user, response.data.token);
         navigate.replace("/chat");
-
         toast({
           title: "Welcome back",
           description: "Login successful!",
         });
       }
-    } catch (error: any) {
-      console.warn("Email login error (Backend might be unreachable):", error.message);
-      const serverMessage = error?.response?.data?.message;
-      let message = serverMessage || "Invalid email or password";
+    } catch (firebaseError: any) {
+      console.warn("Firebase Email/Password auth failed, attempting fallback to backend login...", firebaseError.message);
+      
+      try {
+        // 2. Fallback to custom backend login endpoint
+        const response = await axiosInstance.post("/auth/login", { email, password });
 
-      toast({
-        title: "Login Failed",
-        description: message,
-        variant: "destructive",
-      });
+        if (response.data.success) {
+          const userData = {
+            email,
+            displayName: email.split("@")[0],
+          };
+          login(userData, response.data.token);
+
+          navigate.replace("/chat");
+
+          toast({
+            title: "Welcome back",
+            description: "Login successful!",
+          });
+        }
+      } catch (backendError: any) {
+        console.warn("Fallback backend login error:", backendError.message);
+        const serverMessage = backendError?.response?.data?.message;
+        let message = serverMessage || "Invalid email or password";
+
+        toast({
+          title: "Login Failed",
+          description: message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(prev => ({ ...prev, email: false }));
     }

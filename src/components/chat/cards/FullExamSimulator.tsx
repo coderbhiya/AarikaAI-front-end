@@ -20,6 +20,23 @@ export interface FullExamSimulatorProps {
 
 type QuestionStatus = 'answered' | 'review' | 'not_visited' | 'not_attempted';
 
+const checkIfAnswerIsCorrect = (userAns: string | undefined, q: Question | null | undefined): boolean => {
+  if (!q || !userAns || userAns === "Not Answered") return false;
+  const userOptIdx = q.options.indexOf(userAns);
+  const userLabel = userOptIdx !== -1 ? String.fromCharCode(65 + userOptIdx) : ""; // A, B, C, or D
+  
+  const cleanUser = userAns.trim().toLowerCase();
+  const cleanCorrect = q.correctAnswer ? q.correctAnswer.trim().toLowerCase() : "";
+  const cleanLabel = userLabel.toLowerCase();
+
+  return (
+    cleanUser === cleanCorrect ||
+    (!!cleanLabel && cleanLabel === cleanCorrect) ||
+    (!!cleanLabel && cleanCorrect.startsWith(cleanLabel)) ||
+    (!!cleanUser && !!cleanCorrect && (cleanUser.startsWith(cleanCorrect) || cleanCorrect.startsWith(cleanUser)))
+  );
+};
+
 const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClose }) => {
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [activeQuestionIdx, setActiveQuestionIdx] = useState(0);
@@ -82,6 +99,20 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
     answersRef.current = answers;
     statusesRef.current = statuses;
   }, [answers, statuses]);
+
+  const markingScheme = useMemo(() => {
+    const examLower = (blueprint.exam || "").toLowerCase();
+    if (examLower.includes("jee") || examLower.includes("neet")) {
+      return { correct: 4.0, incorrect: 1.0 };
+    }
+    if (examLower.includes("upsc")) {
+      return { correct: 2.0, incorrect: 0.66 };
+    }
+    if (examLower.includes("ssc")) {
+      return { correct: 2.0, incorrect: 0.5 };
+    }
+    return { correct: 2.0, incorrect: 0.0 };
+  }, [blueprint.exam]);
 
   const [timeLeft, setTimeLeft] = useState((blueprint.durationMinutes || 120) * 60);
   const [isPaused, setIsPaused] = useState(false);
@@ -271,12 +302,12 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
           subject: getSectionSubject(idx),
           selectedAnswer: currentAnswers[idx] ?? null,
           correctAnswer: q.correctAnswer,
-          isCorrect: currentAnswers[idx] === q.correctAnswer,
+          isCorrect: checkIfAnswerIsCorrect(currentAnswers[idx], q),
           skipped: !currentAnswers[idx],
           timeTaken: null,
           markedForReview: currentStatuses[idx] === 'review',
         }));
-        const score = allQuestions.filter((q: Question, idx: number) => currentAnswers[idx] === q.correctAnswer).length;
+        const score = allQuestions.filter((q: Question, idx: number) => checkIfAnswerIsCorrect(currentAnswers[idx], q)).length;
         axiosInstance.post('/assessment/submit-exam', {
           examName: blueprint.exam,
           sessionId: adapterRef.current?.sessionId,
@@ -314,7 +345,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       let correct = 0;
       allQs.forEach((q, idx) => {
         const userAns = answers[idx];
-        if (userAns && q.correctAnswer && (userAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase() || userAns.startsWith(q.correctAnswer.charAt(0)))) {
+        if (checkIfAnswerIsCorrect(userAns, q)) {
           correct++;
         }
       });
@@ -343,14 +374,11 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
     const questionEvaluations = Array.from({ length: blueprint.questions }).map((_, idx) => {
       const q = adapter ? adapter.getQuestionSync(idx) : null;
       const userAns = answers[idx] || "Not Answered";
-      let isCorrect = false;
-      if (q && userAns !== "Not Answered") {
-        if (q.correctAnswer && (userAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase() || userAns.startsWith(q.correctAnswer.charAt(0)))) {
-          isCorrect = true;
-          correctCount++;
-        } else {
-          wrongCount++;
-        }
+      let isCorrect = checkIfAnswerIsCorrect(userAns, q);
+      if (isCorrect) {
+        correctCount++;
+      } else if (userAns !== "Not Answered") {
+        wrongCount++;
       }
       return {
         idx,
@@ -364,11 +392,85 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       };
     });
 
+    const obtainedMarks = (correctCount * markingScheme.correct) - (wrongCount * markingScheme.incorrect);
+    const maxMarks = blueprint.questions * markingScheme.correct;
     const scorePercentage = Math.round((correctCount / (blueprint.questions || 1)) * 100);
+    const totalAttempted = correctCount + wrongCount;
+
+    // Calculate subject-wise metrics dynamically
+    const subjectMetrics = sections.map((sec) => {
+      let secCorrect = 0;
+      let secWrong = 0;
+      let secAttempted = 0;
+      for (let i = 0; i < sec.count; i++) {
+        const qIdx = sec.startIndex + i;
+        const q = adapter ? adapter.getQuestionSync(qIdx) : null;
+        const userAns = answers[qIdx] || "Not Answered";
+        if (userAns !== "Not Answered") {
+          secAttempted++;
+          if (q && q.correctAnswer && (userAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase() || userAns.startsWith(q.correctAnswer.charAt(0)))) {
+            secCorrect++;
+          } else {
+            secWrong++;
+          }
+        }
+      }
+      const accuracy = secAttempted > 0 ? Math.round((secCorrect / secAttempted) * 100) : 0;
+      return {
+        subject: sec.subject,
+        total: sec.count,
+        attempted: secAttempted,
+        correct: secCorrect,
+        accuracy,
+      };
+    });
+
+    const weakSubjects = subjectMetrics.filter(s => s.accuracy < 60 || s.attempted === 0);
 
     const submittedScreen = (
-      <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-in fade-in duration-300">
-        <div className="bg-white border border-gray-100/80 rounded-3xl shadow-2xl max-w-3xl w-full text-center overflow-hidden relative p-6 md:p-8 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+      <div id="submitted-modal-container" className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-in fade-in duration-300">
+        <div id="diagnostic-report-print" className="bg-white border border-gray-100/80 rounded-3xl max-w-3xl w-full text-center overflow-hidden relative p-6 md:p-8 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+              /* Hide every direct child of body except our submitted modal */
+              body > *:not(#submitted-modal-container) {
+                display: none !important;
+              }
+              #submitted-modal-container {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                background: white !important;
+                backdrop-filter: none !important;
+                display: block !important;
+                overflow: visible !important;
+                z-index: 99999 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              #diagnostic-report-print {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+            }
+          `}} />
 
           {/* Ambient Decorative Blur */}
           <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -376,7 +478,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
           {/* Hero Icon Badge */}
           <div className="relative mb-3 inline-flex shrink-0 mx-auto">
-            <div className="w-16 h-16 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center shadow-lg shadow-emerald-500/10 mx-auto">
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8 text-emerald-600" />
             </div>
           </div>
@@ -398,7 +500,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             <button
               onClick={() => setActiveResultTab('overview')}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeResultTab === 'overview'
-                  ? 'bg-white text-gray-900 shadow-sm'
+                  ? 'bg-white text-gray-900'
                   : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
@@ -407,7 +509,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             <button
               onClick={() => setActiveResultTab('solutions')}
               className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeResultTab === 'solutions'
-                  ? 'bg-white text-gray-900 shadow-sm'
+                  ? 'bg-white text-gray-900'
                   : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
@@ -423,41 +525,41 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
 
                   {/* Score */}
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-100/30 border border-emerald-100 text-left shadow-2xs">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-100/30 border border-emerald-100 text-left">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Score</span>
                       <Award className="w-4 h-4 text-emerald-500" />
                     </div>
                     <p className="text-xl md:text-2xl font-black text-emerald-950 leading-tight">
-                      {scorePercentage}%
+                      {obtainedMarks.toFixed(1)} <span className="text-xs font-semibold text-emerald-600">/ {maxMarks}</span>
                     </p>
                     <p className="text-[10px] font-medium text-emerald-600/80 mt-0.5">
-                      {correctCount} Correct / {blueprint.questions} Qs
+                      {scorePercentage}% ({correctCount} Correct)
                     </p>
                   </div>
 
                   {/* Attempted */}
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/80 to-blue-100/30 border border-blue-100 text-left shadow-2xs">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-50/80 to-blue-100/30 border border-blue-100 text-left">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Attempted</span>
                       <FileText className="w-4 h-4 text-blue-500" />
                     </div>
                     <p className="text-xl md:text-2xl font-black text-blue-950 leading-tight">
-                      {stats.answered} <span className="text-xs font-semibold text-blue-500">/ {blueprint.questions}</span>
+                      {totalAttempted} <span className="text-xs font-semibold text-blue-500">/ {blueprint.questions}</span>
                     </p>
                     <p className="text-[10px] font-medium text-blue-600/80 mt-0.5">
-                      {blueprint.questions - stats.answered} Skipped
+                      {blueprint.questions - totalAttempted} Skipped
                     </p>
                   </div>
 
                   {/* Accuracy */}
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-purple-100/30 border border-indigo-100 text-left shadow-2xs">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50/80 to-purple-100/30 border border-indigo-100 text-left">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Accuracy</span>
                       <TrendingUp className="w-4 h-4 text-indigo-500" />
                     </div>
                     <p className="text-xl md:text-2xl font-black text-indigo-950 leading-tight">
-                      {stats.answered > 0 ? Math.round((correctCount / stats.answered) * 100) : 0}%
+                      {totalAttempted > 0 ? Math.round((correctCount / totalAttempted) * 100) : 0}%
                     </p>
                     <p className="text-[10px] font-medium text-indigo-600/80 mt-0.5">
                       Precision Rate
@@ -465,7 +567,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                   </div>
 
                   {/* Time Spent */}
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-50/80 to-indigo-100/30 border border-purple-100 text-left shadow-2xs">
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-50/80 to-indigo-100/30 border border-purple-100 text-left">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Time Elapsed</span>
                       <Clock className="w-4 h-4 text-purple-500" />
@@ -481,7 +583,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                 </div>
 
                 {/* AI Telemetry Sync Card */}
-                <div className="bg-slate-900 text-white rounded-2xl p-4 flex items-center justify-between gap-4 text-left shadow-lg">
+                <div className="bg-slate-900 text-white rounded-2xl p-4 flex items-center justify-between gap-4 text-left">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 text-primary">
                       <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
@@ -492,6 +594,74 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                         Attempt performance indexed for AI weak-topic remediation.
                       </p>
                     </div>
+                  </div>
+                </div>
+
+                {/* DETAILED PERFORMANCE & WEAKNESS REPORT */}
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 text-left space-y-4">
+                  <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+                    <Award className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-sm text-gray-900">Detailed Subject-wise Analysis</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    {subjectMetrics.map((sm, idx) => (
+                      <div key={idx} className="p-3 bg-gray-50/50 border border-gray-100 rounded-xl space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-xs text-gray-800">{sm.subject}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            sm.accuracy >= 75 ? 'bg-green-50 text-green-700 border border-green-200' :
+                            sm.accuracy >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            'bg-red-50 text-red-700 border border-red-200'
+                          }`}>
+                            {sm.accuracy}% Accuracy
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-300 ${
+                              sm.accuracy >= 75 ? 'bg-green-500' :
+                              sm.accuracy >= 50 ? 'bg-amber-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${sm.accuracy}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-gray-500 font-medium">
+                          <span>Attempted: {sm.attempted}/{sm.total} Qs</span>
+                          <span>Correct: {sm.correct}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* WEAKNESS AND REMEDIATION REPORT */}
+                  <div className="p-4 rounded-xl border border-red-100 bg-red-50/20 space-y-2.5">
+                    <div className="flex items-center gap-2 text-red-700">
+                      <AlertCircle className="w-4 h-4" />
+                      <h4 className="font-bold text-xs">Priority Weak Areas (Requires Attention)</h4>
+                    </div>
+                    {weakSubjects.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-[11px] text-gray-600 leading-relaxed font-medium">
+                          Our analysis indicates focus is needed on <span className="font-black text-red-700">{weakSubjects.map(s => s.subject).join(', ')}</span>:
+                        </p>
+                        <ul className="list-disc pl-4 text-[10px] text-gray-500 space-y-1">
+                          {weakSubjects.map((s, idx) => (
+                            <li key={idx} className="leading-relaxed">
+                              {s.attempted === 0 
+                                ? `You skipped all questions in ${s.subject}. Practice foundational problems to build confidence.` 
+                                : `Accuracy in ${s.subject} is only ${s.accuracy}%. Review incorrect answers in the solutions tab to analyze core concepts.`
+                              }
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-emerald-700 leading-relaxed font-semibold">
+                        Outstanding! You have no critical weak areas (&lt; 60% accuracy) in this attempt. Keep it up!
+                      </p>
+                    )}
                   </div>
                 </div>
               </>
@@ -542,7 +712,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-gray-100 shrink-0 flex items-center justify-between gap-3">
+          <div className="mt-4 pt-3 border-t border-gray-100 shrink-0 flex items-center justify-between gap-3 no-print">
             <button
               onClick={() => window.print()}
               className="px-5 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs rounded-xl transition-all border border-blue-200 flex items-center gap-2"
@@ -552,7 +722,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             </button>
             <button
               onClick={onClose}
-              className="px-8 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/95 text-white font-bold rounded-xl shadow-lg shadow-primary/25 active:scale-[0.98] transition-all text-xs flex items-center gap-2"
+              className="px-8 py-3 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/95 text-white font-bold rounded-xl active:scale-[0.98] transition-all text-xs flex items-center gap-2"
             >
               <span>Return to Chat</span>
               <ChevronRight className="w-4 h-4" />
@@ -569,34 +739,34 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const simulatorUI = (
     <div className="fixed inset-0 z-[100] bg-gray-50 md:bg-white flex flex-col font-sans md:overflow-hidden overflow-y-auto">
       {/* DESKTOP HEADER */}
-      <div className="hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-6 shrink-0 shadow-sm z-10">
+      <div className="hidden md:flex h-14 bg-background/80 backdrop-blur-md border-b border-border/60 items-center justify-between px-6 shrink-0 z-10">
         <div className="flex items-center gap-4">
           <button
             onClick={() => setIsPaletteOpen(!isPaletteOpen)}
-            className="p-2 hover:bg-gray-100 rounded-[5px] text-gray-600 transition-colors"
+            className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-colors"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4.5 h-4.5" />
           </button>
-          <div className="flex items-center gap-2">
-            <BrainLogo size={36} />
-            <span className="font-bold text-2xl tracking-tight text-primary">AarikaAI</span>
+          <div className="flex items-center gap-1.5">
+            <BrainLogo size={32} />
+            <span className="font-semibold text-[15px] tracking-tight text-foreground">AarikaAI</span>
           </div>
-          <div className="w-px h-8 bg-gray-200 mx-2"></div>
+          <div className="w-px h-6 bg-border mx-2"></div>
           <div>
-            <h1 className="font-bold text-gray-900 leading-tight">{blueprint.exam}</h1>
-            <p className="text-xs text-gray-500">Mock Test</p>
+            <h1 className="font-semibold text-[14px] text-foreground tracking-tight leading-none">{blueprint.exam}</h1>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">Mock Test</p>
           </div>
 
           {/* Top Problem Tabs for Coding Assessments (CodeSignal / LeetCode Style) */}
           {isCodingQuestion && (
-            <div className="flex items-center gap-1.5 ml-4 bg-gray-100 p-1 rounded-xl">
+            <div className="flex items-center gap-1.5 ml-4 bg-muted p-1 rounded-lg">
               {Array.from({ length: blueprint.questions }).map((_, qIdx) => (
                 <button
                   key={qIdx}
                   onClick={() => jumpToQuestion(qIdx)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeQuestionIdx === qIdx
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1.5 ${activeQuestionIdx === qIdx
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted-hover'
                     }`}
                 >
                   <span>Problem {qIdx + 1}</span>
@@ -607,16 +777,16 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-[5px] text-sm font-medium text-gray-600 hover:bg-gray-50">
-            <Info className="w-4 h-4" /> Instructions
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-lg text-[12px] font-semibold text-muted-foreground hover:bg-muted/50 transition-all">
+            <Info className="w-3.5 h-3.5" /> Instructions
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-[5px] text-sm font-medium text-gray-600 hover:bg-gray-50">
-            <AlertCircle className="w-4 h-4" /> Report an Issue
+          <button className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-lg text-[12px] font-semibold text-muted-foreground hover:bg-muted/50 transition-all">
+            <AlertCircle className="w-3.5 h-3.5" /> Report an Issue
           </button>
           <button
             onClick={() => setIsSubmitted(true)}
-            className="px-5 py-2 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-[5px] text-sm font-bold transition-colors"
+            className="px-4 py-1.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-[12px] font-bold transition-all"
           >
             Exit Exam
           </button>
@@ -787,7 +957,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
 
         {/* LEFT PANEL - QUESTION PALETTE (Desktop Only) */}
-        <div className={`hidden md:flex bg-white border-gray-200 flex-col shrink-0 transition-all duration-300 md:min-h-0 z-20 ${isPaletteOpen ? 'w-80 border-r opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'}`}>
+        <div className={`hidden md:flex bg-white border-r border-gray-100 flex-col shrink-0 transition-all duration-300 md:min-h-0 z-20 ${isPaletteOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'}`}>
           <div className="p-5 border-b border-gray-100 w-80">
             <h3 className="font-bold text-gray-900 mb-4 text-base">Question Palette</h3>
             <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs font-medium text-gray-600">
@@ -811,7 +981,20 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
               {sections.map((section, sIdx) => (
                 <div key={sIdx}>
                   <div className="flex items-center justify-between mb-3 px-1">
-                    <h4 className="font-bold text-sm text-gray-800">{section.subject}</h4>
+                    {(() => {
+                      const subjectColors = [
+                        "bg-blue-50 text-blue-700 border-blue-100",
+                        "bg-emerald-50 text-emerald-700 border-emerald-100",
+                        "bg-amber-50 text-amber-700 border-amber-100",
+                        "bg-purple-50 text-purple-700 border-purple-100"
+                      ];
+                      const colorClass = subjectColors[sIdx % subjectColors.length];
+                      return (
+                        <span className={`px-2 py-0.5 rounded-[5px] text-xs font-bold border ${colorClass}`}>
+                          {section.subject}
+                        </span>
+                      );
+                    })()}
                     <span className="text-xs font-semibold text-gray-400">{section.count} Qs</span>
                   </div>
                   <div className="grid grid-cols-5 gap-2">
@@ -829,7 +1012,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                         <button
                           key={qIdx}
                           onClick={() => jumpToQuestion(qIdx)}
-                          className={`w-10 h-10 rounded-[5px] flex items-center justify-center text-sm font-bold border transition-all ${bgClass} ${isCurrent ? 'ring-2 ring-primary ring-offset-1 bg-primary border-primary text-white shadow-md z-10 scale-105' : ''}`}
+                          className={`w-10 h-10 rounded-[5px] flex items-center justify-center text-sm font-bold border transition-all ${bgClass} ${isCurrent ? 'ring-2 ring-primary ring-offset-1 bg-primary border-primary text-white z-10 scale-105' : ''}`}
                         >
                           {qIdx + 1}
                         </button>
@@ -857,8 +1040,10 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             </div>
 
             <div className="flex items-center gap-2 mb-8">
-              <span className="px-2.5 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-[5px] border border-green-100">+2.0 Marks</span>
-              <span className="px-2.5 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-[5px] border border-red-100">-0.66 Marks</span>
+              <span className="px-2.5 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-[5px] border border-green-100">+{markingScheme.correct.toFixed(1)} Marks</span>
+              {markingScheme.incorrect > 0 && (
+                <span className="px-2.5 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-[5px] border border-red-100">-{markingScheme.incorrect.toFixed(2)} Marks</span>
+              )}
             </div>
 
             {qStatus === 'GENERATING' || qStatus === 'PENDING' ? (
@@ -1028,8 +1213,8 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                         <button
                           key={oIdx}
                           onClick={() => handleOptionSelect(opt)}
-                          className={`flex items-center text-left py-3 px-4 rounded-[5px] border-2 transition-all ${isSelected
-                              ? 'border-primary bg-primary/5 shadow-sm'
+                          className={`flex items-center text-left py-3 px-4 rounded-[5px] border transition-all ${isSelected
+                              ? 'border-primary bg-primary/5'
                               : 'border-gray-200 bg-white'
                             }`}
                         >
@@ -1050,11 +1235,11 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             ) : null}
           </div>
 
-          <div className="border-t border-gray-200 bg-gray-50 p-4 flex items-center justify-between">
+          <div className="border-t border-gray-100 bg-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={handleMarkForReview}
-                className="px-6 py-2.5 border-2 border-orange-200 text-orange-600 hover:bg-orange-50 font-bold text-sm rounded-[5px] transition-colors flex items-center gap-2"
+                className="px-6 py-2.5 border border-orange-300 text-orange-600 hover:bg-orange-50 font-bold text-sm rounded-[5px] transition-colors flex items-center gap-2"
               >
                 <Flag className="w-4 h-4" /> Mark for Review
               </button>
@@ -1085,6 +1270,101 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
           </div>
         </div>
 
+        {/* RIGHT PANEL - EXAM PROGRESS & METRICS (Desktop Only) */}
+        <div className="hidden lg:flex flex-col w-80 bg-white border-l border-gray-100 shrink-0 p-5 gap-5 overflow-y-auto z-20">
+          {/* Exam Progress Card */}
+          <div className="bg-gray-50/50 rounded-xl p-4 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Exam Progress</h3>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 shrink-0">
+                <CircularProgressbar
+                  value={Math.round((stats.answered / (blueprint.questions || 1)) * 100)}
+                  text={`${Math.round((stats.answered / (blueprint.questions || 1)) * 100)}%`}
+                  styles={buildStyles({
+                    textSize: "18px",
+                    pathColor: "#4f46e5",
+                    textColor: "#1f2937",
+                    trailColor: "#f3f4f6"
+                  })}
+                />
+              </div>
+              <div className="flex-1 space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Questions:</span>
+                  <span className="font-bold text-gray-900">{blueprint.questions}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Attempted:</span>
+                  <span className="font-bold text-green-600">{stats.answered}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Review:</span>
+                  <span className="font-bold text-orange-600">{stats.review}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Not Attempted:</span>
+                  <span className="font-bold text-gray-600">{stats.notAttempted}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Time Left Card */}
+          <div className="bg-gray-50/50 rounded-xl p-4 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Time Left</h3>
+            <div className="text-2xl font-black font-mono text-gray-900 tracking-tight text-center py-2">
+              {formatTime(timeLeft)}
+            </div>
+            <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-300 ${timeLeft < 300 ? 'bg-red-500' : 'bg-primary'}`} 
+                style={{ width: `${(timeLeft / ((blueprint.durationMinutes || 120) * 60)) * 100}%` }} 
+              />
+            </div>
+          </div>
+
+          {/* Quick Actions Grid */}
+          <div className="bg-gray-50/50 rounded-xl p-4 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button 
+                onClick={handleMarkForReview}
+                className="flex items-center gap-1.5 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-[11px] font-bold text-gray-600 transition-colors"
+              >
+                <Flag className="w-3.5 h-3.5" /> Review
+              </button>
+              <button 
+                onClick={handleClearResponse}
+                className="flex items-center gap-1.5 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-[11px] font-bold text-gray-600 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Clear
+              </button>
+              <button 
+                className="flex items-center gap-1.5 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-[11px] font-bold text-gray-600 transition-colors"
+              >
+                <Calculator className="w-3.5 h-3.5" /> Calculator
+              </button>
+              <button 
+                className="flex items-center gap-1.5 p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-[11px] font-bold text-gray-600 transition-colors"
+              >
+                <Info className="w-3.5 h-3.5" /> Instructions
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* GLOBAL STATUS FOOTER */}
+      <div className="hidden md:flex h-10 bg-gray-50 border-t border-gray-100 items-center justify-between px-6 shrink-0 text-[11px] text-gray-500 font-medium z-20">
+        <div className="flex items-center gap-1.5">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Your response is autosaved every 10 seconds</span>
+        </div>
+        <div>Powered by AarikaAI Exam Engine</div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span>Connection: Stable</span>
+        </div>
       </div>
     </div>
   );
