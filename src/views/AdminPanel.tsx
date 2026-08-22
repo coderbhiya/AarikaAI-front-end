@@ -31,7 +31,8 @@ import {
   Server,
   BookOpen,
   MessageSquare,
-  Megaphone
+  Megaphone,
+  Coins
 } from "lucide-react";
 import {
   adminLogin,
@@ -53,6 +54,7 @@ import {
 } from "@/services/adminService";
 import ArchitectureGuide from "./ArchitectureGuide";
 import MarketingCenter from "@/app/admin/marketing/page";
+import TokenUsageTab from "./TokenUsageTab";
 
 export default function AdminPanel() {
   // Authentication State
@@ -69,7 +71,7 @@ export default function AdminPanel() {
   const [department, setDepartment] = useState("");
 
   // Dashboard & Navigation State
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings" | "marketing">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings" | "marketing" | "tokens">("dashboard");
   const [stats, setStats] = useState<any>(null);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
 
@@ -642,6 +644,18 @@ export default function AdminPanel() {
               <Megaphone size={16} />
               <span>Marketing Center</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab("tokens")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === "tokens"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+              }`}
+            >
+              <Coins size={16} />
+              <span>Token Usage</span>
+            </button>
           </nav>
         </div>
 
@@ -686,6 +700,8 @@ export default function AdminPanel() {
                 ? "System Settings"
                 : activeTab === "marketing"
                 ? "Marketing Center"
+                : activeTab === "tokens"
+                ? "Token Usage"
                 : "Job Listings"}
             </span>
           </div>
@@ -1701,6 +1717,12 @@ export default function AdminPanel() {
           {activeTab === "marketing" && (
             <div className="animate-in fade-in duration-300">
               <MarketingCenter />
+            </div>
+          )}
+          {/* TAB 8: TOKEN USAGE */}
+          {activeTab === "tokens" && (
+            <div className="animate-in fade-in duration-300">
+              <TokenUsageTab />
             </div>
           )}
         </div>

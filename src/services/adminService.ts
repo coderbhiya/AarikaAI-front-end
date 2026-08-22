@@ -58,6 +58,12 @@ export const getDashboardStats = async () => {
   return response.data.stats;
 };
 
+// Token usage analytics (overall + per-user LLM token consumption)
+export const getTokenUsage = async (period: "7d" | "30d" | "90d" | "all" = "30d") => {
+  const response = await adminAxios.get("/token-usage", { params: { period } });
+  return response.data;
+};
+
 export const getUsers = async (page = 1, limit = 10, search = "", status = "") => {
   const response = await adminAxios.get("/users", {
     params: { page, limit, search, status },
