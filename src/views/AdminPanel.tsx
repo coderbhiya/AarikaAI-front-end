@@ -55,6 +55,7 @@ import {
 import ArchitectureGuide from "./ArchitectureGuide";
 import MarketingCenter from "@/app/admin/marketing/page";
 import TokenUsageTab from "./TokenUsageTab";
+import UserTokenAnalytics from "./UserTokenAnalytics";
 
 export default function AdminPanel() {
   // Authentication State
@@ -71,7 +72,7 @@ export default function AdminPanel() {
   const [department, setDepartment] = useState("");
 
   // Dashboard & Navigation State
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings" | "marketing" | "tokens">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings" | "marketing" | "tokens" | "userTokens">("dashboard");
   const [stats, setStats] = useState<any>(null);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
 
@@ -656,6 +657,18 @@ export default function AdminPanel() {
               <Coins size={16} />
               <span>Token Usage</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab("userTokens")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === "userTokens"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+              }`}
+            >
+              <Users size={16} />
+              <span>User Token Analytics</span>
+            </button>
           </nav>
         </div>
 
@@ -702,6 +715,8 @@ export default function AdminPanel() {
                 ? "Marketing Center"
                 : activeTab === "tokens"
                 ? "Token Usage"
+                : activeTab === "userTokens"
+                ? "User Token Analytics"
                 : "Job Listings"}
             </span>
           </div>
@@ -879,6 +894,7 @@ export default function AdminPanel() {
                           <th className="px-6 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Role</th>
                           <th className="px-6 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Verification</th>
                           <th className="px-6 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Created</th>
+                          <th className="px-6 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Tokens Used</th>
                           <th className="px-6 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-wide text-right">Actions</th>
                         </tr>
                       </thead>
@@ -911,6 +927,19 @@ export default function AdminPanel() {
                             </td>
                             <td className="px-6 py-4 text-xs text-slate-400 font-medium">
                               {new Date(user.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="inline-flex flex-col items-end">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
+                                  <Coins size={11} />
+                                  {Number(user.totalTokens || 0).toLocaleString()}
+                                </span>
+                                {user.tokenCalls > 0 && (
+                                  <span className="text-[9px] text-slate-400 font-medium mt-0.5">
+                                    {Number(user.tokenCalls).toLocaleString()} calls
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex justify-end gap-2">
@@ -1723,6 +1752,12 @@ export default function AdminPanel() {
           {activeTab === "tokens" && (
             <div className="animate-in fade-in duration-300">
               <TokenUsageTab />
+            </div>
+          )}
+          {/* TAB 9: USER TOKEN ANALYTICS */}
+          {activeTab === "userTokens" && (
+            <div className="animate-in fade-in duration-300">
+              <UserTokenAnalytics />
             </div>
           )}
         </div>

@@ -64,6 +64,23 @@ export const getTokenUsage = async (period: "7d" | "30d" | "90d" | "all" = "30d"
   return response.data;
 };
 
+// User-wise token usage: paginated + searchable list of all users by token spend
+export const getTokenUsageByUser = async (
+  params: { period?: string; page?: number; limit?: number; search?: string } = {}
+) => {
+  const { period = "30d", page = 1, limit = 15, search = "" } = params;
+  const response = await adminAxios.get("/token-usage/users", {
+    params: { period, page, limit, search },
+  });
+  return response.data;
+};
+
+// Drill-down: a single user's token breakdown (by feature, model, day)
+export const getUserTokenBreakdown = async (userId: number, period: string = "30d") => {
+  const response = await adminAxios.get(`/token-usage/users/${userId}`, { params: { period } });
+  return response.data;
+};
+
 export const getUsers = async (page = 1, limit = 10, search = "", status = "") => {
   const response = await adminAxios.get("/users", {
     params: { page, limit, search, status },
