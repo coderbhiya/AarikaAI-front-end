@@ -6,6 +6,12 @@ export type QuestionStatus = "PENDING" | "GENERATING" | "READY" | "FAILED";
 export class AssessmentGenerationQueue {
   private statusMap: Map<number, QuestionStatus> = new Map();
   private PREFETCH_COUNT = 5;
+  // Each question generation is a multi-second LLM round trip. Generating the
+  // prefetch batch strictly one-at-a-time meant the user could catch up to
+  // (and wait on) the generation frontier even with prefetching enabled.
+  // A small bounded concurrency gets the current + next question ready much
+  // faster without hammering the backend/LLM provider.
+  private CONCURRENCY = 3;
   private isProcessing = false;
 
   constructor(
@@ -40,69 +46,75 @@ export class AssessmentGenerationQueue {
     this.setStatus(index, "PENDING");
   }
 
+  private resolveTopic(index: number): string {
+    let topic = "General";
+    let accumulatedCount = 0;
+    const distributionEntries = Object.entries(this.blueprint.distribution || {});
+
+    for (const [sectionTopic, count] of distributionEntries) {
+      accumulatedCount += count;
+      if (index < accumulatedCount) {
+        topic = sectionTopic;
+        break;
+      }
+    }
+    if (distributionEntries.length > 0 && index >= accumulatedCount) {
+      topic = distributionEntries[distributionEntries.length - 1][0];
+    }
+    return topic;
+  }
+
+  private resolveDifficulty(index: number): string {
+    const totalQs = this.blueprint.questions || 1;
+    const easyLimit = Math.round(totalQs * (this.blueprint.difficulty?.easy ? this.blueprint.difficulty.easy / totalQs : 0.3));
+    const hardLimit = totalQs - Math.round(totalQs * (this.blueprint.difficulty?.hard ? this.blueprint.difficulty.hard / totalQs : 0.2));
+
+    if (index < easyLimit) return "easy";
+    if (index >= hardLimit) return "hard";
+    return "medium";
+  }
+
+  private async generateOne(index: number) {
+    try {
+      const topic = this.resolveTopic(index);
+      const difficulty = this.resolveDifficulty(index);
+
+      const question = await QuestionGenerationEngine.generateWithRetry(
+        this.blueprint,
+        index,
+        topic,
+        difficulty,
+        this.repository.getAllQuestionTexts()
+      );
+
+      this.repository.saveQuestion(index, question);
+      this.setStatus(index, "READY");
+    } catch (error) {
+      console.error(`[AssessmentGenerationQueue] Failed to generate Q${index + 1}`, error);
+      this.setStatus(index, "FAILED");
+    }
+  }
+
   private async processQueue() {
     if (this.isProcessing) return;
     this.isProcessing = true;
 
     try {
       while (true) {
-        let nextIndex = -1;
+        const batch: number[] = [];
         for (let i = 0; i < this.blueprint.questions; i++) {
           if (this.statusMap.get(i) === "PENDING") {
-            nextIndex = i;
-            break;
+            batch.push(i);
+            if (batch.length >= this.CONCURRENCY) break;
           }
         }
 
-        if (nextIndex === -1) break;
+        if (batch.length === 0) break;
 
-        this.setStatus(nextIndex, "GENERATING");
-
-        try {
-          // Determine topic based on sequential section boundaries in blueprint.distribution
-          let topic = "General";
-          let accumulatedCount = 0;
-          const distributionEntries = Object.entries(this.blueprint.distribution || {});
-
-          for (const [sectionTopic, count] of distributionEntries) {
-            accumulatedCount += count;
-            if (nextIndex < accumulatedCount) {
-              topic = sectionTopic;
-              break;
-            }
-          }
-          if (distributionEntries.length > 0 && nextIndex >= accumulatedCount) {
-            topic = distributionEntries[distributionEntries.length - 1][0];
-          }
-
-          // Determine difficulty based on blueprint ratios
-          let difficulty = "medium";
-          const totalQs = this.blueprint.questions || 1;
-          const easyLimit = Math.round(totalQs * (this.blueprint.difficulty?.easy ? this.blueprint.difficulty.easy / totalQs : 0.3));
-          const hardLimit = totalQs - Math.round(totalQs * (this.blueprint.difficulty?.hard ? this.blueprint.difficulty.hard / totalQs : 0.2));
-
-          if (nextIndex < easyLimit) {
-            difficulty = "easy";
-          } else if (nextIndex >= hardLimit) {
-            difficulty = "hard";
-          } else {
-            difficulty = "medium";
-          }
-
-          const question = await QuestionGenerationEngine.generateWithRetry(
-            this.blueprint,
-            nextIndex,
-            topic,
-            difficulty,
-            this.repository.getAllQuestionTexts()
-          );
-
-          this.repository.saveQuestion(nextIndex, question);
-          this.setStatus(nextIndex, "READY");
-        } catch (error) {
-          console.error(`[AssessmentGenerationQueue] Failed to generate Q${nextIndex + 1}`, error);
-          this.setStatus(nextIndex, "FAILED");
-        }
+        batch.forEach((index) => this.setStatus(index, "GENERATING"));
+        // Generate this batch concurrently instead of one question at a time —
+        // cuts wall-clock prefetch time roughly by the concurrency factor.
+        await Promise.all(batch.map((index) => this.generateOne(index)));
       }
     } finally {
       this.isProcessing = false;
