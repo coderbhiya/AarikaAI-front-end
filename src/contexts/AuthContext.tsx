@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { User } from "@/types";
 import { auth } from "@/lib/auth";
 import axiosInstance from "@/lib/axios";
+import { setAuthCookie, clearAuthCookie, syncAuthCookieFromStorage } from "@/lib/authCookie";
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +31,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // Reconcile the auth cookie with localStorage as early as possible so the
+    // middleware (cookie-based) and the client (localStorage-based) never
+    // disagree — the divergence that causes the / -> /chat -> / redirect loop.
+    // If the cookie had silently expired while the localStorage token lived on,
+    // this re-establishes it before any redirect fires.
+    syncAuthCookieFromStorage();
+
     const savedUser = typeof window !== 'undefined' ? localStorage.getItem("user") : null;
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -87,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(null);
           localStorage.removeItem("user");
           localStorage.removeItem("authToken");
-          document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          clearAuthCookie();
         }
       }
       setLoading(false);
@@ -130,7 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setToken(null);
         localStorage.removeItem("user");
         localStorage.removeItem("authToken");
-        document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        clearAuthCookie();
       }
     } finally {
       setProfileLoaded(true);
@@ -143,7 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (authToken) {
       setToken(authToken);
       localStorage.setItem("authToken", authToken);
-      document.cookie = `authToken=${authToken}; path=/; max-age=604800`; // 7 days
+      setAuthCookie(authToken);
       // syncProfile runs in the background — don't await it so navigation is instant
       syncProfile().catch(() => {});
     }
@@ -155,7 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       localStorage.removeItem("user");
       localStorage.removeItem("authToken");
-      document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      clearAuthCookie();
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;

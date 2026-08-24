@@ -31,6 +31,7 @@ import Link from "next/link";
 import axiosInstance from "@/lib/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/auth";
+import { syncAuthCookieFromStorage } from "@/lib/authCookie";
 
 export const LoginPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -49,9 +50,13 @@ export const LoginPage: React.FC = () => {
     linkedin: false,
   });
 
-  // If already authenticated, redirect to chat
+  // If already authenticated, redirect to chat.
+  // Ensure the middleware's auth cookie is in sync with our localStorage token
+  // BEFORE navigating, otherwise the middleware would bounce us straight back
+  // to "/" and cause an infinite / -> /chat -> / redirect loop.
   React.useEffect(() => {
     if (!loading && isAuthenticated) {
+      syncAuthCookieFromStorage();
       navigate.replace("/chat");
     }
   }, [loading, isAuthenticated, navigate]);
