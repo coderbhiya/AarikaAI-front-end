@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Copy, Check, Maximize2, X, Download, ZoomIn, ZoomOut, RotateCcw, Sparkles } from "lucide-react";
 
 interface DiagramCardProps {
@@ -282,7 +283,11 @@ const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, me
       </div>
 
       {/* ── FULLSCREEN MODAL ──────────────────────────────────────────── */}
-      {isFullscreen && (
+      {/* Rendered via portal so this fixed overlay covers the whole viewport
+          instead of being clipped by ancestor overflow-hidden containers
+          (chat scroll area, main layout), which previously made it render
+          "under" the sidebar/header instead of truly fullscreen. */}
+      {isFullscreen && createPortal(
         <div
           onClick={(e) => { if (e.target === e.currentTarget) setIsFullscreen(false); }}
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
@@ -336,13 +341,19 @@ const DiagramCard: React.FC<DiagramCardProps> = ({ type = "flowchart", title, me
             </div>
 
             {/* Canvas Area */}
-            <div className="flex-1 overflow-auto p-6 bg-slate-50/40 flex items-center justify-center">
+            {/* items-start (not items-center): when the diagram is taller than
+                the modal, centering it in a scrollable flex container makes the
+                top portion overflow above scrollTop=0 — unreachable by scrolling,
+                so it renders permanently cut off. Starting from the top keeps
+                the whole diagram reachable by scrolling down. */}
+            <div className="flex-1 overflow-auto p-6 bg-slate-50/40 flex items-start justify-center">
               <div style={{ transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.2s ease" }} className="w-full flex justify-center">
                 <div ref={modalRef} className="w-full bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex justify-center" />
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

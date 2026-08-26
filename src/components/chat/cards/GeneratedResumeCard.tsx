@@ -1,5 +1,6 @@
-import React, { useRef, useState } from "react";
-import { Download, Copy, Check, X } from "lucide-react";
+import React, { useRef, useState, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
+import { Download, Copy, Check, X, Sparkles } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { TemplateClassic } from "../../resume/templates/TemplateClassic";
@@ -112,7 +113,26 @@ function normalizeResumeData(raw: any): GeneratedResumeData {
     };
 }
 
-const GeneratedResumeCard: React.FC<{ data: any }> = ({ data: rawData }) => {
+interface GeneratedResumeCardProps {
+    data: any;
+    /**
+     * "card" (default): a small clickable preview card that opens its own
+     * fullscreen modal on click — used for the inline chat-message rendering.
+     * "inline": renders the full editor (template picker + preview) directly,
+     * filling its container — used inside ChatArea's split workspace panel
+     * so the resume is visible side-by-side with the chat, Claude-style,
+     * without an extra click or a modal on top of the modal.
+     */
+    mode?: "card" | "inline";
+    /**
+     * When provided (mode="card"), clicking the card calls this instead of
+     * opening the internal fullscreen modal — used to open the split
+     * workspace panel (ChatArea's activeArtifact) instead.
+     */
+    onOpenWorkspace?: () => void;
+}
+
+const GeneratedResumeCard: React.FC<GeneratedResumeCardProps> = ({ data: rawData, mode = "card", onOpenWorkspace }) => {
     const data = normalizeResumeData(rawData);
 
     const resumeRef = useRef<HTMLDivElement>(null);
@@ -121,11 +141,97 @@ const GeneratedResumeCard: React.FC<{ data: any }> = ({ data: rawData }) => {
     const [selectedTemplate, setSelectedTemplate] = useState<'classic' | 'modern'>('classic');
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // Auto-fit scaling for the resume page: the page has a fixed A4 width
+    // (210mm ≈ 794px), which is wider than most split-panel/workspace
+    // widths — without this it gets clipped on the right instead of shrinking
+    // to fit, the way Google Docs / Canva scale a page preview to its container.
+    //
+    // The scale is applied directly to the resumeRef element's own transform
+    // (not a wrapper), and measurement uses scrollWidth/scrollHeight — both
+    // layout-based and unaffected by the element's own `transform`, so this
+    // can't feed back into itself. handleDownload neutralizes the transform
+    // before capturing so the exported PDF is always full, natural resolution
+    // regardless of how small the on-screen preview is currently scaled to.
+    const previewContainerRef = useRef<HTMLDivElement>(null);
+    const [pageScale, setPageScale] = useState(1);
+    const [pageNaturalSize, setPageNaturalSize] = useState({ width: 0, height: 0 });
+
+    useLayoutEffect(() => {
+        const container = previewContainerRef.current;
+        const page = resumeRef.current;
+        if (!container || !page) return;
+
+        const PAGE_PADDING = 32; // breathing room around the page inside the scroll area
+
+        // Guard against the classic ResizeObserver + setState infinite loop:
+        // only commit new state when the values actually changed (by more
+        // than a px of float jitter). Without this, calling setState with a
+        // freshly-created { width, height } object on every observer tick —
+        // even with identical numbers — still re-renders (objects don't
+        // compare equal by reference), which can re-trigger the observer and
+        // loop forever ("Maximum update depth exceeded").
+        let lastNaturalWidth = -1;
+        let lastNaturalHeight = -1;
+        let lastScale = -1;
+        let rafId: number | null = null;
+
+        const applyMeasurement = () => {
+            rafId = null;
+            const naturalWidth = page.scrollWidth;
+            const naturalHeight = page.scrollHeight;
+            if (naturalWidth === 0) return;
+
+            const availableWidth = container.clientWidth - PAGE_PADDING;
+            const rawScale = availableWidth / naturalWidth;
+            const nextScale = rawScale > 0 ? Math.min(1, rawScale) : 1;
+
+            const sizeChanged = Math.abs(naturalWidth - lastNaturalWidth) > 1 || Math.abs(naturalHeight - lastNaturalHeight) > 1;
+            const scaleChanged = Math.abs(nextScale - lastScale) > 0.005;
+            if (!sizeChanged && !scaleChanged) return;
+
+            lastNaturalWidth = naturalWidth;
+            lastNaturalHeight = naturalHeight;
+            lastScale = nextScale;
+
+            if (sizeChanged) setPageNaturalSize({ width: naturalWidth, height: naturalHeight });
+            if (scaleChanged) setPageScale(nextScale);
+        };
+
+        // Reserving a scaled height for the page can flip an ancestor's
+        // scrollbar on/off, which changes this container's own clientWidth,
+        // which would change the computed scale again — a same-tick
+        // ResizeObserver→setState→resize loop, which is exactly what
+        // "Maximum update depth exceeded" is. Deferring the actual
+        // measurement to the next animation frame breaks that synchronous
+        // cascade (this is the standard fix for ResizeObserver-driven state).
+        const recalc = () => {
+            if (rafId != null) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(applyMeasurement);
+        };
+
+        recalc();
+
+        const resizeObserver = new ResizeObserver(recalc);
+        resizeObserver.observe(container);
+        return () => {
+            resizeObserver.disconnect();
+            if (rafId != null) cancelAnimationFrame(rafId);
+        };
+    }, [selectedTemplate, data, mode]);
+
     const handleDownload = async () => {
         if (!resumeRef.current) return;
         try {
             setIsDownloading(true);
             const element = resumeRef.current;
+
+            // The on-screen preview may be visually shrunk (pageScale) to fit
+            // the available width. Neutralize that before capturing so the
+            // exported PDF is always full, natural resolution regardless of
+            // how small it currently looks on screen.
+            const previousTransform = element.style.transform;
+            element.style.transform = "none";
+
             const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
@@ -133,6 +239,8 @@ const GeneratedResumeCard: React.FC<{ data: any }> = ({ data: rawData }) => {
                 backgroundColor: "#ffffff",
                 windowWidth: 800,
             });
+
+            element.style.transform = previousTransform;
 
             const imgData = canvas.toDataURL("image/png");
             const pdf = new jsPDF("p", "mm", "a4");
@@ -188,12 +296,127 @@ ${data.education.map(e => `${e.degree} - ${e.institution} (${e.dates})`).join("\
         setTimeout(() => setIsCopied(false), 2000);
     };
 
+    // ── INLINE MODE: rendered directly inside ChatArea's split workspace
+    // panel — no card, no modal chrome, just the editor filling its container
+    // so the resume is visible side-by-side with the chat.
+    if (mode === "inline") {
+        return (
+            <div className="flex flex-col md:flex-row w-full">
+                {/* Controls — sticky on desktop so they stay visible while the
+                    parent panel scrolls through a long resume. */}
+                <div className="flex md:flex-col md:w-64 md:sticky md:top-0 md:self-start shrink-0 gap-5 p-5 border-b md:border-b-0 md:border-r border-gray-200 bg-gradient-to-b from-white to-gray-50/60">
+                    <div className="hidden md:flex items-center gap-2.5 pb-4 border-b border-gray-100">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600/10 flex items-center justify-center text-blue-600 shrink-0">
+                            <Sparkles size={16} />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-bold text-gray-900 leading-none">Resume Editor</h4>
+                            <p className="text-[11px] text-gray-400 mt-1">Customize &amp; export</p>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 md:flex-none">
+                        <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Template</label>
+                        <select
+                            value={selectedTemplate}
+                            onChange={(e) => setSelectedTemplate(e.target.value as any)}
+                            className="w-full text-sm bg-white border border-gray-300 hover:border-gray-400 rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 text-gray-700 font-medium cursor-pointer transition-colors shadow-sm"
+                        >
+                            <option value="classic">Professional Classic</option>
+                            <option value="modern">Modern Analyst</option>
+                        </select>
+                    </div>
+
+                    <div className="flex md:flex-col gap-2">
+                        <button
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                            className="flex-1 md:flex-none px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
+                        >
+                            <Download size={16} />
+                            {isDownloading ? "Generating..." : "Download PDF"}
+                        </button>
+                        <button
+                            onClick={handleCopy}
+                            className="flex-1 md:flex-none px-4 py-2.5 border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:scale-[0.98]"
+                        >
+                            {isCopied ? (
+                                <>
+                                    <Check size={16} className="text-emerald-500" />
+                                    <span className="hidden sm:inline">Copied!</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Copy size={16} />
+                                    <span className="hidden sm:inline">Copy Text</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Resume Preview — auto-scaled to fit the available width so the
+                    page is never clipped, the way Google Docs/Canva fit a page
+                    preview to its container. The outer split panel scrolls. */}
+                {/* min-w-0 is load-bearing: without it, a flex item defaults to
+                    min-width:auto and won't shrink below its content's natural
+                    size, which here is the full-width (unscaled) resume — that
+                    would make this container's own measured width depend on
+                    its child, creating a measure→resize→remeasure loop with
+                    the ResizeObserver below ("Maximum update depth exceeded"). */}
+                <div
+                    ref={previewContainerRef}
+                    className="relative flex-1 min-w-0 bg-gradient-to-b from-slate-100 to-slate-200/70 p-4 md:p-8 flex justify-center"
+                >
+                    {/* overflow-hidden: resumeRef's own layout box stays at its
+                        full natural width (CSS transform only affects paint,
+                        not layout), so without clipping it here, the oversized
+                        child would bleed out and defeat the min-w-0 above. */}
+                    <div
+                        className="overflow-hidden"
+                        style={
+                            pageNaturalSize.width
+                                ? { width: pageNaturalSize.width * pageScale, height: pageNaturalSize.height * pageScale }
+                                : undefined
+                        }
+                    >
+                        <div
+                            ref={resumeRef}
+                            className="bg-white shadow-[0_10px_40px_rgba(15,23,42,0.15)] ring-1 ring-black/5 rounded-sm"
+                            style={{
+                                width: "210mm",
+                                minHeight: "297mm",
+                                padding: "16mm 20mm",
+                                boxSizing: "border-box",
+                                fontFamily: '"Segoe UI", "Helvetica Neue", sans-serif',
+                                transform: `scale(${pageScale})`,
+                                transformOrigin: "top left",
+                            }}
+                        >
+                            {selectedTemplate === 'classic' ? (
+                                <TemplateClassic data={data} />
+                            ) : (
+                                <TemplateModern data={data} />
+                            )}
+                        </div>
+                    </div>
+
+                    {pageScale < 1 && (
+                        <span className="absolute bottom-3 right-3 px-2 py-1 rounded-md bg-gray-900/70 text-white text-[10px] font-semibold tracking-wide backdrop-blur-sm select-none">
+                            {Math.round(pageScale * 100)}% fit
+                        </span>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             {/* CARD TRIGGER - Initial View */}
             <div className="w-full max-w-sm mx-auto my-6">
                 <div
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => onOpenWorkspace ? onOpenWorkspace() : setIsModalOpen(true)}
                     className="bg-white rounded-xl border-2 border-gray-200 shadow-lg hover:shadow-xl hover:border-blue-400 cursor-pointer transition-all duration-300 overflow-hidden group"
                 >
                     {/* Card Header */}
@@ -244,7 +467,11 @@ ${data.education.map(e => `${e.degree} - ${e.institution} (${e.dates})`).join("\
             </div>
 
             {/* MODAL - 2-Part Layout */}
-            {isModalOpen && (
+            {/* Rendered via portal so this fixed overlay covers the whole
+                viewport instead of being clipped by ancestor overflow-hidden
+                containers (chat scroll area, main layout), which previously
+                made it render "under" the sidebar/header instead of truly fullscreen. */}
+            {isModalOpen && createPortal(
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="w-full max-w-7xl h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
 
@@ -317,30 +544,49 @@ ${data.education.map(e => `${e.degree} - ${e.institution} (${e.dates})`).join("\
                             </div>
                         </div>
 
-                        {/* RIGHT SIDE - Resume Preview */}
-                        <div className="flex-1 bg-gray-100 p-4 md:p-6 overflow-auto pt-20 md:pt-16">
-                            <div className="flex justify-center items-start">
-                                <div className="w-full max-w-[900px]">
-                                    <div
-                                        ref={resumeRef}
-                                        className="bg-white shadow-2xl"
-                                        style={{
-                                            width: "210mm",
-                                            minHeight: "297mm",
-                                            padding: "16mm 20mm",
-                                            boxSizing: "border-box",
-                                            fontFamily: '"Segoe UI", "Helvetica Neue", sans-serif',
-                                        }}
-                                    >
-                                        {/* Resume Content */}
-                                        {selectedTemplate === 'classic' ? (
-                                            <TemplateClassic data={data} />
-                                        ) : (
-                                            <TemplateModern data={data} />
-                                        )}
-                                    </div>
+                        {/* RIGHT SIDE - Resume Preview — auto-scaled to fit, same as inline mode.
+                            min-w-0 + overflow-hidden on the wrapper below: see the comment
+                            on the inline-mode version of this container for why both are
+                            required to avoid a ResizeObserver feedback loop. */}
+                        <div
+                            ref={previewContainerRef}
+                            className="relative flex-1 min-w-0 bg-gradient-to-b from-slate-100 to-slate-200/70 p-4 md:p-6 pt-20 md:pt-16 overflow-auto flex justify-center"
+                        >
+                            <div
+                                className="overflow-hidden"
+                                style={
+                                    pageNaturalSize.width
+                                        ? { width: pageNaturalSize.width * pageScale, height: pageNaturalSize.height * pageScale }
+                                        : undefined
+                                }
+                            >
+                                <div
+                                    ref={resumeRef}
+                                    className="bg-white shadow-[0_10px_40px_rgba(15,23,42,0.15)] ring-1 ring-black/5 rounded-sm"
+                                    style={{
+                                        width: "210mm",
+                                        minHeight: "297mm",
+                                        padding: "16mm 20mm",
+                                        boxSizing: "border-box",
+                                        fontFamily: '"Segoe UI", "Helvetica Neue", sans-serif',
+                                        transform: `scale(${pageScale})`,
+                                        transformOrigin: "top left",
+                                    }}
+                                >
+                                    {/* Resume Content */}
+                                    {selectedTemplate === 'classic' ? (
+                                        <TemplateClassic data={data} />
+                                    ) : (
+                                        <TemplateModern data={data} />
+                                    )}
                                 </div>
                             </div>
+
+                            {pageScale < 1 && (
+                                <span className="absolute bottom-3 right-3 px-2 py-1 rounded-md bg-gray-900/70 text-white text-[10px] font-semibold tracking-wide backdrop-blur-sm select-none">
+                                    {Math.round(pageScale * 100)}% fit
+                                </span>
+                            )}
                         </div>
 
                         {/* Mobile Bottom Bar */}
@@ -363,7 +609,8 @@ ${data.education.map(e => `${e.degree} - ${e.institution} (${e.dates})`).join("\
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

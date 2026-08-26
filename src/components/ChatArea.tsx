@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import ChatInput from "./ChatInput";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,11 +53,15 @@ const renderArtifactPreview = (artifact: any) => {
 
     switch (type) {
         case "resume_builder": {
+            // No h-full/overflow-auto here by design: this panel's parent
+            // (Content Body) already scrolls, and GeneratedResumeCard's
+            // inline mode keeps its own controls sticky within that scroll,
+            // matching how the other artifact cases in this switch rely on
+            // the outer scroll container rather than a fragile inner
+            // percentage-height chain.
             return (
-                <div className="w-full h-full min-h-[450px] overflow-y-auto bg-muted flex flex-col items-center py-4">
-                    <div className="w-full max-w-4xl px-2">
-                        <GeneratedResumeCard data={data} />
-                    </div>
+                <div className="w-full min-h-[450px] border border-gray-150 rounded-2xl overflow-hidden bg-white shadow-sm">
+                    <GeneratedResumeCard data={data} mode="inline" />
                 </div>
             );
         }
@@ -883,6 +888,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 }
                                 onSendMessage={handleSendMessage}
                                 onPinNote={handlePinNote}
+                                onOpenArtifact={(artifact) => setActiveArtifact(artifact)}
                                 onEditMessage={async (messageId: string | number, newText: string) => {
                                     try {
                                         const numId = Number(messageId);
@@ -969,8 +975,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
             </div>
 
             {/* Right/Workspace Area */}
-            {activeArtifact && (
-                <div className={`flex flex-col h-full bg-background relative overflow-hidden border-l border-border transition-all duration-300 ${isMobile ? 'w-full absolute inset-0 z-50' : 'w-1/2'}`}>
+            {/* On mobile this is meant to be a fullscreen overlay. It previously used
+                `absolute inset-0`, which only fills the nearest positioned ancestor
+                (not the viewport) and was clipped by the layout's overflow-hidden
+                containers — rendering it "under" the sidebar/header instead of
+                truly fullscreen. Portaling to document.body with `fixed inset-0`
+                fixes that; the desktop split-panel view is unaffected. */}
+            {activeArtifact && (() => {
+                const workspacePanel = (
+                <div className={`flex flex-col h-full bg-background relative overflow-hidden border-l border-border transition-all duration-300 ${isMobile ? 'w-full fixed inset-0 z-50' : 'w-1/2'}`}>
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-border bg-[#f9fafb]">
                         <div className="flex items-center gap-2.5">
@@ -1047,7 +1060,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                         )}
                     </div>
                 </div>
-            )}
+                );
+                return isMobile ? createPortal(workspacePanel, document.body) : workspacePanel;
+            })()}
 
             <PinnedNotesDrawer
                 isOpen={isNotesDrawerOpen}

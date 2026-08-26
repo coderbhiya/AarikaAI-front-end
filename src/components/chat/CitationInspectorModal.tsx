@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { X, ExternalLink, FileText, Globe } from "lucide-react";
 
 export interface CitationData {
@@ -20,7 +21,11 @@ interface CitationInspectorModalProps {
 export const CitationInspectorModal: React.FC<CitationInspectorModalProps> = ({ isOpen, citation, onClose }) => {
   if (!isOpen || !citation) return null;
 
-  return (
+  // Rendered via portal so this fixed overlay covers the whole viewport
+  // instead of being clipped by ancestor overflow-hidden containers (chat
+  // scroll area, main layout), which previously made it render "under" the
+  // sidebar/header instead of truly fullscreen.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-5 space-y-4 animate-in zoom-in-95 duration-200">
         {/* Header */}
@@ -80,7 +85,8 @@ export const CitationInspectorModal: React.FC<CitationInspectorModalProps> = ({ 
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

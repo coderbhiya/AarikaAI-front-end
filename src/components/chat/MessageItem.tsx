@@ -41,6 +41,8 @@ interface MessageItemProps {
   onSendMessage?: (text: string) => void;
   onEditMessage?: (messageId: string | number, newText: string) => void;
   onPinNote?: (title: string, content: string) => void;
+  /** Opens a document (resume, etc.) in ChatArea's split workspace panel instead of a fullscreen modal. */
+  onOpenArtifact?: (artifact: { type: string; title?: string; data: any }) => void;
 }
 
 const formatFileSize = (bytes: number) => {
@@ -58,7 +60,7 @@ const getFileIcon = (fileType: string) => {
   return <FileIcon size={16} className="text-gray-400" />;
 };
 
-const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEditMessage, onPinNote }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEditMessage, onPinNote, onOpenArtifact }) => {
   const isUser = message.role === "user";
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.message ?? "");
@@ -448,7 +450,14 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       return (
         <div className="flex flex-col gap-2 w-full max-w-4xl">
           {resumeBuilderData.cleanText && <Markdown text={resumeBuilderData.cleanText} />}
-          <GeneratedResumeCard data={resumeBuilderData.data} />
+          <GeneratedResumeCard
+            data={resumeBuilderData.data}
+            onOpenWorkspace={
+              onOpenArtifact
+                ? () => onOpenArtifact({ type: "resume_builder", title: resumeBuilderData.data?.name ? `${resumeBuilderData.data.name} - Resume` : "Resume", data: resumeBuilderData.data })
+                : undefined
+            }
+          />
         </div>
       );
     }

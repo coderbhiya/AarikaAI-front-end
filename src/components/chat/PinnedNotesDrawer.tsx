@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Bookmark, Copy, Trash2, Download, Search, Check } from "lucide-react";
 
 export interface PinnedNote {
@@ -44,7 +45,11 @@ export const PinnedNotesDrawer: React.FC<PinnedNotesDrawerProps> = ({ isOpen, no
     URL.revokeObjectURL(url);
   };
 
-  return (
+  // Rendered via portal so this fixed overlay covers the whole viewport
+  // instead of being clipped by ancestor overflow-hidden containers (chat
+  // scroll area, main layout), which previously made it render "under" the
+  // sidebar/header instead of truly fullscreen.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col p-5 border-l border-gray-100 animate-in slide-in-from-right duration-300">
         {/* Header */}
@@ -127,7 +132,8 @@ export const PinnedNotesDrawer: React.FC<PinnedNotesDrawerProps> = ({ isOpen, no
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
