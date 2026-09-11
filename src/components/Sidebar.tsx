@@ -497,14 +497,15 @@ const Sidebar = () => {
         {/* ── Unified Scrollable Body ── */}
         <div className="flex-1 overflow-y-auto scrollbar-none min-h-0 flex flex-col px-2">
 
-          {/* ── Primary Feature Navigation (Single "AI Tools" Item, same weight as Chat/Mission Hunt) ── */}
+          {/* ── Primary Feature Navigation ── */}
           <div className="space-y-0.5 pt-1">
-            <NavLink
+            {/* Hidden per request: Chat */}
+            {/* <NavLink
               to="/chat"
               icon={<MessageSquare size={16} />}
               label="Chat"
               active={isOnChatPage && !activeThreadId && !activeToolParam}
-            />
+            /> */}
 
             <NavLink
               to="/tools"
@@ -513,32 +514,33 @@ const Sidebar = () => {
               active={pathname === "/tools" || !!activeToolParam}
             />
 
-            {navConfig.showExamSimulator && (
+            {/* Hidden per request: Exam Simulator, Placement Prep, My Learning, Mission Hunt, Auto-Apply */}
+            {/* navConfig.showExamSimulator && (
               <NavLink
                 to="/exam-simulator"
                 icon={<GraduationCap size={16} />}
                 label="Exam Simulator"
                 active={pathname === "/exam-simulator"}
               />
-            )}
+            ) */}
 
-            {navConfig.showPlacementPrep && (
+            {/* navConfig.showPlacementPrep && (
               <NavLink
                 to="/placement-prep"
                 icon={<Briefcase size={16} />}
                 label="Placement Prep"
                 active={pathname === "/placement-prep"}
               />
-            )}
+            ) */}
 
-            {features.learningModuleEnabled && (
+            {/* features.learningModuleEnabled && (
               <NavLink
                 to="/dashboard/learning"
                 icon={<BookOpen size={16} />}
                 label="My Learning"
                 active={pathname === "/dashboard/learning"}
               />
-            )}
+            ) */}
             {features.communityModuleEnabled && (
               <NavLink
                 to="/community"
@@ -547,7 +549,7 @@ const Sidebar = () => {
                 active={pathname === "/community"}
               />
             )}
-            {features.jobRecommendationsEnabled && (
+            {/* features.jobRecommendationsEnabled && (
               <>
                 <NavLink
                   to="/jobs"
@@ -562,7 +564,7 @@ const Sidebar = () => {
                   active={pathname === "/agent"}
                 />
               </>
-            )}
+            ) */}
             {(user?.role === "admin" || user?.role === "super_admin") && (
               <NavLink
                 to="/admin/marketing"

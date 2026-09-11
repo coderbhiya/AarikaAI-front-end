@@ -41,10 +41,28 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const [isPaletteOpen, setIsPaletteOpen] = useState(true);
   const [activeQuestionIdx, setActiveQuestionIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [loadingStepIdx, setLoadingStepIdx] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const loadingMessages = useMemo(() => [
+    `Initializing ${blueprint.exam || 'Practice Exam'} blueprint...`,
+    "Scraping & assembling authentic exam paper questions...",
+    "Calibrating difficulty levels & negative marking scheme...",
+    "Synthesizing structured question paper..."
+  ], [blueprint.exam]);
+
+  // Animate loading step message every 1.2s
+  useEffect(() => {
+    if (!isInitialLoading) return;
+    const interval = setInterval(() => {
+      setLoadingStepIdx(prev => (prev + 1) % loadingMessages.length);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [isInitialLoading, loadingMessages.length]);
 
   // Create or retrieve adapter
   const adapterRef = useRef<AssessmentRuntimeAdapter | null>(null);
@@ -65,6 +83,16 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   }, [blueprint]);
 
   const adapter = adapterRef.current;
+
+  // Auto-hide initial loading screen as soon as Question 0 is loaded / READY
+  useEffect(() => {
+    if (currentQuestion && qStatus === 'READY') {
+      const timer = setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [currentQuestion, qStatus]);
 
   // Keep active question index in sync
   useEffect(() => {
@@ -735,6 +763,84 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   }
 
   const status = adapter ? adapter.getStatus(activeQuestionIdx) : 'PENDING';
+
+  if (isInitialLoading) {
+    const assemblingOverlay = (
+      <div className="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-white font-sans transition-all duration-500">
+        {/* Background Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/25 rounded-full blur-3xl pointer-events-none animate-pulse" />
+
+        {/* Exit Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-slate-300 transition-all backdrop-blur-md"
+        >
+          Exit Exam
+        </button>
+
+        <div className="relative z-10 flex flex-col items-center max-w-md w-full text-center">
+          {/* Animated Brain Icon / Pulsing AI Core */}
+          <div className="relative mb-8">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-primary via-indigo-500 to-purple-500 p-0.5 shadow-2xl shadow-primary/40 animate-bounce">
+              <div className="w-full h-full bg-slate-900 rounded-[22px] flex items-center justify-center">
+                <BrainLogo size={52} />
+              </div>
+            </div>
+            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-indigo-500 border-4 border-slate-950 flex items-center justify-center">
+              <Loader2 className="w-4 h-4 text-white animate-spin" />
+            </div>
+          </div>
+
+          {/* Exam Title */}
+          <h2 className="text-2xl font-black tracking-tight text-white mb-2">
+            {blueprint.exam || "Assembling Exam Paper"}
+          </h2>
+
+          {/* Metadata Badges */}
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 mb-8">
+            <span>{blueprint.questions} Questions</span>
+            <span>•</span>
+            <span>{blueprint.durationMinutes} Mins</span>
+            <span>•</span>
+            <span className="text-primary font-bold">AarikaAI Engine</span>
+          </div>
+
+          {/* Dynamic Loading Step Message */}
+          <div className="h-10 flex items-center justify-center mb-6">
+            <p className="text-sm font-semibold text-indigo-200 transition-all duration-300">
+              ✨ {loadingMessages[loadingStepIdx]}
+            </p>
+          </div>
+
+          {/* Animated Progress Bar */}
+          <div className="w-full bg-slate-800/80 rounded-full h-2.5 overflow-hidden border border-white/10 relative mb-4">
+            <div className="h-full bg-gradient-to-r from-blue-500 via-primary to-purple-500 rounded-full w-full animate-pulse" />
+          </div>
+
+          <p className="text-[11px] text-slate-400 font-medium">
+            Preparing questions, difficulty calibration, and marking scheme...
+          </p>
+
+          {qStatus === 'FAILED' && (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <p className="text-xs font-semibold text-red-400">Failed to generate question paper</p>
+              <button
+                onClick={() => {
+                  adapter?.retryQuestion(0);
+                  forceRender(prev => prev + 1);
+                }}
+                className="px-5 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold transition-all shadow-lg"
+              >
+                Retry Generation
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
+    return mounted ? createPortal(assemblingOverlay, document.body) : null;
+  }
 
   const simulatorUI = (
     <div className="fixed inset-0 z-[100] bg-gray-50 md:bg-white flex flex-col font-sans md:overflow-hidden overflow-y-auto">

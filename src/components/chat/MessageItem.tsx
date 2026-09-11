@@ -106,8 +106,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
   }
 
   const renderContent = () => {
-    // Normalize escaped brackets that the LLM might sometimes output
-    let text = rawText.replace(/\\\[/g, "[").replace(/\\\]/g, "]");
+    let text = rawText;
     let originalRawText = rawText;
     rawText = text; // Ensure extractJsonData also uses normalized text
 

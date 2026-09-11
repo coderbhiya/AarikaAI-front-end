@@ -1,14 +1,43 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import RoadmapViewer from "../chat/cards/RoadmapViewer";
 
-const Markdown = ({ text }) => {
+/**
+ * Normalizes LaTeX formula delimiters in text so remark-math / rehype-katex can render them cleanly.
+ * Converts:
+ *  - \[ ... \]  => $$ ... $$
+ *  - \( ... \)  => $ ... $
+ */
+export function preprocessLaTeX(text = ""): string {
+  if (!text) return "";
+
+  let processed = String(text);
+
+  // 1. Convert block math \[ ... \] into \n\n$$ ... $$\n\n
+  processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+    return `\n\n$$${math.trim()}$$\n\n`;
+  });
+
+  // 2. Convert inline math \( ... \) into $ ... $
+  processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+    return `$${math.trim()}$`;
+  });
+
+  return processed;
+}
+
+const Markdown = ({ text }: { text?: string }) => {
+    const formattedText = preprocessLaTeX(text || "");
     
     return (
         <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
             components={{
                 // Headings
                 h1: ({ node, ...props }) => (
@@ -124,7 +153,7 @@ const Markdown = ({ text }) => {
                 ),
             }}
         >
-            {text}
+            {formattedText}
         </ReactMarkdown>
     );
 };
