@@ -2,7 +2,7 @@ import React from 'react';
 
 export const TemplateClassic = ({ data }: { data: any }) => {
   const contactParts = [
-    data.email || 'email@example.com',
+    data.email,
     data.phone,
     data.location,
   ].filter(Boolean);

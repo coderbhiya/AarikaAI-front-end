@@ -45,11 +45,11 @@ const generateQuestion = async (
   }
 
   const response = await axiosInstance.post(
-    `/assessment/generate-question`, 
-    { 
-      blueprint, 
-      index, 
-      topic, 
+    `/assessment/generate-question`,
+    {
+      blueprint,
+      index,
+      topic,
       difficulty,
       language: blueprint.language || "English",
       excludeTexts
@@ -57,7 +57,15 @@ const generateQuestion = async (
   );
 
   if (response.data && response.data.success) {
-    return response.data.data;
+    // type/maxMarks (mcq vs short_answer/long_answer) are new fields the
+    // backend added — default them so older cached responses without these
+    // fields still behave as plain MCQ.
+    const data = response.data.data;
+    return {
+      ...data,
+      type: data.type || 'mcq',
+      maxMarks: data.maxMarks ?? 1,
+    };
   }
   throw new Error(response.data?.error || "Failed to generate question");
 };

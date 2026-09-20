@@ -97,10 +97,10 @@ function normalizeResumeData(raw: any): GeneratedResumeData {
     const hobbies = raw.hobbies || [];
 
     return {
-        name: raw.name || "Aakash Dave",
-        role: raw.role || raw.title || raw.designation || raw.currentRole || "Software Engineer",
-        location: raw.location || "India",
-        email: raw.email || raw.emailAddress || "aakash.davegroup@gmail.com",
+        name: raw.name || "Your Name",
+        role: raw.role || raw.title || raw.designation || raw.currentRole || "",
+        location: raw.location || "",
+        email: raw.email || raw.emailAddress || "",
         phone: raw.phone || raw.phoneNumber || raw.mobile || "",
         summary: raw.summary || raw.professionalSummary || raw.objective || raw.bio || "",
         skills,
@@ -134,6 +134,11 @@ interface GeneratedResumeCardProps {
 
 const GeneratedResumeCard: React.FC<GeneratedResumeCardProps> = ({ data: rawData, mode = "card", onOpenWorkspace }) => {
     const data = normalizeResumeData(rawData);
+
+    // When the underlying profile has nothing to show, the page renders as
+    // an almost-blank sheet with just a name — indistinguishable from a
+    // rendering bug. Surface it explicitly instead of staying silent.
+    const isMostlyEmpty = !data.summary && data.skills.length === 0 && data.experience.length === 0 && data.projects.length === 0 && data.education.length === 0;
 
     const resumeRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = useState(false);
@@ -220,7 +225,12 @@ const GeneratedResumeCard: React.FC<GeneratedResumeCardProps> = ({ data: rawData
     }, [selectedTemplate, data, mode]);
 
     const handleDownload = async () => {
-        if (!resumeRef.current) return;
+        if (!resumeRef.current) {
+            // Compact card view: the resume page isn't mounted yet (nothing to
+            // capture), so open the editor first — same as clicking the card.
+            if (onOpenWorkspace) onOpenWorkspace(); else setIsModalOpen(true);
+            return;
+        }
         try {
             setIsDownloading(true);
             const element = resumeRef.current;
@@ -297,64 +307,12 @@ ${data.education.map(e => `${e.degree} - ${e.institution} (${e.dates})`).join("\
     };
 
     // ── INLINE MODE: rendered directly inside ChatArea's split workspace
-    // panel — no card, no modal chrome, just the editor filling its container
-    // so the resume is visible side-by-side with the chat.
+    // panel — no card, no modal chrome, just the page itself filling its
+    // container, Claude-artifact-style. Actions are a small floating toolbar
+    // over the preview rather than a dedicated control sidebar.
     if (mode === "inline") {
         return (
-            <div className="flex flex-col md:flex-row w-full">
-                {/* Controls — sticky on desktop so they stay visible while the
-                    parent panel scrolls through a long resume. */}
-                <div className="flex md:flex-col md:w-64 md:sticky md:top-0 md:self-start shrink-0 gap-5 p-5 border-b md:border-b-0 md:border-r border-gray-200 bg-gradient-to-b from-white to-gray-50/60">
-                    <div className="hidden md:flex items-center gap-2.5 pb-4 border-b border-gray-100">
-                        <div className="w-8 h-8 rounded-lg bg-blue-600/10 flex items-center justify-center text-blue-600 shrink-0">
-                            <Sparkles size={16} />
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-bold text-gray-900 leading-none">Resume Editor</h4>
-                            <p className="text-[11px] text-gray-400 mt-1">Customize &amp; export</p>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 md:flex-none">
-                        <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Template</label>
-                        <select
-                            value={selectedTemplate}
-                            onChange={(e) => setSelectedTemplate(e.target.value as any)}
-                            className="w-full text-sm bg-white border border-gray-300 hover:border-gray-400 rounded-xl px-3 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 text-gray-700 font-medium cursor-pointer transition-colors shadow-sm"
-                        >
-                            <option value="classic">Professional Classic</option>
-                            <option value="modern">Modern Analyst</option>
-                        </select>
-                    </div>
-
-                    <div className="flex md:flex-col gap-2">
-                        <button
-                            onClick={handleDownload}
-                            disabled={isDownloading}
-                            className="flex-1 md:flex-none px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
-                        >
-                            <Download size={16} />
-                            {isDownloading ? "Generating..." : "Download PDF"}
-                        </button>
-                        <button
-                            onClick={handleCopy}
-                            className="flex-1 md:flex-none px-4 py-2.5 border border-gray-300 hover:border-gray-400 text-gray-700 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:scale-[0.98]"
-                        >
-                            {isCopied ? (
-                                <>
-                                    <Check size={16} className="text-emerald-500" />
-                                    <span className="hidden sm:inline">Copied!</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Copy size={16} />
-                                    <span className="hidden sm:inline">Copy Text</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
+            <div className="flex w-full">
                 {/* Resume Preview — auto-scaled to fit the available width so the
                     page is never clipped, the way Google Docs/Canva fit a page
                     preview to its container. The outer split panel scrolls. */}
@@ -366,8 +324,32 @@ ${data.education.map(e => `${e.degree} - ${e.institution} (${e.dates})`).join("\
                     the ResizeObserver below ("Maximum update depth exceeded"). */}
                 <div
                     ref={previewContainerRef}
-                    className="relative flex-1 min-w-0 bg-gradient-to-b from-slate-100 to-slate-200/70 p-4 md:p-8 flex justify-center"
+                    className="relative flex-1 min-w-0 bg-gradient-to-b from-slate-100 to-slate-200/70 p-4 md:p-8 flex flex-col items-center gap-4"
                 >
+                    {/* Floating action toolbar — download / copy text */}
+                    <div className="absolute top-3 right-3 z-10 flex items-center gap-1 p-1 rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm">
+                        <button
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                            title={isDownloading ? "Generating..." : "Download PDF"}
+                            className="p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50 active:scale-95"
+                        >
+                            <Download size={15} />
+                        </button>
+                        <button
+                            onClick={handleCopy}
+                            title={isCopied ? "Copied!" : "Copy Text"}
+                            className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors active:scale-95"
+                        >
+                            {isCopied ? <Check size={15} className="text-emerald-500" /> : <Copy size={15} />}
+                        </button>
+                    </div>
+
+                    {isMostlyEmpty && (
+                        <div className="w-full max-w-[210mm] px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[12.5px] leading-relaxed">
+                            This resume looks empty because your profile has no summary, skills, experience, projects or education added yet. Fill those in on your Profile page and regenerate for a complete resume.
+                        </div>
+                    )}
                     {/* overflow-hidden: resumeRef's own layout box stays at its
                         full natural width (CSS transform only affects paint,
                         not layout), so without clipping it here, the oversized
@@ -413,56 +395,34 @@ ${data.education.map(e => `${e.degree} - ${e.institution} (${e.dates})`).join("\
 
     return (
         <>
-            {/* CARD TRIGGER - Initial View */}
-            <div className="w-full max-w-sm mx-auto my-6">
+            {/* CARD TRIGGER - Initial View — a single compact row (icon, title,
+                subtitle, Download button), Claude-artifact-card style, instead
+                of a multi-section preview card. */}
+            <div className="w-full max-w-md my-4">
                 <div
                     onClick={() => onOpenWorkspace ? onOpenWorkspace() : setIsModalOpen(true)}
-                    className="bg-white rounded-xl border-2 border-gray-200 shadow-lg hover:shadow-xl hover:border-blue-400 cursor-pointer transition-all duration-300 overflow-hidden group"
+                    className="flex items-center gap-3 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer transition-all duration-200 px-4 py-3 group"
                 >
-                    {/* Card Header */}
-                    <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-transparent">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 group-hover:text-blue-600 transition-colors">
-                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
-                                    {data.name}
-                                </h3>
-                                <p className="text-sm text-gray-600 mt-1">{data.role}</p>
-                            </div>
-                            <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                        </div>
+                    <div className="shrink-0 w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
                     </div>
 
-                    {/* Card Body */}
-                    <div className="px-6 py-4">
-                        <div className="mb-4">
-                            <p className="text-sm text-gray-600 line-clamp-3">
-                                {data.summary || "Professional resume ready to download"}
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {data.skills.slice(0, 3).map((skill: string, i: number) => (
-                                <span key={i} className="inline-block px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full font-medium">
-                                    {skill}
-                                </span>
-                            ))}
-                            {data.skills.length > 3 && (
-                                <span className="inline-block px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full font-medium">
-                                    +{data.skills.length - 3} more
-                                </span>
-                            )}
-                        </div>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                            {data.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Document · PDF</p>
                     </div>
 
-                    {/* Card Footer */}
-                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Click to open editor</span>
-                        <Download className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
-                    </div>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+                        disabled={isDownloading}
+                        className="shrink-0 px-3.5 py-2 text-xs font-semibold rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors disabled:opacity-50 active:scale-95"
+                    >
+                        {isDownloading ? "..." : "Download"}
+                    </button>
                 </div>
             </div>
 

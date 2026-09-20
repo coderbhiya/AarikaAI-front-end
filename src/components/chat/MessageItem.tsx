@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Message } from "@/types";
-import { Copy, Share, Download, FileText, ImageIcon, File as FileIcon, Globe, ExternalLink, Pencil, Check, X as XIcon, Sparkles } from "lucide-react";
+import { Copy, Share, Download, FileText, ImageIcon, File as FileIcon, Globe, ExternalLink, Pencil, Check, X as XIcon, Sparkles, RefreshCw } from "lucide-react";
 import Markdown from "@/components/common/Markdown";
 import { toast } from "sonner";
 import BrainLogo from "../BrainLogo";
@@ -43,6 +43,8 @@ interface MessageItemProps {
   onPinNote?: (title: string, content: string) => void;
   /** Opens a document (resume, etc.) in ChatArea's split workspace panel instead of a fullscreen modal. */
   onOpenArtifact?: (artifact: { type: string; title?: string; data: any }) => void;
+  /** Re-runs generation for this assistant reply, discarding it in favor of a fresh one. */
+  onRegenerate?: (messageId: string | number) => void;
 }
 
 const formatFileSize = (bytes: number) => {
@@ -60,7 +62,7 @@ const getFileIcon = (fileType: string) => {
   return <FileIcon size={16} className="text-gray-400" />;
 };
 
-const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEditMessage, onPinNote, onOpenArtifact }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEditMessage, onPinNote, onOpenArtifact, onRegenerate }) => {
   const isUser = message.role === "user";
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(message.message ?? "");
@@ -339,7 +341,11 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         durationMinutes: examData.data.durationMinutes || 15,
         questions: examData.data.questions || (examData.data.questionsList?.length || 10),
         difficulty: examData.data.difficulty || { easy: 3, medium: 5, hard: 2 },
-        distribution: examData.data.distribution || { "Core Concepts": 5, "Applied Knowledge": 5 }
+        distribution: examData.data.distribution || { "Core Concepts": 5, "Applied Knowledge": 5 },
+        // Per-section question format (mcq / short_answer / long_answer) —
+        // board exams (CBSE/ICSE/State Board) mix these instead of being pure
+        // MCQ; defaults to mcq per section when the model doesn't specify it.
+        sectionTypes: examData.data.sectionTypes || {}
       };
       return (
         <div className="flex flex-col gap-2 w-full max-w-2xl">
@@ -608,6 +614,86 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
       }
     }
 
+    // Generic reopen card for a structured artifact (career_roadmap,
+    // document_builder, research_report, etc. — resume_builder is handled
+    // separately above via its own tag-based mechanism). The backend links
+    // each assistant message to the CareerArtifact row it generated, so
+    // `message.artifact` survives a page reload/history refetch — unlike the
+    // raw [ARTIFACT_xxx] tag, which the server strips out of the persisted
+    // text right after generating it. Without this, the artifact only ever
+    // opened once, right after it streamed in; on reload there was nothing
+    // left to reopen it from, so it appeared to "disappear".
+    if (message.artifact && message.artifact.type !== "resume_builder") {
+      const art = message.artifact;
+      const cleanText = text.replace(/\[ARTIFACT_[a-zA-Z0-9_]+\][\s\S]*?(?:\[\/ARTIFACT_[a-zA-Z0-9_]+\]|$)/gi, "").trim();
+      const artifactTitle = art.title || String(art.type || "").replace(/_/g, " ");
+
+      return (
+        <div className="flex flex-col gap-2 w-full max-w-2xl">
+          {cleanText && <Markdown text={cleanText} />}
+          <button
+            onClick={() => onOpenArtifact?.({ type: art.type, title: art.title, data: art.data })}
+            className="flex items-center gap-3 w-full max-w-sm p-3 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all text-left"
+          >
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <FileText size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-foreground truncate">{artifactTitle}</p>
+              <p className="text-[11px] text-gray-400 uppercase tracking-wide">{String(art.type || "").replace(/_/g, " ")}</p>
+            </div>
+          </button>
+          {renderFollowUpChips()}
+        </div>
+      );
+    }
+
+    // Fallback: parse a raw [ARTIFACT_xxx] tag directly out of the message
+    // text. This only matters for the live-streaming render (before the tag
+    // is stripped server-side) or for any older message saved before the
+    // artifactId link existed.
+    const genericArtifactRegex = /\[ARTIFACT_([a-zA-Z0-9_]+)\]([\s\S]*?)(?:\[\/ARTIFACT_\1\]|$)/i;
+    const genericArtifactMatch = text.match(genericArtifactRegex);
+    if (genericArtifactMatch && genericArtifactMatch[1] !== "resume_builder") {
+      const artifactType = genericArtifactMatch[1];
+      try {
+        let rawData = genericArtifactMatch[2].trim().replace(/```json|```/g, "").trim();
+        const firstBrace = rawData.indexOf("{");
+        const lastBrace = rawData.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          rawData = rawData.substring(firstBrace, lastBrace + 1);
+        }
+        const parsed = JSON.parse(rawData);
+        const cleanText = text.replace(genericArtifactRegex, "").trim();
+        const artifactTitle = parsed.title || artifactType.replace(/_/g, " ");
+
+        return (
+          <div className="flex flex-col gap-2 w-full max-w-2xl">
+            {cleanText && <Markdown text={cleanText} />}
+            <button
+              onClick={() => onOpenArtifact?.({ type: artifactType, title: parsed.title, data: parsed.data })}
+              className="flex items-center gap-3 w-full max-w-sm p-3 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all text-left"
+            >
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <FileText size={16} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-foreground truncate">{artifactTitle}</p>
+                <p className="text-[11px] text-gray-400 uppercase tracking-wide">{artifactType.replace(/_/g, " ")}</p>
+              </div>
+            </button>
+            {renderFollowUpChips()}
+          </div>
+        );
+      } catch {
+        // Expected while the tag is still streaming in and the JSON is
+        // incomplete — this regex intentionally matches an unclosed tag
+        // (closing tag is optional) so it re-tries on every chunk until the
+        // full block has arrived. Falls through to the plain-text render
+        // below in the meantime.
+      }
+    }
+
     // Strip out all [ARTIFACT_...] blocks since they are rendered in the side panel by ChatArea
     // Support streaming by making the closing tag optional
     const artifactRegex = /\[ARTIFACT_[a-zA-Z0-9_]+\]([\s\S]*?)(?:\[\/ARTIFACT_[a-zA-Z0-9_]+\]|$)/gi;
@@ -629,8 +715,8 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
         {/* Avatar Section for AI */}
         {!isUser && (
           <div className="flex items-center gap-2 mb-1 px-1 sm:px-0">
-            <div className="w-6 h-6 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm shrink-0">
-              <BrainLogo size={14} />
+            <div className="w-7 h-7 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+              <BrainLogo size={20} />
             </div>
             <span className="font-semibold text-[14px] text-gray-800">AarikaAI</span>
           </div>
@@ -800,6 +886,16 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
               >
                 <Bookmark size={16} />
               </button>
+
+              {onRegenerate && message.id !== "streaming" && !isNaN(Number(message.id)) && (
+                <button
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                  title="Regenerate response"
+                  onClick={() => onRegenerate(message.id as string | number)}
+                >
+                  <RefreshCw size={16} />
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -8,28 +8,20 @@ export const getChats = async (threadId?: string): Promise<Message[]> => {
   return response.data.chats;
 };
 
-export const sendChatMessage = async (
-  message: string,
-  fileAttachments: FileAttachment[] = [],
-  webSearch?: boolean,
-  engine?: string,
+const streamChatRequest = async (
+  body: Record<string, any>,
   onChunk?: (chunk: any) => void,
-  signal?: AbortSignal,
-  threadId?: string,
-  activeVideoId?: string,
-  isPersonalized?: boolean,
-  isVisualIntel?: boolean,
-  selectedTool?: string
+  signal?: AbortSignal
 ): Promise<{ reply: string; citations: any[]; artifact?: any; FileAttachments?: any[] }> => {
   const token = localStorage.getItem("authToken");
-  
+
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ message, fileAttachments, webSearch, engine, threadId, activeVideoId, isPersonalized, isVisualIntel, selectedTool }),
+    body: JSON.stringify(body),
     signal,
   });
 
@@ -106,6 +98,39 @@ export const sendChatMessage = async (
   // Bug #1 fix: prefer accumulatedReply (built chunk-by-chunk) over finalReply from the `done`
   // event, which may be truncated or an empty string if the backend omits it.
   return { reply: accumulatedReply || finalReply, citations: finalCitations, artifact: finalArtifact, FileAttachments: finalFileAttachments };
+};
+
+export const sendChatMessage = async (
+  message: string,
+  fileAttachments: FileAttachment[] = [],
+  webSearch?: boolean,
+  engine?: string,
+  onChunk?: (chunk: any) => void,
+  signal?: AbortSignal,
+  threadId?: string,
+  activeVideoId?: string,
+  isPersonalized?: boolean,
+  isVisualIntel?: boolean,
+  selectedTool?: string
+): Promise<{ reply: string; citations: any[]; artifact?: any; FileAttachments?: any[] }> => {
+  return streamChatRequest(
+    { message, fileAttachments, webSearch, engine, threadId, activeVideoId, isPersonalized, isVisualIntel, selectedTool },
+    onChunk,
+    signal
+  );
+};
+
+export const regenerateMessage = async (
+  assistantMessageId: number,
+  threadId?: string,
+  onChunk?: (chunk: any) => void,
+  signal?: AbortSignal
+): Promise<{ reply: string; citations: any[]; artifact?: any; FileAttachments?: any[] }> => {
+  return streamChatRequest(
+    { regenerateAssistantId: assistantMessageId, threadId },
+    onChunk,
+    signal
+  );
 };
 
 export const uploadFile = async (file: File): Promise<FileAttachment> => {

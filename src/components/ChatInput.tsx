@@ -17,7 +17,8 @@ import {
   Wrench,
   ChevronRight,
   Zap,
-  Search
+  Search,
+  Camera
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
@@ -95,6 +96,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [selectedEngine, setSelectedEngine] = useState(engines[0].id);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const isMobile = useIsMobile();
 
@@ -110,6 +112,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const handleImageClick = () => {
     setPlusMenuOpen(false);
     fileInputRef.current?.click();
+  };
+
+  // The `capture="environment"` attribute on the hidden input below opens
+  // the device's rear camera directly on mobile browsers (Photomath-style
+  // "snap a question and ask about it"); on desktop, capture has no effect
+  // and it gracefully falls back to the normal file picker.
+  const handleCameraClick = () => {
+    setPlusMenuOpen(false);
+    cameraInputRef.current?.click();
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -318,6 +329,20 @@ const ChatInput: React.FC<ChatInputProps> = ({
                           </div>
                         </button>
 
+                        <button
+                          type="button"
+                          onClick={handleCameraClick}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium hover:bg-muted text-foreground transition-colors text-left group"
+                        >
+                          <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 group-hover:bg-emerald-100 transition-colors">
+                            <Camera size={15} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground">Take Photo of a Question</p>
+                            <p className="text-[10px] text-muted-foreground">Snap a textbook/homework question for an instant answer</p>
+                          </div>
+                        </button>
+
                         <div className="h-px bg-border/60 my-1" />
 
                         {/* Section 2: AI Feature Tools */}
@@ -448,6 +473,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
             type="file"
             multiple
             accept="image/*,.pdf,.doc,.docx,.txt"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
             onChange={handleFileSelect}
             className="hidden"
           />

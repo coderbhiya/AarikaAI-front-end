@@ -399,8 +399,8 @@ const WorkspaceChatArea: React.FC<WorkspaceChatAreaProps> = ({ embeddedContext, 
           {isProcessing && !streamingReply && (
             <div className="flex justify-start my-6 animate-in fade-in slide-in-from-left-4 duration-500">
               <div className="flex items-center gap-3 px-1">
-                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100/50">
-                  <BrainLogo size={18} />
+                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100/50 overflow-hidden">
+                  <BrainLogo size={24} />
                 </div>
                 {searchProgress ? (
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-full shadow-sm">

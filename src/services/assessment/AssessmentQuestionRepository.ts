@@ -1,8 +1,10 @@
 export interface Question {
   question: string;
   options: string[];
-  correctAnswer: string;
-  explanation: string;
+  correctAnswer: string; // for descriptive types, holds the full model answer
+  explanation: string; // for descriptive types, holds the marking rubric
+  type?: 'mcq' | 'short_answer' | 'long_answer'; // defaults to 'mcq' when absent
+  maxMarks?: number; // defaults to 1 for mcq
   _id?: number | null; // DB question ID for analytics tracking
 }
 
@@ -13,6 +15,10 @@ export interface AssessmentBlueprint {
   durationMinutes: number;
   difficulty: { easy: number; medium: number; hard: number };
   distribution: Record<string, number>;
+  // Per-section question format, keyed by the same names as `distribution`.
+  // Board exams (CBSE/ICSE/State Board) mix mcq/short_answer/long_answer
+  // sections instead of being pure MCQ; a missing entry defaults to 'mcq'.
+  sectionTypes?: Record<string, 'mcq' | 'short_answer' | 'long_answer'>;
 }
 
 export class AssessmentQuestionRepository {

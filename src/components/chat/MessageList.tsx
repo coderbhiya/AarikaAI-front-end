@@ -8,9 +8,10 @@ interface MessageListProps {
   onEditMessage?: (messageId: string | number, newText: string) => void;
   onPinNote?: (title: string, content: string) => void;
   onOpenArtifact?: (artifact: { type: string; title?: string; data: any }) => void;
+  onRegenerate?: (messageId: string | number) => void;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, onSendMessage, onEditMessage, onPinNote, onOpenArtifact }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, onSendMessage, onEditMessage, onPinNote, onOpenArtifact, onRegenerate }) => {
   return (
     <div className="space-y-2.5 sm:space-y-3 w-full max-w-5xl mx-auto pb-2 px-2 sm:px-4">
       {messages.map((message, index) => (
@@ -21,6 +22,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onSendMessage, onEd
           onEditMessage={onEditMessage}
           onPinNote={onPinNote}
           onOpenArtifact={onOpenArtifact}
+          onRegenerate={onRegenerate}
         />
       ))}
     </div>

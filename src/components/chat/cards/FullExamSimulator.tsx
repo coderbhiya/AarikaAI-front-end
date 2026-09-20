@@ -8,6 +8,7 @@ import {
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import BrainLogo from "../../BrainLogo";
+import Markdown from "@/components/common/Markdown";
 import { AssessmentBlueprint, Question } from '../../../services/assessment/AssessmentQuestionRepository';
 import { AssessmentRuntimeAdapter } from '../../../services/assessment/AssessmentRuntimeAdapter';
 import { QuestionStatus as GenStatus } from '../../../services/assessment/AssessmentGenerationQueue';
@@ -19,6 +20,36 @@ export interface FullExamSimulatorProps {
 }
 
 type QuestionStatus = 'answered' | 'review' | 'not_visited' | 'not_attempted';
+
+// Newer exam-question generations are prompted to wrap code/pseudo-code in
+// fenced Markdown code blocks and math in LaTeX (see assessmentController.js /
+// examPaperEngine.js), which QuestionMarkdown below renders properly. Older
+// already-cached questions predate that prompt and have no fence markers —
+// this heuristic auto-wraps text that clearly looks like code/pseudo-code so
+// it still gets a monospace, indentation-preserving block instead of being
+// flattened into an ordinary paragraph.
+const looksLikeCode = (text: string): boolean => {
+  const lines = text.split("\n").filter((l) => l.trim().length > 0);
+  if (lines.length < 3) return false;
+  const indentedLines = lines.filter((l) => /^\s{2,}/.test(l)).length;
+  const codeSignal = /\b(FUNCTION|END FUNCTION|BEGIN|RETURN|CALL\s|for\s*\(|while\s*\(|if\s*\(.*\)\s*(then|{)|class\s|def\s|int\s+\w+|void\s+\w+|public\s+|private\s+|#include|import\s)/i;
+  return indentedLines / lines.length > 0.3 || codeSignal.test(text);
+};
+
+const toQuestionMarkdown = (text?: string): string => {
+  const raw = text || "";
+  if (!raw || raw.includes("```")) return raw; // empty, or already fenced by the model
+  return looksLikeCode(raw) ? "```text\n" + raw + "\n```" : raw;
+};
+
+/** Renders question/option/explanation text through the shared Markdown
+ * renderer (code blocks, LaTeX, tables) instead of a plain whitespace-pre-wrap
+ * paragraph, so exam content reads the same as the rest of the app. */
+const QuestionMarkdown: React.FC<{ text?: string; className?: string }> = ({ text, className }) => (
+  <div className={className}>
+    <Markdown text={toQuestionMarkdown(text)} />
+  </div>
+);
 
 const checkIfAnswerIsCorrect = (userAns: string | undefined, q: Question | null | undefined): boolean => {
   if (!q || !userAns || userAns === "Not Answered") return false;
@@ -166,6 +197,14 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   }, [blueprint.exam, currentQuestion]);
 
   const isDescriptiveQuestion = useMemo(() => {
+    // Prefer the real backend-provided type — board exams (CBSE/ICSE/State
+    // Board) mix mcq/short_answer/long_answer sections within the same
+    // paper, so this must be a genuine per-question field, not a guess from
+    // the exam name or question wording.
+    if (currentQuestion?.type === 'short_answer' || currentQuestion?.type === 'long_answer') return true;
+    if (currentQuestion?.type === 'mcq') return false;
+
+    // Fallback heuristic for older/other flows that don't send a `type` field.
     const examLower = (blueprint.exam || "").toLowerCase();
     const qText = (currentQuestion?.question || "").toLowerCase();
 
@@ -365,17 +404,85 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const [activeResultTab, setActiveResultTab] = useState<'overview' | 'solutions'>('overview');
   const [hasSavedAttempt, setHasSavedAttempt] = useState(false);
 
+  // Short/long-answer questions can't be scored by string comparison like
+  // MCQs — each one is graded by an LLM against its model answer + rubric
+  // once the exam is submitted. Gates the results screen until grading
+  // finishes so the report never shows a score computed before descriptive
+  // marks are in.
+  type DescriptiveGrade = { marksAwarded: number | null; maxMarks: number; feedback: string; gradingFailed?: boolean };
+  const [descriptiveGrades, setDescriptiveGrades] = useState<Record<number, DescriptiveGrade>>({});
+  const [isGradingDescriptive, setIsGradingDescriptive] = useState(false);
+  const [hasGradedDescriptive, setHasGradedDescriptive] = useState(false);
+
+  useEffect(() => {
+    if (!isSubmitted || hasGradedDescriptive || !adapter) return;
+    setHasGradedDescriptive(true);
+
+    const allQs = adapter.getAllLoadedQuestions();
+    const descriptiveEntries = allQs
+      .map((q, idx) => ({ q, idx }))
+      .filter(({ q }) => q?.type === 'short_answer' || q?.type === 'long_answer');
+
+    if (descriptiveEntries.length === 0) return;
+
+    setIsGradingDescriptive(true);
+    Promise.all(
+      descriptiveEntries.map(({ q, idx }) =>
+        axiosInstance.post('/assessment/evaluate-descriptive', {
+          question: q.question,
+          modelAnswer: q.correctAnswer,
+          rubric: q.explanation,
+          maxMarks: q.maxMarks || 5,
+          userAnswer: answers[idx] || '',
+        })
+          .then(res => ({ idx, result: res.data?.data as DescriptiveGrade }))
+          .catch(err => {
+            console.warn(`[FullExamSimulator] Grading failed for Q${idx + 1}:`, err);
+            return {
+              idx,
+              result: { marksAwarded: null, maxMarks: q.maxMarks || 5, feedback: 'Automatic grading failed — needs manual review.', gradingFailed: true } as DescriptiveGrade,
+            };
+          })
+      )
+    ).then((results) => {
+      const gradesMap: Record<number, DescriptiveGrade> = {};
+      results.forEach(({ idx, result }) => { gradesMap[idx] = result; });
+      setDescriptiveGrades(gradesMap);
+      setIsGradingDescriptive(false);
+    });
+  }, [isSubmitted, hasGradedDescriptive, adapter, answers]);
+
+  // Resolve which section/subject a question index falls under, for
+  // per-question analytics — same boundaries used for the results screen's
+  // subjectMetrics breakdown.
+  const getSubjectForIndex = (idx: number): string => {
+    const sec = sections.find(s => idx >= s.startIndex && idx < s.startIndex + s.count);
+    return sec?.subject || "General";
+  };
+
   // Auto-submit score to backend when test is submitted
   useEffect(() => {
     if (isSubmitted && !hasSavedAttempt && adapter) {
       setHasSavedAttempt(true);
       const allQs = adapter.getAllLoadedQuestions();
       let correct = 0;
-      allQs.forEach((q, idx) => {
+      // Real per-question breakdown (subject + correctness) — this is what
+      // lets the backend compute genuine subject-wise weak/strong topics and
+      // write them to CareerMemory/MemoryOS, instead of one flat aggregate
+      // that couldn't distinguish which section was actually weak.
+      const answerBreakdown = allQs.map((q, idx) => {
         const userAns = answers[idx];
-        if (checkIfAnswerIsCorrect(userAns, q)) {
-          correct++;
-        }
+        const isCorrect = checkIfAnswerIsCorrect(userAns, q);
+        if (isCorrect) correct++;
+        return {
+          questionId: q?._id ?? null,
+          subject: getSubjectForIndex(idx),
+          selectedAnswer: userAns || null,
+          correctAnswer: q?.correctAnswer || null,
+          isCorrect,
+          skipped: !userAns,
+          timeTaken: null,
+        };
       });
       const scorePct = Math.round((correct / (allQs.length || blueprint.questions || 1)) * 100);
 
@@ -383,30 +490,80 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       axiosInstance.post('/company-assessment/submit', {
         companyName: blueprint.exam?.split(' ')[0] || "Standard",
         testName: blueprint.exam,
+        sessionId: blueprint.exam ? `${blueprint.exam}_${Date.now()}` : undefined,
         sectionScores: { correctCount: correct, totalCount: blueprint.questions, percentage: scorePct },
         timeSpentSeconds: (blueprint.durationMinutes * 60) - timeLeft,
-        answers
+        answers: answerBreakdown
       }).catch(err => console.warn("[FullExamSimulator] Auto-save attempt warning:", err));
     }
-  }, [isSubmitted, hasSavedAttempt, adapter, answers, blueprint, timeLeft]);
+  }, [isSubmitted, hasSavedAttempt, adapter, answers, blueprint, timeLeft, sections]);
 
   if (isSubmitted) {
+    // Short/long-answer questions are graded asynchronously after
+    // submission — don't compute or show a score until that finishes,
+    // otherwise the report would render with those questions blank/zeroed.
+    if (isGradingDescriptive) {
+      const gradingOverlay = (
+        <div className="fixed inset-0 z-[200] bg-background/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+            <Loader2 className="w-7 h-7 text-primary animate-spin" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900 mb-1.5">Evaluating your written answers...</h2>
+          <p className="text-sm text-gray-500 max-w-xs">Grading short/long-answer responses against the marking scheme. This takes a few seconds.</p>
+        </div>
+      );
+      return mounted ? createPortal(gradingOverlay, document.body) : null;
+    }
+
     const timeUsedSeconds = (blueprint.durationMinutes * 60) - timeLeft;
     const timeFormatted = formatTime(timeUsedSeconds > 0 ? timeUsedSeconds : 0);
     const completionPct = Math.round((stats.answered / (blueprint.questions || 1)) * 100);
 
-    // Evaluate answers against loaded questions
+    // Evaluate answers against loaded questions. MCQ correctness is a binary
+    // string match; short/long-answer marks come from the async LLM grading
+    // above — both are normalized to a common "marksAwarded / maxMarks" so
+    // mixed-format board papers (MCQ + descriptive in the same exam) get one
+    // coherent score instead of two incompatible scoring systems.
     const allQuestions = adapter ? adapter.getAllLoadedQuestions() : [];
-    let correctCount = 0;
+    let correctCount = 0; // MCQ only — kept for the existing per-question-correct UI
     let wrongCount = 0;
+    let totalMarksAwarded = 0;
+    let totalMaxMarks = 0;
     const questionEvaluations = Array.from({ length: blueprint.questions }).map((_, idx) => {
       const q = adapter ? adapter.getQuestionSync(idx) : null;
       const userAns = answers[idx] || "Not Answered";
+      const isDescriptiveQ = q?.type === 'short_answer' || q?.type === 'long_answer';
+
+      if (isDescriptiveQ) {
+        const grade = descriptiveGrades[idx];
+        const qMax = grade?.maxMarks ?? q?.maxMarks ?? 5;
+        totalMaxMarks += qMax;
+        totalMarksAwarded += grade?.marksAwarded ?? 0;
+        return {
+          idx,
+          question: q?.question || `Question ${idx + 1}`,
+          options: [],
+          userAnswer: userAns,
+          correctAnswer: q?.correctAnswer || "Refer to Solution",
+          explanation: q?.explanation || "Explanations available in review.",
+          isCorrect: (grade?.marksAwarded ?? 0) >= qMax * 0.6,
+          isAnswered: userAns !== "Not Answered",
+          isDescriptive: true,
+          marksAwarded: grade?.marksAwarded ?? null,
+          maxMarks: qMax,
+          feedback: grade?.feedback || "",
+          gradingFailed: !!grade?.gradingFailed,
+        };
+      }
+
       let isCorrect = checkIfAnswerIsCorrect(userAns, q);
+      totalMaxMarks += markingScheme.correct;
       if (isCorrect) {
         correctCount++;
+        totalMarksAwarded += markingScheme.correct;
       } else if (userAns !== "Not Answered") {
         wrongCount++;
+        totalMarksAwarded -= markingScheme.incorrect;
       }
       return {
         idx,
@@ -416,34 +573,51 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
         correctAnswer: q?.correctAnswer || "Refer to Solution",
         explanation: q?.explanation || "Explanations available in review.",
         isCorrect,
-        isAnswered: userAns !== "Not Answered"
+        isAnswered: userAns !== "Not Answered",
+        isDescriptive: false,
       };
     });
 
-    const obtainedMarks = (correctCount * markingScheme.correct) - (wrongCount * markingScheme.incorrect);
-    const maxMarks = blueprint.questions * markingScheme.correct;
-    const scorePercentage = Math.round((correctCount / (blueprint.questions || 1)) * 100);
+    const obtainedMarks = Math.round(totalMarksAwarded * 100) / 100;
+    const maxMarks = totalMaxMarks || (blueprint.questions * markingScheme.correct);
+    const scorePercentage = Math.round((obtainedMarks / (maxMarks || 1)) * 100);
     const totalAttempted = correctCount + wrongCount;
 
-    // Calculate subject-wise metrics dynamically
+    // Calculate subject-wise metrics dynamically — marks-based so a section
+    // that's entirely short/long-answer still gets a meaningful accuracy%
+    // instead of always reading 0 (it has no MCQ options to string-match).
     const subjectMetrics = sections.map((sec) => {
-      let secCorrect = 0;
-      let secWrong = 0;
+      let secMarksAwarded = 0;
+      let secMaxMarks = 0;
       let secAttempted = 0;
+      let secCorrect = 0;
       for (let i = 0; i < sec.count; i++) {
         const qIdx = sec.startIndex + i;
         const q = adapter ? adapter.getQuestionSync(qIdx) : null;
         const userAns = answers[qIdx] || "Not Answered";
-        if (userAns !== "Not Answered") {
-          secAttempted++;
-          if (q && q.correctAnswer && (userAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase() || userAns.startsWith(q.correctAnswer.charAt(0)))) {
-            secCorrect++;
-          } else {
-            secWrong++;
+        const isDescriptiveQ = q?.type === 'short_answer' || q?.type === 'long_answer';
+
+        if (isDescriptiveQ) {
+          const grade = descriptiveGrades[qIdx];
+          const qMax = grade?.maxMarks ?? q?.maxMarks ?? 5;
+          secMaxMarks += qMax;
+          if (userAns !== "Not Answered") {
+            secAttempted++;
+            secMarksAwarded += grade?.marksAwarded ?? 0;
+            if ((grade?.marksAwarded ?? 0) >= qMax * 0.6) secCorrect++;
+          }
+        } else {
+          secMaxMarks += 1;
+          if (userAns !== "Not Answered") {
+            secAttempted++;
+            if (q && q.correctAnswer && (userAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase() || userAns.startsWith(q.correctAnswer.charAt(0)))) {
+              secCorrect++;
+              secMarksAwarded += 1;
+            }
           }
         }
       }
-      const accuracy = secAttempted > 0 ? Math.round((secCorrect / secAttempted) * 100) : 0;
+      const accuracy = secMaxMarks > 0 ? Math.round((secMarksAwarded / secMaxMarks) * 100) : 0;
       return {
         subject: sec.subject,
         total: sec.count,
@@ -700,7 +874,17 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                   <div key={item.idx} className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs space-y-2">
                     <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                       <span className="font-bold text-gray-900">Q{item.idx + 1}. {item.question}</span>
-                      {item.isCorrect ? (
+                      {item.isDescriptive ? (
+                        item.gradingFailed ? (
+                          <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 font-bold text-[10px] shrink-0 ml-2">
+                            NEEDS MANUAL REVIEW
+                          </span>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded font-bold text-[10px] shrink-0 ml-2 ${item.isCorrect ? 'bg-emerald-100 text-emerald-700' : (item.marksAwarded ?? 0) > 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                            {item.marksAwarded ?? 0}/{item.maxMarks} MARKS
+                          </span>
+                        )
+                      ) : item.isCorrect ? (
                         <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold text-[10px]">
                           CORRECT (+2.0)
                         </span>
@@ -715,24 +899,45 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
-                      <div className="p-2 rounded bg-white border border-gray-200">
-                        <span className="font-semibold text-gray-500">Your Answer: </span>
-                        <span className={item.isCorrect ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
-                          {item.userAnswer}
-                        </span>
-                      </div>
-                      <div className="p-2 rounded bg-white border border-gray-200">
-                        <span className="font-semibold text-gray-500">Correct Answer: </span>
-                        <span className="font-bold text-emerald-600">{item.correctAnswer}</span>
-                      </div>
+                    <div className="p-2 rounded bg-white border border-gray-200">
+                      <span className="font-semibold text-gray-500">Your Answer: </span>
+                      <span className={item.isCorrect ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
+                        {item.userAnswer}
+                      </span>
                     </div>
 
-                    {item.explanation && (
-                      <div className="p-2.5 rounded bg-blue-50 border border-blue-100 text-blue-900 text-[11px]">
-                        <span className="font-bold text-blue-700">AI Explanation: </span>
-                        {item.explanation}
-                      </div>
+                    {item.isDescriptive ? (
+                      <>
+                        {item.feedback && (
+                          <div className="p-2.5 rounded bg-amber-50 border border-amber-100 text-amber-900 text-[11px]">
+                            <span className="font-bold text-amber-700">Feedback: </span>
+                            {item.feedback}
+                          </div>
+                        )}
+                        <div className="p-2.5 rounded bg-emerald-50 border border-emerald-100 text-emerald-900 text-[11px]">
+                          <span className="font-bold text-emerald-700">Model Answer:</span>
+                          <QuestionMarkdown text={item.correctAnswer} className="prose prose-sm max-w-none [&_p]:mb-2 [&_p]:last:mb-0" />
+                        </div>
+                        {item.explanation && (
+                          <div className="p-2.5 rounded bg-blue-50 border border-blue-100 text-blue-900 text-[11px]">
+                            <span className="font-bold text-blue-700">Marking Scheme:</span>
+                            <QuestionMarkdown text={item.explanation} className="prose prose-sm max-w-none [&_p]:mb-2 [&_p]:last:mb-0" />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="p-2 rounded bg-white border border-gray-200">
+                          <span className="font-semibold text-gray-500">Correct Answer: </span>
+                          <span className="font-bold text-emerald-600">{item.correctAnswer}</span>
+                        </div>
+                        {item.explanation && (
+                          <div className="p-2.5 rounded bg-blue-50 border border-blue-100 text-blue-900 text-[11px]">
+                            <span className="font-bold text-blue-700">AI Explanation:</span>
+                            <QuestionMarkdown text={item.explanation} className="prose prose-sm max-w-none [&_p]:mb-2 [&_p]:last:mb-0" />
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
@@ -766,14 +971,14 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
   if (isInitialLoading) {
     const assemblingOverlay = (
-      <div className="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-white font-sans transition-all duration-500">
+      <div className="fixed inset-0 z-[200] bg-background/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-foreground font-sans transition-all duration-500">
         {/* Background Ambient Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/25 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
 
         {/* Exit Button */}
-        <button 
+        <button
           onClick={onClose}
-          className="absolute top-6 right-6 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-slate-300 transition-all backdrop-blur-md"
+          className="absolute top-6 right-6 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-500 transition-all"
         >
           Exit Exam
         </button>
@@ -781,23 +986,23 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
         <div className="relative z-10 flex flex-col items-center max-w-md w-full text-center">
           {/* Animated Brain Icon / Pulsing AI Core */}
           <div className="relative mb-8">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-primary via-indigo-500 to-purple-500 p-0.5 shadow-2xl shadow-primary/40 animate-bounce">
-              <div className="w-full h-full bg-slate-900 rounded-[22px] flex items-center justify-center">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-primary via-indigo-500 to-purple-500 p-0.5 shadow-lg shadow-primary/20 animate-bounce">
+              <div className="w-full h-full bg-white rounded-[22px] flex items-center justify-center">
                 <BrainLogo size={52} />
               </div>
             </div>
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-indigo-500 border-4 border-slate-950 flex items-center justify-center">
+            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary border-4 border-background flex items-center justify-center">
               <Loader2 className="w-4 h-4 text-white animate-spin" />
             </div>
           </div>
 
           {/* Exam Title */}
-          <h2 className="text-2xl font-black tracking-tight text-white mb-2">
+          <h2 className="text-2xl font-black tracking-tight text-gray-900 mb-2">
             {blueprint.exam || "Assembling Exam Paper"}
           </h2>
 
           {/* Metadata Badges */}
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 mb-8">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 border border-gray-200 text-xs font-semibold text-gray-500 mb-8">
             <span>{blueprint.questions} Questions</span>
             <span>•</span>
             <span>{blueprint.durationMinutes} Mins</span>
@@ -807,23 +1012,23 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
           {/* Dynamic Loading Step Message */}
           <div className="h-10 flex items-center justify-center mb-6">
-            <p className="text-sm font-semibold text-indigo-200 transition-all duration-300">
+            <p className="text-sm font-semibold text-primary transition-all duration-300">
               ✨ {loadingMessages[loadingStepIdx]}
             </p>
           </div>
 
           {/* Animated Progress Bar */}
-          <div className="w-full bg-slate-800/80 rounded-full h-2.5 overflow-hidden border border-white/10 relative mb-4">
+          <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden border border-gray-200 relative mb-4">
             <div className="h-full bg-gradient-to-r from-blue-500 via-primary to-purple-500 rounded-full w-full animate-pulse" />
           </div>
 
-          <p className="text-[11px] text-slate-400 font-medium">
+          <p className="text-[11px] text-gray-400 font-medium">
             Preparing questions, difficulty calibration, and marking scheme...
           </p>
 
           {qStatus === 'FAILED' && (
             <div className="mt-6 flex flex-col items-center gap-2">
-              <p className="text-xs font-semibold text-red-400">Failed to generate question paper</p>
+              <p className="text-xs font-semibold text-red-600">Failed to generate question paper</p>
               <button
                 onClick={() => {
                   adapter?.retryQuestion(0);
@@ -986,34 +1191,51 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
               </div>
             ) : currentQuestion ? (
               <>
-                <p className="text-[15px] text-gray-900 font-medium leading-relaxed whitespace-pre-wrap mb-6">
-                  {currentQuestion.question}
-                </p>
-                <div className="flex flex-col gap-3">
-                  {currentQuestion.options.map((opt, oIdx) => {
-                    const label = String.fromCharCode(65 + oIdx);
-                    const isSelected = answers[activeQuestionIdx] === opt;
-                    return (
-                      <button
-                        key={oIdx}
-                        onClick={() => handleOptionSelect(opt)}
-                        className={`flex items-center text-left w-full py-3 px-3 rounded-[5px] border transition-all ${isSelected
-                            ? 'border-primary bg-primary/5'
-                            : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                      >
-                        <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
-                          }`}>
-                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                        <div className="flex items-center gap-3 flex-1">
-                          <span className="font-bold text-gray-900 text-sm">{label}.</span>
-                          <span className="text-gray-800 text-sm leading-snug">{opt}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                <QuestionMarkdown text={currentQuestion.question} className="text-[15px] text-gray-900 font-medium leading-relaxed mb-4" />
+                {isDescriptiveQuestion ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider">
+                        {currentQuestion.type === 'long_answer' ? 'Long Answer' : 'Short Answer'} · {currentQuestion.maxMarks || 5} Marks
+                      </span>
+                      <span className="text-[11px] font-semibold text-gray-500">
+                        {(answers[activeQuestionIdx] || "").trim().split(/\s+/).filter(Boolean).length} words
+                      </span>
+                    </div>
+                    <textarea
+                      value={answers[activeQuestionIdx] || ""}
+                      onChange={(e) => handleOptionSelect(e.target.value)}
+                      placeholder="Type your answer here — it will be graded against the marking scheme once you submit the exam..."
+                      className="w-full min-h-[180px] p-3 rounded-[5px] border border-gray-200 text-sm text-gray-900 focus:outline-none focus:border-primary resize-y leading-relaxed"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {currentQuestion.options.map((opt, oIdx) => {
+                      const label = String.fromCharCode(65 + oIdx);
+                      const isSelected = answers[activeQuestionIdx] === opt;
+                      return (
+                        <button
+                          key={oIdx}
+                          onClick={() => handleOptionSelect(opt)}
+                          className={`flex items-center text-left w-full py-3 px-3 rounded-[5px] border transition-all ${isSelected
+                              ? 'border-primary bg-primary/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                        >
+                          <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center mr-3 transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
+                            }`}>
+                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <div className="flex items-center gap-3 flex-1">
+                            <span className="font-bold text-gray-900 text-sm">{label}.</span>
+                            <span className="text-gray-800 text-sm leading-snug">{opt}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             ) : null}
           </div>
@@ -1171,11 +1393,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             ) : currentQuestion ? (
               <div className="flex-1 flex flex-col h-full">
                 {!isCodingQuestion && !isDescriptiveQuestion && (
-                  <div className="prose max-w-none mb-6">
-                    <p className="text-[15px] text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
-                      {currentQuestion.question}
-                    </p>
-                  </div>
+                  <QuestionMarkdown text={currentQuestion.question} className="prose max-w-none mb-6 text-[15px] text-gray-800 leading-relaxed font-medium" />
                 )}
 
                 {isCodingQuestion ? (
@@ -1189,9 +1407,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                         <span className="text-xs font-semibold text-gray-500">Coding Assessment Format</span>
                       </div>
 
-                      <div className="prose max-w-none text-gray-800 font-medium text-sm leading-relaxed whitespace-pre-wrap">
-                        {currentQuestion.question}
-                      </div>
+                      <QuestionMarkdown text={currentQuestion.question} className="prose max-w-none text-gray-800 font-medium text-sm leading-relaxed" />
 
                       <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
                         <h5 className="text-xs font-bold uppercase tracking-wider text-gray-500">Sample Constraints:</h5>
@@ -1267,28 +1483,22 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                     </div>
                   </div>
                 ) : isDescriptiveQuestion ? (
-                  /* 50-50 DESCRIPTIVE / UPSC MAINS RESPONSE EDITOR */
+                  /* 50-50 DESCRIPTIVE (SHORT/LONG ANSWER) RESPONSE EDITOR */
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 h-full min-h-[500px]">
-                    {/* LEFT COLUMN (50% Width) - UPSC / DESCRIPTIVE QUESTION */}
+                    {/* LEFT COLUMN (50% Width) - DESCRIPTIVE QUESTION */}
                     <div className="bg-slate-50 border border-gray-200 rounded-xl p-6 flex flex-col overflow-y-auto space-y-4 shadow-2xs">
                       <div className="flex items-center justify-between border-b border-gray-200 pb-3">
                         <span className="px-2.5 py-1 text-xs font-bold bg-amber-100 text-amber-800 rounded-full uppercase tracking-wider">
-                          UPSC Mains / Descriptive Question
+                          {currentQuestion.type === 'long_answer' ? 'Long Answer' : 'Short Answer'} Question
                         </span>
-                        <span className="text-xs font-semibold text-gray-500">Word Limit: 250 Words</span>
+                        <span className="text-xs font-semibold text-gray-500">{currentQuestion.maxMarks || 5} Marks</span>
                       </div>
 
-                      <div className="prose max-w-none text-gray-900 font-bold text-base leading-relaxed whitespace-pre-wrap">
-                        {currentQuestion.question}
-                      </div>
+                      <QuestionMarkdown text={currentQuestion.question} className="prose max-w-none text-gray-900 font-bold text-base leading-relaxed" />
 
                       <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                        <h5 className="text-xs font-bold uppercase tracking-wider text-gray-500">Key Evaluation Rubrics:</h5>
-                        <ul className="text-xs text-gray-700 space-y-1 list-disc pl-4">
-                          <li>Structure: Introduction, Body, Analytical Arguments & Conclusion</li>
-                          <li>Factual Accuracy & Contemporary Context</li>
-                          <li>Clarity, Neutrality & Constructive Synthesis</li>
-                        </ul>
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-gray-500">Marking Scheme:</h5>
+                        <QuestionMarkdown text={currentQuestion.explanation} className="prose prose-sm max-w-none text-xs text-gray-700 [&_p]:mb-1.5 [&_ul]:mb-0" />
                       </div>
                     </div>
 
@@ -1297,14 +1507,14 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                       <div className="flex items-center justify-between bg-slate-900 text-white p-3 rounded-t-xl">
                         <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Your Written Answer:</span>
                         <span className="text-xs font-bold text-emerald-400">
-                          {(answers[activeQuestionIdx] || "").trim().split(/\s+/).filter(Boolean).length} / 250 Words
+                          {(answers[activeQuestionIdx] || "").trim().split(/\s+/).filter(Boolean).length} words
                         </span>
                       </div>
                       <div className="flex-1 border border-gray-300 bg-white rounded-b-xl overflow-hidden shadow-inner flex flex-col min-h-[350px]">
                         <textarea
                           value={answers[activeQuestionIdx] || ""}
                           onChange={(e) => handleOptionSelect(e.target.value)}
-                          placeholder="Type your structured analytical response here..."
+                          placeholder="Type your answer here — it will be graded against the marking scheme once you submit the exam..."
                           className="w-full h-full p-4 font-sans text-sm text-gray-900 focus:outline-none resize-none leading-relaxed flex-1"
                         />
                       </div>

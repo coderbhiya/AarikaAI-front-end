@@ -131,9 +131,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (err: any) {
       // Use console.warn instead of console.error to prevent Next.js from throwing a full-screen error overlay in dev mode when the backend is simply down.
       console.warn("Profile synchronization failed (Backend might be unreachable):", err.message);
-      
-      // If token is rejected, or we don't have a cached user (which causes an infinite loop between middleware and ProtectedRoute)
-      if (err.response?.status === 401 || err.response?.status === 403 || !localStorage.getItem("user")) {
+
+      // Only treat this as "the session is invalid" when the server actually
+      // rejected the token (401/403) — err.response exists. A network error,
+      // timeout, or the backend being briefly unreachable (err.response is
+      // undefined) is NOT proof the token is bad, and must never destroy a
+      // valid login: this previously force-logged-out users on every
+      // transient connectivity hiccup, which is very noticeable in normal
+      // use (flaky wifi, backend redeploy/restart, a slow request timing out).
+      if (err.response?.status === 401 || err.response?.status === 403) {
         setUser(null);
         setToken(null);
         localStorage.removeItem("user");

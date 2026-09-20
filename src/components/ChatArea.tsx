@@ -5,7 +5,9 @@ import { createPortal } from "react-dom";
 import ChatInput from "./ChatInput";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb, X, Flame, Star } from "lucide-react";
+import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb, X, Flame, Star, Maximize2, Minimize2, Download } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +21,7 @@ import GeneratedResumeCard from "./chat/cards/GeneratedResumeCard";
 import BrainLogo from "./BrainLogo";
 import { Message, FileAttachment } from "@/types";
 import { ProfileSyncModal } from "./profile/ProfileSyncModal";
-import { sendChatMessage } from "@/services/chatService";
+import { sendChatMessage, regenerateMessage } from "@/services/chatService";
 import { getMobileBanner } from "@/services/settingService";
 import { pingStreak } from "@/services/gamificationService";
 import PinnedNotesDrawer, { PinnedNote } from "./chat/PinnedNotesDrawer";
@@ -46,7 +48,7 @@ const sanitizeSvg = (svgMarkup: string): string => {
     }
 };
 
-const renderArtifactPreview = (artifact: any) => {
+const renderArtifactPreview = (artifact: any, docRef?: React.Ref<HTMLDivElement>) => {
     if (!artifact || !artifact.data) return null;
 
     const { type, data } = artifact;
@@ -69,7 +71,7 @@ const renderArtifactPreview = (artifact: any) => {
         case "document_builder": {
             const content = data.content || data.markdown || "";
             return (
-                <div className="w-full h-full min-h-[450px] border border-gray-150 rounded-2xl overflow-y-auto bg-background shadow-sm flex flex-col p-6 md:p-10">
+                <div ref={docRef} className="w-full h-full min-h-[450px] border border-gray-150 rounded-2xl overflow-y-auto bg-background shadow-sm flex flex-col p-6 md:p-10">
                     <div className="prose prose-sm md:prose-base max-w-none prose-slate">
                         <Markdown text={content} />
                     </div>
@@ -395,6 +397,113 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const [pendingSnapshotForModal, setPendingSnapshotForModal] = useState<any>(null);
     const [activeArtifact, setActiveArtifact] = useState<any>(null);
     const [workspaceTab, setWorkspaceTab] = useState<"preview" | "code">("preview");
+
+    // Resizable + fullscreen artifact workspace panel (Claude-style split view)
+    const splitContainerRef = useRef<HTMLDivElement>(null);
+    const [workspaceWidthPct, setWorkspaceWidthPct] = useState<number>(() => {
+        if (typeof window === "undefined") return 50;
+        try {
+            const saved = localStorage.getItem("aarika_workspace_width_pct");
+            const parsed = saved ? parseFloat(saved) : 50;
+            return Number.isFinite(parsed) ? Math.min(75, Math.max(28, parsed)) : 50;
+        } catch {
+            return 50;
+        }
+    });
+    const [isResizingWorkspace, setIsResizingWorkspace] = useState(false);
+    const [isArtifactFullscreen, setIsArtifactFullscreen] = useState(false);
+
+    const handleWorkspaceResizeStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizingWorkspace(true);
+    };
+
+    // Real client-side PDF export for document_builder artifacts (exam papers,
+    // reports, notes, etc.), same html2canvas+jsPDF pagination approach as
+    // GeneratedResumeCard's resume download — this is the only place a
+    // downloadable PDF actually comes from; there is no background/server-side
+    // PDF job to poll for.
+    const documentPreviewRef = useRef<HTMLDivElement>(null);
+    const [isDownloadingDoc, setIsDownloadingDoc] = useState(false);
+
+    const handleDownloadDocument = async () => {
+        if (!documentPreviewRef.current) return;
+        try {
+            setIsDownloadingDoc(true);
+            const element = documentPreviewRef.current;
+
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: "#ffffff",
+                windowWidth: 800,
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF("p", "mm", "a4");
+
+            const imgWidth = 210;
+            const pageHeight = 297;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            const fileName = `${(activeArtifact?.title || "Document").replace(/\s+/g, "_")}.pdf`;
+            pdf.save(fileName);
+        } catch (err) {
+            console.error("Document PDF generation error:", err);
+            toast.error("PDF download failed. Please try again.");
+        } finally {
+            setIsDownloadingDoc(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!isResizingWorkspace) return;
+
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!splitContainerRef.current) return;
+            const rect = splitContainerRef.current.getBoundingClientRect();
+            const pct = ((rect.right - e.clientX) / rect.width) * 100;
+            setWorkspaceWidthPct(Math.min(75, Math.max(28, pct)));
+        };
+        const handleMouseUp = () => {
+            setIsResizingWorkspace(false);
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+            try {
+                localStorage.setItem("aarika_workspace_width_pct", String(workspaceWidthPct));
+            } catch { }
+        };
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+    }, [isResizingWorkspace, workspaceWidthPct]);
+
+    // Fullscreen resets when the artifact closes, so reopening one always starts split.
+    useEffect(() => {
+        if (!activeArtifact) setIsArtifactFullscreen(false);
+    }, [activeArtifact]);
     const [isPersonalized, setIsPersonalized] = useState<boolean>(true);
     const [mobileBannerUrl, setMobileBannerUrl] = useState<string | null>(null);
     const [myStreak, setMyStreak] = useState<any>(null);
@@ -619,6 +728,74 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         },
     });
 
+    const regenerateMutation = useMutation({
+        mutationFn: async ({ messageId, threadId }: { messageId: string | number; threadId?: string }) => {
+            setStreamingReply("");
+            setSearchProgress("Regenerating response...");
+            const abortController = new AbortController();
+            abortControllerRef.current = abortController;
+
+            return await regenerateMessage(Number(messageId), threadId, (chunk) => {
+                if (chunk.type === "progress") {
+                    setSearchProgress(chunk.message);
+                } else if (chunk.type === "text") {
+                    setSearchProgress(null);
+                    setStreamingReply((prev) => (prev || "") + chunk.content);
+                }
+            }, abortController.signal);
+        },
+        onMutate: async ({ messageId, threadId }) => {
+            const targetThreadKey = threadId || activeThreadKey;
+            await queryClient.cancelQueries({ queryKey: ["chats", targetThreadKey] });
+            const previousChats = queryClient.getQueryData<Message[]>(["chats", targetThreadKey]);
+
+            // Optimistically drop the reply being regenerated — the backend deletes
+            // the same row (and anything after it) server-side.
+            queryClient.setQueryData<Message[]>(["chats", targetThreadKey], (old) =>
+                (old || []).filter((m) => String(m.id) !== String(messageId))
+            );
+
+            return { previousChats, targetThreadKey };
+        },
+        onError: (err: any, variables, context) => {
+            const targetThreadKey = context?.targetThreadKey || activeThreadKey;
+            queryClient.setQueryData(["chats", targetThreadKey], context?.previousChats);
+            setStreamingReply(null);
+            setSearchProgress(null);
+            toast.error(err?.message || "Regeneration failed. Please retry.");
+        },
+        onSuccess: (result, variables, context) => {
+            const targetThreadKey = context.targetThreadKey || activeThreadKey;
+            const aiMessage: Message = {
+                id: `temp-ai-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                message: result.reply || "",
+                role: "assistant",
+                citations: result.citations,
+                artifact: result.artifact,
+                FileAttachments: result.FileAttachments,
+                createdAt: new Date().toISOString(),
+            };
+
+            queryClient.setQueryData<Message[]>(["chats", targetThreadKey], (old) => [...(old || []), aiMessage]);
+
+            if (result.artifact) {
+                setActiveArtifact(result.artifact);
+            }
+            setStreamingReply(null);
+            setSearchProgress(null);
+
+            setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ["chats", targetThreadKey] });
+            }, 1500);
+        },
+    });
+
+    const handleRegenerate = (messageId: string | number) => {
+        if (chatMutation.isPending || regenerateMutation.isPending) return;
+        const threadId = searchParams.get("threadId") || undefined;
+        regenerateMutation.mutate({ messageId, threadId });
+    };
+
     // Fix 5: Intelligent Streaming Auto Scroll
     useEffect(() => {
         if (scrollRef.current && !isUserScrolledUp.current) {
@@ -627,7 +804,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 behavior: 'smooth'
             });
         }
-    }, [messages, streamingReply, chatMutation.isPending]);
+    }, [messages, streamingReply, chatMutation.isPending, regenerateMutation.isPending]);
 
     const handleFileUploads = async (files: File[]): Promise<FileAttachment[]> => {
         if (files.length === 0) return [];
@@ -727,12 +904,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         });
     };
 
-    const isProcessing = chatMutation.isPending || isUploading;
+    const isProcessing = chatMutation.isPending || regenerateMutation.isPending || isUploading;
 
     return (
-        <div className="flex-1 flex w-full h-full overflow-hidden">
+        <div ref={splitContainerRef} className="flex-1 flex w-full h-full overflow-hidden">
             {/* Left/Main Chat Area */}
-            <div className={`flex flex-col h-full bg-background relative overflow-hidden transition-all duration-300 ${activeArtifact ? (isMobile ? 'w-full hidden' : 'w-1/2 border-r border-border') : 'w-full'}`}>
+            <div
+                className={`flex flex-col h-full bg-background relative overflow-hidden ${isResizingWorkspace ? '' : 'transition-all duration-300'} ${activeArtifact ? (isMobile ? 'w-full hidden' : 'border-r border-border') : 'w-full'} ${activeArtifact && !isMobile && isArtifactFullscreen ? 'hidden' : ''}`}
+                style={activeArtifact && !isMobile && !isArtifactFullscreen ? { width: `${100 - workspaceWidthPct}%` } : undefined}
+            >
                 {/* Header */}
                 <header className="sticky top-0 z-40 shrink-0 w-full flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-background/95 backdrop-blur-xl border-b border-border/60">
                     <div className="flex items-center gap-2 md:gap-3 shrink-0">
@@ -889,6 +1069,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 onSendMessage={handleSendMessage}
                                 onPinNote={handlePinNote}
                                 onOpenArtifact={(artifact) => setActiveArtifact(artifact)}
+                                onRegenerate={handleRegenerate}
                                 onEditMessage={async (messageId: string | number, newText: string) => {
                                     try {
                                         const numId = Number(messageId);
@@ -919,8 +1100,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                         {isProcessing && !streamingReply && (
                             <div className="flex justify-start my-2.5 animate-in fade-in slide-in-from-left-4 duration-300">
                                 <div className="flex items-center gap-3 px-1">
-                                    <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10">
-                                        <BrainLogo size={18} />
+                                    <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10 overflow-hidden">
+                                        <BrainLogo size={24} />
                                     </div>
                                     {searchProgress ? (
                                         <div className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-full shadow-sm">
@@ -981,23 +1162,35 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 containers — rendering it "under" the sidebar/header instead of
                 truly fullscreen. Portaling to document.body with `fixed inset-0`
                 fixes that; the desktop split-panel view is unaffected. */}
+            {/* Drag handle to resize the split between chat and the artifact workspace */}
+            {activeArtifact && !isMobile && !isArtifactFullscreen && (
+                <div
+                    onMouseDown={handleWorkspaceResizeStart}
+                    className="w-1 hover:w-1.5 shrink-0 cursor-col-resize bg-border hover:bg-primary/50 active:bg-primary/60 transition-colors relative z-10"
+                    title="Drag to resize"
+                />
+            )}
+
             {activeArtifact && (() => {
                 const workspacePanel = (
-                <div className={`flex flex-col h-full bg-background relative overflow-hidden border-l border-border transition-all duration-300 ${isMobile ? 'w-full fixed inset-0 z-50' : 'w-1/2'}`}>
+                <div
+                    className={`flex flex-col h-full bg-background overflow-hidden border-l border-border ${isResizingWorkspace ? '' : 'transition-all duration-300'} ${isMobile ? 'w-full fixed inset-0 z-50' : 'relative'}`}
+                    style={!isMobile ? { width: isArtifactFullscreen ? '100%' : `${workspaceWidthPct}%` } : undefined}
+                >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-border bg-[#f9fafb]">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                    <div className="flex items-center justify-between gap-2 p-4 border-b border-border bg-[#f9fafb]">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shadow-sm shrink-0">
                                 <Sparkles size={16} />
                             </div>
-                            <div>
-                                <h3 className="text-[14px] font-bold text-foreground truncate max-w-[150px] sm:max-w-[250px]">{activeArtifact.title || "Career Artifact"}</h3>
-                                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                            <div className="min-w-0">
+                                <h3 className="text-[14px] font-bold text-foreground truncate max-w-[90px] sm:max-w-[150px] md:max-w-[250px]">{activeArtifact.title || "Career Artifact"}</h3>
+                                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider truncate">
                                     {activeArtifact.type?.replace("_", " ")} • v{activeArtifact.version || 1}
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                             {/* Tab Switcher */}
                             <div className="bg-gray-100/80 p-0.5 rounded-lg flex items-center shadow-inner">
                                 <button
@@ -1020,6 +1213,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 </button>
                             </div>
 
+                            {activeArtifact.type === "document_builder" && workspaceTab === "preview" && (
+                                <button
+                                    onClick={handleDownloadDocument}
+                                    disabled={isDownloadingDoc}
+                                    className="p-2 text-gray-400 hover:bg-gray-100 hover:text-muted-foreground rounded-full transition-colors active:scale-95 disabled:opacity-50"
+                                    title="Download PDF"
+                                >
+                                    <Download size={16} />
+                                </button>
+                            )}
+
+                            {!isMobile && (
+                                <button
+                                    onClick={() => setIsArtifactFullscreen(prev => !prev)}
+                                    className="p-2 text-gray-400 hover:bg-gray-100 hover:text-muted-foreground rounded-full transition-colors active:scale-95"
+                                    title={isArtifactFullscreen ? "Exit fullscreen" : "Fullscreen"}
+                                >
+                                    {isArtifactFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                                </button>
+                            )}
+
                             <button
                                 onClick={() => setActiveArtifact(null)}
                                 className="p-2 text-gray-400 hover:bg-gray-100 hover:text-muted-foreground rounded-full transition-colors active:scale-95"
@@ -1033,7 +1247,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     {/* Content Body */}
                     <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-slate-50/55">
                         {workspaceTab === "preview" ? (
-                            renderArtifactPreview(activeArtifact)
+                            renderArtifactPreview(activeArtifact, documentPreviewRef)
                         ) : (
                             <div className="relative group">
                                 <button
