@@ -19,6 +19,7 @@ import { ProfileSyncModal } from "@/components/profile/ProfileSyncModal";
 import CareerJourneyTab from "@/components/profile/CareerJourneyTab";
 import LeaderboardTab from "@/components/LeaderboardTab";
 import AssessmentReportsTab from "@/components/profile/AssessmentReportsTab";
+import { getProfileFieldSet } from "@/lib/profileFieldSet";
 
 const ProfilePage = () => {
   const { user, toggleSidebar, syncProfile } = useAuth();
@@ -31,8 +32,7 @@ const ProfilePage = () => {
   // is a fixed part of every persona's profile today, so this is the one
   // exception carved out for them (PersonalInfo.tsx handles the rest of the
   // persona-specific field differences within its own card).
-  const isSchoolStudent = user?.UserProfile?.personaType === "STUDENT"
-    && user?.UserProfile?.studentDetails?.educationLevel === "school";
+  const isSchoolStudent = getProfileFieldSet(user) === "school";
 
   useEffect(() => {
     // Sync profile on mount to ensure we have the latest pendingResumeSnapshot

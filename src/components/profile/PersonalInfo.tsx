@@ -4,6 +4,60 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfile, updateProfile } from '@/services/profileService';
 import { Edit3, Save, X, User, Mail, Phone, MapPin, Globe, CreditCard, GraduationCap } from "lucide-react";
+import { getProfileFieldSet, ProfileFieldSet } from "@/lib/profileFieldSet";
+
+// Same underlying fields (currentRole/targetRole/experienceYears) apply to
+// every non-school persona — a college student's internship, a job seeker's
+// last role, and a career switcher's current field are all genuinely
+// "current role" data. What differs per persona is what to call these fields
+// and what to hint in the placeholder, so each persona sees copy that
+// actually matches their situation instead of generic "professional" wording.
+const FIELD_SET_COPY: Record<Exclude<ProfileFieldSet, "school">, {
+  sectionTitle: string;
+  headlinePlaceholder: string;
+  bioPlaceholder: string;
+  currentRoleLabel: string;
+  currentRolePlaceholder: string;
+  targetRoleLabel: string;
+  targetRolePlaceholder: string;
+}> = {
+  professional: {
+    sectionTitle: "Professional Focus",
+    headlinePlaceholder: "Strategizing the next move | AI Career Specialist",
+    bioPlaceholder: "Briefly describe your professional background and goals...",
+    currentRoleLabel: "Current Role",
+    currentRolePlaceholder: "Software Engineer",
+    targetRoleLabel: "Target Role",
+    targetRolePlaceholder: "Senior Lead Engineer",
+  },
+  college: {
+    sectionTitle: "Academic & Career Focus",
+    headlinePlaceholder: "Final-year CS student exploring backend roles",
+    bioPlaceholder: "Briefly describe your degree, interests, and career goals...",
+    currentRoleLabel: "Current Role / Internship",
+    currentRolePlaceholder: "Intern at XYZ (if any)",
+    targetRoleLabel: "Target Role (after graduation)",
+    targetRolePlaceholder: "Software Engineer",
+  },
+  job_seeker: {
+    sectionTitle: "Job Search Focus",
+    headlinePlaceholder: "Actively looking for Product Manager roles",
+    bioPlaceholder: "Briefly describe your background and what you're looking for...",
+    currentRoleLabel: "Current / Last Role",
+    currentRolePlaceholder: "Marketing Associate",
+    targetRoleLabel: "Target Job Title",
+    targetRolePlaceholder: "Product Manager",
+  },
+  career_switcher: {
+    sectionTitle: "Career Transition Focus",
+    headlinePlaceholder: "Switching from Mechanical Engineering to Data Science",
+    bioPlaceholder: "Briefly describe your current field and why you're switching...",
+    currentRoleLabel: "Current Field",
+    currentRolePlaceholder: "Mechanical Engineering",
+    targetRoleLabel: "Target Field",
+    targetRolePlaceholder: "Data Science",
+  },
+};
 
 // Same board/exam value sets as onboarding (OnboardingFlow.tsx) — kept in
 // sync manually since values are persisted verbatim into studentDetails.
@@ -73,8 +127,9 @@ const PersonalInfo = () => {
     targetExams: [] as string[],
   });
 
-  const isSchoolStudent = user?.UserProfile?.personaType === "STUDENT"
-    && user?.UserProfile?.studentDetails?.educationLevel === "school";
+  const fieldSet = getProfileFieldSet(user);
+  const isSchoolStudent = fieldSet === "school";
+  const copy = FIELD_SET_COPY[isSchoolStudent ? "professional" : fieldSet];
 
   const mapExperienceToOption = (val) => {
     if (val === null || val === undefined || val === '') return '';
@@ -316,7 +371,7 @@ const PersonalInfo = () => {
             class/board/stream/exam-prep fields instead. */}
         <div>
           <h3 className="text-[15px] font-semibold text-gray-900 mb-4 px-1">
-            {isSchoolStudent ? "Academic Details" : "Professional Focus"}
+            {isSchoolStudent ? "Academic Details" : copy.sectionTitle}
           </h3>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -330,7 +385,7 @@ const PersonalInfo = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={inputClasses}
-                placeholder={isSchoolStudent ? "Preparing for Class 10 Boards" : "Strategizing the next move | AI Career Specialist"}
+                placeholder={isSchoolStudent ? "Preparing for Class 10 Boards" : copy.headlinePlaceholder}
               />
             </div>
             <div className="space-y-1.5">
@@ -342,7 +397,7 @@ const PersonalInfo = () => {
                 disabled={!isEditing}
                 rows={4}
                 className={`${inputClasses} resize-none h-28 pt-3`}
-                placeholder={isSchoolStudent ? "Briefly describe your interests and academic goals..." : "Briefly describe your professional background and goals..."}
+                placeholder={isSchoolStudent ? "Briefly describe your interests and academic goals..." : copy.bioPlaceholder}
               />
             </div>
 
@@ -470,7 +525,7 @@ const PersonalInfo = () => {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[12px] font-bold text-gray-700 ml-1">Current Role</label>
+                  <label className="text-[12px] font-bold text-gray-700 ml-1">{copy.currentRoleLabel}</label>
                   <input
                     type="text"
                     name="currentRole"
@@ -478,11 +533,11 @@ const PersonalInfo = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={inputClasses}
-                    placeholder="Software Engineer"
+                    placeholder={copy.currentRolePlaceholder}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[12px] font-bold text-gray-700 ml-1">Target Role</label>
+                  <label className="text-[12px] font-bold text-gray-700 ml-1">{copy.targetRoleLabel}</label>
                   <input
                     type="text"
                     name="targetRole"
@@ -490,7 +545,7 @@ const PersonalInfo = () => {
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={inputClasses}
-                    placeholder="Senior Lead Engineer"
+                    placeholder={copy.targetRolePlaceholder}
                   />
                 </div>
               </div>
