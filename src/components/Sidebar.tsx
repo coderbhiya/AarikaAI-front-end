@@ -43,6 +43,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AI_TOOLS } from "@/lib/tools";
 import { getDynamicNavigation } from "@/services/profileService";
+import { getProfileFieldSet } from "@/lib/profileFieldSet";
 
 const toolIconMap: Record<string, React.ReactNode> = {
   Building2: <Building2 size={15} className="text-blue-500" />,
@@ -252,6 +253,13 @@ const Sidebar = () => {
     showPlacementPrep: true,
     isSchoolStudent: false,
   });
+
+  // Job-hunting features (Mission Hunt, Auto-Apply) don't apply to a school
+  // student or a government-exam aspirant — neither is browsing/applying to
+  // private-sector job listings. getDynamicNavigation only returns
+  // isSchoolStudent today, so this reads the field-set directly off the
+  // profile already in context instead of a second persona-derivation.
+  const hideJobSearch = ["school", "govt_aspirant"].includes(getProfileFieldSet(user));
 
   React.useEffect(() => {
     let active = true;
@@ -516,33 +524,39 @@ const Sidebar = () => {
               active={pathname === "/tools" || !!activeToolParam}
             />
 
-            {/* Hidden per request: Exam Simulator, Placement Prep, My Learning, Mission Hunt, Auto-Apply */}
-            {/* navConfig.showExamSimulator && (
+            {/* Exam Simulator: server-computed per persona — school students
+                only if they opted into exam prep at onboarding; college
+                students, govt aspirants, and anyone with exams selected get
+                it; plain job seekers/professionals/career switchers don't. */}
+            {navConfig.showExamSimulator && (
               <NavLink
                 to="/exam-simulator"
                 icon={<GraduationCap size={16} />}
                 label="Exam Simulator"
                 active={pathname === "/exam-simulator"}
               />
-            ) */}
+            )}
 
-            {/* navConfig.showPlacementPrep && (
+            {/* Placement Prep is the "campus" category in the AI Tools
+                catalog, not a standalone page — there is no /placement-prep
+                route, so this links into that tab directly. */}
+            {navConfig.showPlacementPrep && (
               <NavLink
-                to="/placement-prep"
+                to="/tools?category=campus"
                 icon={<Briefcase size={16} />}
                 label="Placement Prep"
-                active={pathname === "/placement-prep"}
+                active={pathname === "/tools" && activeToolParam === null && searchParams.get("category") === "campus"}
               />
-            ) */}
+            )}
 
-            {/* features.learningModuleEnabled && (
+            {features.learningModuleEnabled && (
               <NavLink
                 to="/dashboard/learning"
                 icon={<BookOpen size={16} />}
                 label="My Learning"
                 active={pathname === "/dashboard/learning"}
               />
-            ) */}
+            )}
             {features.communityModuleEnabled && !navConfig.isSchoolStudent && (
               <NavLink
                 to="/community"
@@ -551,7 +565,7 @@ const Sidebar = () => {
                 active={pathname === "/community"}
               />
             )}
-            {/* features.jobRecommendationsEnabled && (
+            {features.jobRecommendationsEnabled && !hideJobSearch && (
               <>
                 <NavLink
                   to="/jobs"
@@ -566,7 +580,7 @@ const Sidebar = () => {
                   active={pathname === "/agent"}
                 />
               </>
-            ) */}
+            )}
             {(user?.role === "admin" || user?.role === "super_admin") && (
               <NavLink
                 to="/admin/marketing"

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Wrench,
   Search,
@@ -74,9 +74,12 @@ const CATEGORIES = [
 
 export default function ToolsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toggleSidebar } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  // Lets a sidebar shortcut (e.g. "Placement Prep" -> /tools?category=campus)
+  // land directly on the relevant tab instead of always opening on "all".
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
   const [isSchoolStudent, setIsSchoolStudent] = useState(false);
 
   useEffect(() => {
