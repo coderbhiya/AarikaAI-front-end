@@ -1,5 +1,6 @@
 "use client";
 
+import React, { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { Navigate } from "@/components/Navigate";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,10 +45,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-[#F8F9FA] text-foreground relative">
-      <Sidebar />
+      <React.Suspense fallback={<div className="w-64 border-r border-border/50 bg-background/95 h-full" />}>
+        <Sidebar />
+      </React.Suspense>
       <main className={`flex-1 h-full flex flex-col min-w-0 overflow-hidden transition-all duration-500 ease-in-out ${!isMobile && showSidebar ? "ml-0" : ""
         }`}>
-        {children}
+        <React.Suspense fallback={
+          <div className="flex items-center justify-center h-full w-full">
+            <div className="w-8 h-8 border-2 border-t-transparent border-primary rounded-full animate-spin"></div>
+          </div>
+        }>
+          {children}
+        </React.Suspense>
       </main>
     </div>
   );

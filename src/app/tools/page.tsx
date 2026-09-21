@@ -72,7 +72,7 @@ const CATEGORIES = [
   { id: "study", label: "Study Guides", icon: <BookOpen className="w-3.5 h-3.5" /> },
 ];
 
-export default function ToolsPage() {
+function ToolsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toggleSidebar } = useAuth();
@@ -347,5 +347,19 @@ export default function ToolsPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function ToolsPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex h-screen bg-background items-center justify-center">
+          <div className="w-8 h-8 border-2 border-t-transparent border-primary rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <ToolsContent />
+    </React.Suspense>
   );
 }
