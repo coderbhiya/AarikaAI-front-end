@@ -11,6 +11,7 @@ import ResumeAnalysisCard from "./cards/ResumeAnalysisCard";
 import SWOTCard from "./cards/SWOTCard";
 import CollegeCard from "./cards/CollegeCard";
 import QuizCard from "./cards/QuizCard";
+import CourseTestCard from "./cards/CourseTestCard";
 import ResumeSyncCard from "./cards/ResumeSyncCard";
 import TimelineCard from "./cards/TimelineCard";
 import BadgeCard from "./cards/BadgeCard";
@@ -188,6 +189,31 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
           </div>
         </div>
       );
+    }
+
+    // Course Proficiency Test Card — the "Quiz" button / "test me" flow in
+    // the learning workspace (courseTestingEngine.js generates this, graded
+    // as one batch of 5 answers rather than QuizCard's one-at-a-time submit).
+    const courseTestTagRegex = /\[COURSE_TEST_CARD\]([\s\S]*?)\[\/COURSE_TEST_CARD\]/i;
+    const courseTestMatch = text.match(courseTestTagRegex);
+
+    if (courseTestMatch) {
+      try {
+        const testData = JSON.parse(courseTestMatch[1]);
+        const cleanText = text.replace(courseTestTagRegex, "").trim();
+
+        return (
+          <div className="flex flex-col gap-2 w-full">
+            {cleanText && <Markdown text={cleanText} />}
+            <CourseTestCard
+              questions={testData.questions}
+              onSubmit={(answerText) => onSendMessage?.(answerText)}
+            />
+          </div>
+        );
+      } catch (err) {
+        console.error("Failed to parse course test card data", err);
+      }
     }
 
     // Quiz Card Logic (Legacy fallback)
