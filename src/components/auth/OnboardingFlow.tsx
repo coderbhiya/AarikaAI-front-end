@@ -16,6 +16,7 @@ import {
   TrendingUp,
   FileText,
   BookOpen,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import axiosInstance from "@/lib/axios";
@@ -59,6 +60,35 @@ const EXAM_OPTIONS = [
   { value: "BOARD_10", label: "Class 10 Boards", emoji: "🏅" },
   { value: "BOARD_12", label: "Class 12 Boards", emoji: "🏆" },
   { value: "OLYMPIAD", label: "Olympiads", emoji: "🧮" },
+];
+
+// Same category vocabulary the backend already uses to tag government
+// jobs/exams (governmentParser.js's LLM-extraction enum), kept to the subset
+// that's actually "an aspirant preparing for a competitive exam" rather than
+// e.g. Engineering/Medical/Law which are qualification fields, not exam types.
+const GOVT_EXAM_OPTIONS = [
+  { value: "UPSC", label: "UPSC (Civil Services)", emoji: "🏛️" },
+  { value: "SSC", label: "SSC (CGL / CHSL / etc.)", emoji: "📋" },
+  { value: "Banking", label: "Banking (IBPS / SBI)", emoji: "🏦" },
+  { value: "Railway", label: "Railway (RRB)", emoji: "🚆" },
+  { value: "State PSC", label: "State PSC", emoji: "📍" },
+  { value: "Police", label: "Police / Defence", emoji: "🎖️" },
+  { value: "Teaching", label: "Teaching (CTET / TET)", emoji: "🍎" },
+];
+
+const GOVT_CATEGORY_OPTIONS = ["General", "OBC", "SC", "ST", "EWS"];
+
+const GOVT_QUALIFICATION_OPTIONS = ["12th Pass", "Graduation", "Post-Graduation", "Diploma", "Other"];
+
+// Matches governmentEligibilityEngine.js's UR/General-quota vs state-quota
+// matching — an aspirant's home state affects state-level exam eligibility.
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa",
+  "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala",
+  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland",
+  "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu & Kashmir",
+  "Ladakh", "Puducherry", "Chandigarh", "Other",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,6 +158,11 @@ function StepWho({
       id: "other",
       label: "Career Switcher",
       icon: <Compass className="w-4 h-4" />,
+    },
+    {
+      id: "govt_aspirant",
+      label: "Government Exam Aspirant",
+      icon: <Landmark className="w-4 h-4" />,
     },
   ];
 
@@ -409,6 +444,134 @@ function StepBoardAndExam({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STEP: GOVERNMENT EXAM DETAILS (govt aspirant path)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const selectClasses = "w-full px-3 py-2.5 text-sm rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-600 focus:outline-none transition-colors cursor-pointer";
+const textInputClasses = "w-full px-3 py-2.5 text-sm rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-600 focus:outline-none transition-colors";
+
+function StepGovtExam({
+  targetExams,
+  toggleExam,
+  category,
+  setCategory,
+  age,
+  setAge,
+  state,
+  setState,
+  qualification,
+  setQualification,
+  attemptYear,
+  setAttemptYear,
+}: {
+  targetExams: string[];
+  toggleExam: (v: string) => void;
+  category: string;
+  setCategory: (v: string) => void;
+  age: string;
+  setAge: (v: string) => void;
+  state: string;
+  setState: (v: string) => void;
+  qualification: string;
+  setQualification: (v: string) => void;
+  attemptYear: string;
+  setAttemptYear: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Which exam(s) are you preparing for?
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Select all that apply — helps us track the right deadlines and results for you.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          {GOVT_EXAM_OPTIONS.map((ex) => (
+            <OptionCard
+              key={ex.value}
+              selected={targetExams.includes(ex.value)}
+              onClick={() => toggleExam(ex.value)}
+            >
+              <span>{ex.emoji}</span>
+              {ex.label}
+            </OptionCard>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-slate-200 dark:border-slate-800 pt-4 space-y-3">
+        <div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            Your details
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Used for accurate eligibility checks — age limits and category relaxation vary by exam.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={16}
+            max={70}
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            placeholder="Age"
+            className={textInputClasses}
+          />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={selectClasses}
+          >
+            <option value="">Category</option>
+            {GOVT_CATEGORY_OPTIONS.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+
+        <select
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+          className={selectClasses}
+        >
+          <option value="">— Select your state —</option>
+          {INDIAN_STATES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+
+        <div className="grid grid-cols-2 gap-3">
+          <select
+            value={qualification}
+            onChange={(e) => setQualification(e.target.value)}
+            className={selectClasses}
+          >
+            <option value="">Qualification</option>
+            {GOVT_QUALIFICATION_OPTIONS.map((q) => (
+              <option key={q} value={q}>{q}</option>
+            ))}
+          </select>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={attemptYear}
+            onChange={(e) => setAttemptYear(e.target.value)}
+            placeholder="Target year"
+            className={textInputClasses}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // STEP: PRIMARY GOAL (non-school paths)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -534,10 +697,19 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     "Friendly & Casual (Hinglish)"
   );
 
+  // ── Step 2 (govt aspirant): exam + eligibility details ──
+  const [govtTargetExams, setGovtTargetExams] = useState<string[]>([]);
+  const [govtCategory, setGovtCategory] = useState("");
+  const [govtAge, setGovtAge] = useState("");
+  const [govtState, setGovtState] = useState("");
+  const [govtQualification, setGovtQualification] = useState("");
+  const [govtAttemptYear, setGovtAttemptYear] = useState("");
+
   // ── Derived path flags ──
   const isStudent = currentStatus === "student";
   const isSchoolPath = isStudent && educationLevel === "school";
   const isCollegeStudent = isStudent && educationLevel === "college";
+  const isGovtAspirant = currentStatus === "govt_aspirant";
 
   // Total steps: student paths = 4, others = 3
   const totalSteps = isStudent || currentStatus === "" ? 4 : 3;
@@ -551,12 +723,17 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     | "school_or_college"
     | "class"
     | "board_exam"
+    | "govt_details"
     | "goal"
     | "tone";
 
   const getStepKey = (): StepKey => {
     if (step === 1) return "who";
-    if (step === 2) return isStudent ? "school_or_college" : "goal";
+    if (step === 2) {
+      if (isStudent) return "school_or_college";
+      if (isGovtAspirant) return "govt_details";
+      return "goal";
+    }
     if (step === 3) {
       if (isSchoolPath) return "class";
       if (isCollegeStudent) return "goal";
@@ -575,7 +752,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   // ── Proceed guard ──
   const canProceed = (): boolean => {
     if (step === 1) return !!currentStatus;
-    if (step === 2) return isStudent ? !!educationLevel : !!primaryGoal;
+    if (step === 2) {
+      if (isStudent) return !!educationLevel;
+      if (isGovtAspirant) return govtTargetExams.length > 0 && !!govtAge && !!govtState;
+      return !!primaryGoal;
+    }
     if (step === 3) {
       if (isSchoolPath) {
         if (!schoolClass) return false;
@@ -615,6 +796,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setStateBoard("");
     setWantsExamPrep(false);
     setTargetExams([]);
+    setGovtTargetExams([]);
+    setGovtCategory("");
+    setGovtAge("");
+    setGovtState("");
+    setGovtQualification("");
+    setGovtAttemptYear("");
   };
 
   const handleEducationLevelChange = (v: string) => {
@@ -638,6 +825,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     );
   };
 
+  const toggleGovtExam = (value: string) => {
+    setGovtTargetExams((prev) =>
+      prev.includes(value) ? prev.filter((e) => e !== value) : [...prev, value]
+    );
+  };
+
   // ── Submit to backend ──
   const handleFinish = async () => {
     setLoading(true);
@@ -653,7 +846,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           ? wantsExamPrep
             ? "exam_prep"
             : "explore"
-          : primaryGoal,
+          : isGovtAspirant
+            ? "exam_prep"
+            : primaryGoal,
         ...(educationLevel && { educationLevel }),
         ...(isSchoolPath && {
           schoolClass,
@@ -661,6 +856,14 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           wantsExamPrep,
           targetExams: wantsExamPrep ? targetExams : [],
           ...((schoolClass === "11" || schoolClass === "12") && { stream }),
+        }),
+        ...(isGovtAspirant && {
+          govtTargetExams,
+          govtCategory,
+          govtAge,
+          govtState,
+          govtQualification,
+          govtAttemptYear,
         }),
       };
 
@@ -690,6 +893,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     school_or_college: "Tell us more about yourself",
     class: "Tell us about your class",
     board_exam: "Almost done!",
+    govt_details: "Tell us more about yourself",
     goal: "What's your goal?",
     tone: "One last thing",
   };
@@ -753,6 +957,22 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               setWantsExamPrep={setWantsExamPrep}
               targetExams={targetExams}
               toggleExam={toggleExam}
+            />
+          )}
+          {stepKey === "govt_details" && (
+            <StepGovtExam
+              targetExams={govtTargetExams}
+              toggleExam={toggleGovtExam}
+              category={govtCategory}
+              setCategory={setGovtCategory}
+              age={govtAge}
+              setAge={setGovtAge}
+              state={govtState}
+              setState={setGovtState}
+              qualification={govtQualification}
+              setQualification={setGovtQualification}
+              attemptYear={govtAttemptYear}
+              setAttemptYear={setGovtAttemptYear}
             />
           )}
           {stepKey === "goal" && (

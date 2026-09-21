@@ -4,7 +4,7 @@
 // onboarded before that field existed have it as null, so fall back to
 // re-deriving it from personaType + studentDetails.educationLevel the same
 // way the backend does.
-export type ProfileFieldSet = "school" | "college" | "professional" | "job_seeker" | "career_switcher";
+export type ProfileFieldSet = "school" | "college" | "professional" | "job_seeker" | "career_switcher" | "govt_aspirant";
 
 export function getProfileFieldSet(user: any): ProfileFieldSet {
   const profile = user?.UserProfile;
@@ -16,5 +16,6 @@ export function getProfileFieldSet(user: any): ProfileFieldSet {
   }
   if (profile.personaType === "JOB_SEEKER") return "job_seeker";
   if (profile.personaType === "CAREER_SWITCHER") return "career_switcher";
+  if (profile.personaType === "GOVT_ASPIRANT") return "govt_aspirant";
   return "professional";
 }

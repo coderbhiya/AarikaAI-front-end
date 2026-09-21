@@ -12,7 +12,7 @@ import { getProfileFieldSet, ProfileFieldSet } from "@/lib/profileFieldSet";
 // "current role" data. What differs per persona is what to call these fields
 // and what to hint in the placeholder, so each persona sees copy that
 // actually matches their situation instead of generic "professional" wording.
-const FIELD_SET_COPY: Record<Exclude<ProfileFieldSet, "school">, {
+const FIELD_SET_COPY: Record<Exclude<ProfileFieldSet, "school" | "govt_aspirant">, {
   sectionTitle: string;
   headlinePlaceholder: string;
   bioPlaceholder: string;
@@ -102,6 +102,27 @@ const EXAM_OPTIONS = [
   { value: "OLYMPIAD", label: "Olympiads" },
 ];
 
+// Same value sets as onboarding's govt-aspirant step (OnboardingFlow.tsx).
+const GOVT_EXAM_OPTIONS = [
+  { value: "UPSC", label: "UPSC (Civil Services)" },
+  { value: "SSC", label: "SSC (CGL / CHSL / etc.)" },
+  { value: "Banking", label: "Banking (IBPS / SBI)" },
+  { value: "Railway", label: "Railway (RRB)" },
+  { value: "State PSC", label: "State PSC" },
+  { value: "Police", label: "Police / Defence" },
+  { value: "Teaching", label: "Teaching (CTET / TET)" },
+];
+const GOVT_CATEGORY_OPTIONS = ["General", "OBC", "SC", "ST", "EWS"];
+const GOVT_QUALIFICATION_OPTIONS = ["12th Pass", "Graduation", "Post-Graduation", "Diploma", "Other"];
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa",
+  "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala",
+  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland",
+  "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu & Kashmir",
+  "Ladakh", "Puducherry", "Chandigarh", "Other",
+];
+
 const PersonalInfo = () => {
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -126,10 +147,19 @@ const PersonalInfo = () => {
     wantsExamPrep: false,
     targetExams: [] as string[],
   });
+  const [govtData, setGovtData] = useState({
+    targetExams: [] as string[],
+    category: '',
+    age: '',
+    state: '',
+    qualification: '',
+    attemptYear: '',
+  });
 
   const fieldSet = getProfileFieldSet(user);
   const isSchoolStudent = fieldSet === "school";
-  const copy = FIELD_SET_COPY[isSchoolStudent ? "professional" : fieldSet];
+  const isGovtAspirant = fieldSet === "govt_aspirant";
+  const copy = FIELD_SET_COPY[isSchoolStudent || isGovtAspirant ? "professional" : fieldSet];
 
   const mapExperienceToOption = (val) => {
     if (val === null || val === undefined || val === '') return '';
@@ -167,6 +197,15 @@ const PersonalInfo = () => {
         wantsExamPrep: !!sd.wantsExamPrep,
         targetExams: Array.isArray(sd.targetExams) ? sd.targetExams : [],
       });
+      const ged = profile.govtExamDetails || {};
+      setGovtData({
+        targetExams: Array.isArray(ged.targetExams) ? ged.targetExams : [],
+        category: profile.category || '',
+        age: profile.age != null ? String(profile.age) : '',
+        state: profile.state || ged.targetState || '',
+        qualification: profile.qualification || '',
+        attemptYear: ged.attemptYear != null ? String(ged.attemptYear) : '',
+      });
     }
   }, [user, isEditing]);
 
@@ -191,6 +230,20 @@ const PersonalInfo = () => {
 
   const toggleTargetExam = (value: string) => {
     setAcademicData(prev => ({
+      ...prev,
+      targetExams: prev.targetExams.includes(value)
+        ? prev.targetExams.filter(e => e !== value)
+        : [...prev.targetExams, value],
+    }));
+  };
+
+  const handleGovtChange = (e) => {
+    const { name, value } = e.target;
+    setGovtData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const toggleGovtTargetExam = (value: string) => {
+    setGovtData(prev => ({
       ...prev,
       targetExams: prev.targetExams.includes(value)
         ? prev.targetExams.filter(e => e !== value)
@@ -227,6 +280,15 @@ const PersonalInfo = () => {
             wantsExamPrep: !!sd.wantsExamPrep,
             targetExams: Array.isArray(sd.targetExams) ? sd.targetExams : [],
           });
+          const ged = profileData.govtExamDetails || {};
+          setGovtData({
+            targetExams: Array.isArray(ged.targetExams) ? ged.targetExams : [],
+            category: profileData.category || '',
+            age: profileData.age != null ? String(profileData.age) : '',
+            state: profileData.state || ged.targetState || '',
+            qualification: profileData.qualification || '',
+            attemptYear: ged.attemptYear != null ? String(ged.attemptYear) : '',
+          });
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -241,7 +303,9 @@ const PersonalInfo = () => {
     try {
       const payload = isSchoolStudent
         ? { ...formData, studentDetails: academicData }
-        : formData;
+        : isGovtAspirant
+          ? { ...formData, govtDetails: govtData }
+          : formData;
       const response = await updateProfile(payload);
       if (response.success) {
         // Refetch profile to sync context and prevent old data from reverting the UI
@@ -371,12 +435,12 @@ const PersonalInfo = () => {
             class/board/stream/exam-prep fields instead. */}
         <div>
           <h3 className="text-[15px] font-semibold text-gray-900 mb-4 px-1">
-            {isSchoolStudent ? "Academic Details" : copy.sectionTitle}
+            {isSchoolStudent ? "Academic Details" : isGovtAspirant ? "Exam Preparation Details" : copy.sectionTitle}
           </h3>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[12px] font-bold text-gray-700 ml-1">
-                {isSchoolStudent ? "Headline" : "Professional Headline"}
+                {isSchoolStudent || isGovtAspirant ? "Headline" : "Professional Headline"}
               </label>
               <input
                 type="text"
@@ -385,7 +449,7 @@ const PersonalInfo = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={inputClasses}
-                placeholder={isSchoolStudent ? "Preparing for Class 10 Boards" : copy.headlinePlaceholder}
+                placeholder={isSchoolStudent ? "Preparing for Class 10 Boards" : isGovtAspirant ? "Preparing for UPSC Civil Services" : copy.headlinePlaceholder}
               />
             </div>
             <div className="space-y-1.5">
@@ -397,7 +461,7 @@ const PersonalInfo = () => {
                 disabled={!isEditing}
                 rows={4}
                 className={`${inputClasses} resize-none h-28 pt-3`}
-                placeholder={isSchoolStudent ? "Briefly describe your interests and academic goals..." : copy.bioPlaceholder}
+                placeholder={isSchoolStudent ? "Briefly describe your interests and academic goals..." : isGovtAspirant ? "Briefly describe your exam prep journey and goals..." : copy.bioPlaceholder}
               />
             </div>
 
@@ -498,6 +562,105 @@ const PersonalInfo = () => {
                       })}
                     </div>
                   )}
+                </div>
+              </>
+            ) : isGovtAspirant ? (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {GOVT_EXAM_OPTIONS.map(ex => {
+                    const isSelected = govtData.targetExams.includes(ex.value);
+                    return (
+                      <button
+                        key={ex.value}
+                        type="button"
+                        disabled={!isEditing}
+                        onClick={() => toggleGovtTargetExam(ex.value)}
+                        className={`px-3 h-8 rounded-full border text-[12px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                          isSelected
+                            ? "border-primary/40 bg-primary/5 text-primary"
+                            : "border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300"
+                        }`}
+                      >
+                        {ex.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[12px] font-bold text-gray-700 ml-1">Age</label>
+                    <input
+                      type="number"
+                      name="age"
+                      value={govtData.age}
+                      onChange={handleGovtChange}
+                      disabled={!isEditing}
+                      className={inputClasses}
+                      placeholder="25"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[12px] font-bold text-gray-700 ml-1">Category</label>
+                    <select
+                      name="category"
+                      value={govtData.category}
+                      onChange={handleGovtChange}
+                      disabled={!isEditing}
+                      className={`${inputClasses} appearance-none cursor-pointer`}
+                    >
+                      <option value="">Select Category</option>
+                      {GOVT_CATEGORY_OPTIONS.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[12px] font-bold text-gray-700 ml-1">State</label>
+                    <select
+                      name="state"
+                      value={govtData.state}
+                      onChange={handleGovtChange}
+                      disabled={!isEditing}
+                      className={`${inputClasses} appearance-none cursor-pointer`}
+                    >
+                      <option value="">Select State</option>
+                      {INDIAN_STATES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[12px] font-bold text-gray-700 ml-1">Qualification</label>
+                    <select
+                      name="qualification"
+                      value={govtData.qualification}
+                      onChange={handleGovtChange}
+                      disabled={!isEditing}
+                      className={`${inputClasses} appearance-none cursor-pointer`}
+                    >
+                      <option value="">Select Qualification</option>
+                      {GOVT_QUALIFICATION_OPTIONS.map(q => (
+                        <option key={q} value={q}>{q}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-bold text-gray-700 ml-1">Target Attempt Year</label>
+                  <input
+                    type="number"
+                    name="attemptYear"
+                    value={govtData.attemptYear}
+                    onChange={handleGovtChange}
+                    disabled={!isEditing}
+                    className={inputClasses}
+                    placeholder="2027"
+                  />
                 </div>
               </>
             ) : (
