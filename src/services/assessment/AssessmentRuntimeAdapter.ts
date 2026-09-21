@@ -14,17 +14,25 @@ export class AssessmentRuntimeAdapter {
   private queue: AssessmentGenerationQueue;
   public sessionId: string;
   private state: AssessmentState;
+  // True when the constructor found and loaded a prior in-progress attempt
+  // for this exact sessionId — lets the caller (FullExamSimulator) know it
+  // should seed its own React state (answers/statuses/timer) from this
+  // adapter instead of starting blank, so a refresh/crash mid-exam actually
+  // resumes instead of silently discarding everything.
+  public resumed: boolean;
 
   constructor(
-    blueprint: AssessmentBlueprint, 
+    blueprint: AssessmentBlueprint,
     sessionId: string,
     private onStatusUpdate?: (index: number, status: QuestionStatus) => void
   ) {
     this.sessionId = sessionId;
     this.repository = new AssessmentQuestionRepository(sessionId);
-    
+
     // Resume state if exists, else create new
-    this.state = this.loadState() || {
+    const loaded = this.loadState();
+    this.resumed = !!loaded;
+    this.state = loaded || {
       blueprint,
       currentIndex: 0,
       answers: new Map(),
@@ -84,6 +92,19 @@ export class AssessmentRuntimeAdapter {
   public submitAnswer(index: number, answer: string) {
     this.state.answers.set(index, answer);
     this.persistState();
+  }
+
+  public clearAnswer(index: number) {
+    this.state.answers.delete(index);
+    this.persistState();
+  }
+
+  public getAllAnswers(): Map<number, string> {
+    return this.state.answers;
+  }
+
+  public getReviewIndices(): number[] {
+    return Array.from(this.state.markedReview);
   }
 
   public toggleReview(index: number) {

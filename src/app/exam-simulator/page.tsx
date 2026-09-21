@@ -3,23 +3,40 @@
 import React, { useState, Suspense } from "react";
 import { createPortal } from "react-dom";
 import Sidebar from "@/components/Sidebar";
-import { 
-  GraduationCap, 
-  Sparkles, 
-  ArrowRight, 
-  Check, 
-  FileText, 
-  Zap, 
-  Layers
+import {
+  GraduationCap,
+  Sparkles,
+  ArrowRight,
+  Check,
+  FileText,
+  Zap,
+  Layers,
+  Loader2,
 } from "lucide-react";
 import FullExamSimulator from "@/components/chat/cards/FullExamSimulator";
+import axiosInstance from "@/lib/axios";
 
+// Exam names here just need to reach the backend's blueprint resolver
+// (examBlueprintService.js) with a recognizable name — "IIT JEE"/"NEET"/
+// "UPSC"/"UPSC CSAT"/"SSC CGL"/"IBPS PO"/"CAT"/"CA Foundation" hit its
+// hardcoded fast-path table; everything else (any board/class/subject,
+// GATE, Railway, State PSC, ...) falls through to its LLM-based generator,
+// which is why "Other Exam" below accepts free text instead of needing a
+// hardcoded entry per exam. `subjects` is just this page's convenience
+// preset list — the real section names come back from the resolved
+// blueprint once "Generate & Start Exam" is clicked.
 const EXAMS = [
   { id: "IIT JEE", name: "IIT JEE", description: "Joint Entrance Examination for Engineering", subjects: ["Full Exam", "Physics", "Chemistry", "Mathematics"] },
   { id: "NEET", name: "NEET", description: "National Eligibility cum Entrance Test for Medical", subjects: ["Full Exam", "Physics", "Chemistry", "Biology"] },
-  { id: "UPSC", name: "UPSC Civil Services", description: "Union Public Service Commission Exams", subjects: ["Full Exam", "General Studies", "History", "Polity", "Geography"] },
-  { id: "CBSE 12", name: "CBSE Class 12", description: "Board Examination Sample Papers", subjects: ["Full Exam", "Physics", "Chemistry", "Mathematics", "Biology"] },
-  { id: "SSC CGL", name: "SSC CGL", description: "Staff Selection Commission exams", subjects: ["Full Exam", "Quantitative Aptitude", "General Intelligence", "English"] }
+  { id: "UPSC", name: "UPSC Civil Services (Prelims GS)", description: "General Studies Paper 1", subjects: ["Full Exam", "General Studies"] },
+  { id: "UPSC CSAT", name: "UPSC CSAT (Prelims Paper 2)", description: "Qualifying aptitude paper", subjects: ["Full Exam", "CSAT (Aptitude & Comprehension)"] },
+  { id: "SSC CGL", name: "SSC CGL", description: "Staff Selection Commission exams", subjects: ["Full Exam", "Quantitative Aptitude", "General Intelligence", "English", "General Awareness"] },
+  { id: "IBPS PO", name: "Banking (IBPS/SBI PO Prelims)", description: "Bank PO/Clerk prelims pattern", subjects: ["Full Exam", "English Language", "Quantitative Aptitude", "Reasoning Ability"] },
+  { id: "CAT", name: "CAT", description: "Common Admission Test for MBA", subjects: ["Full Exam", "Verbal Ability & Reading Comprehension", "Data Interpretation & Logical Reasoning", "Quantitative Aptitude"] },
+  { id: "CA Foundation", name: "CA Foundation (MCQ Papers)", description: "Business Economics & Quantitative Aptitude", subjects: ["Full Exam", "Business Economics", "Quantitative Aptitude"] },
+  { id: "CBSE Class 12", name: "CBSE Class 12", description: "Board exam pattern (pick a subject below)", subjects: ["Physics", "Chemistry", "Mathematics", "Biology", "English"] },
+  { id: "CBSE Class 10", name: "CBSE Class 10", description: "Board exam pattern (pick a subject below)", subjects: ["Science", "Mathematics", "Social Science", "English"] },
+  { id: "__custom__", name: "Other Exam (type below)", description: "Any exam — GATE, Railway RRB, State PSC, Police, Teaching (CTET/TET), a specific ICSE/state-board subject, etc.", subjects: ["Full Exam"] },
 ];
 
 const LANGUAGES = [
@@ -34,6 +51,7 @@ const YEARS = [2020, 2021, 2022, 2023, 2024, 2025];
 export default function ExamSimulatorPage() {
   // Configuration State
   const [selectedExam, setSelectedExam] = useState("IIT JEE");
+  const [customExamName, setCustomExamName] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("Full Exam");
   const [selectedDifficulty, setSelectedDifficulty] = useState("Medium");
   const [selectedLanguage, setSelectedLanguage] = useState("english");
@@ -44,51 +62,77 @@ export default function ExamSimulatorPage() {
   // Full Exam Simulator Modal State
   const [isOpen, setIsOpen] = useState(false);
   const [blueprint, setBlueprint] = useState<any>(null);
+  const [isResolvingBlueprint, setIsResolvingBlueprint] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
 
-  const handleStartExam = () => {
-    const totalQuestions = examMode === "official"
-      ? (selectedExam === "IIT JEE" ? 90 : selectedExam === "NEET" ? 200 : selectedExam === "UPSC" ? 100 : selectedExam === "SSC CGL" ? 100 : 30)
-      : (selectedSubject === "Full Exam" ? (selectedExam === "IIT JEE" ? 15 : selectedExam === "NEET" ? 15 : selectedExam === "SSC CGL" ? 20 : 15) : 10);
-
-    const duration = examMode === "official"
-      ? (selectedExam === "IIT JEE" ? 180 : selectedExam === "NEET" ? 200 : selectedExam === "UPSC" ? 120 : selectedExam === "SSC CGL" ? 60 : 180)
-      : 10;
-
-    // Distribution map based on subjects selected
-    let distribution: Record<string, number> = {};
-    if (selectedSubject === "Full Exam") {
-      if (selectedExam === "IIT JEE") {
-        const qPerSub = examMode === "official" ? 30 : 5;
-        distribution = { Physics: qPerSub, Chemistry: qPerSub, Mathematics: qPerSub };
-      } else if (selectedExam === "NEET") {
-        const qPerSub = examMode === "official" ? 50 : 5;
-        distribution = { Physics: qPerSub, Chemistry: qPerSub, Biology: examMode === "official" ? 100 : 5 };
-      } else if (selectedExam === "SSC CGL") {
-        const qPerSub = examMode === "official" ? 25 : 5;
-        distribution = { "Quantitative Aptitude": qPerSub, "General Intelligence": qPerSub, English: qPerSub, "General Awareness": qPerSub };
-      } else {
-        distribution = { "General Studies": examMode === "official" ? 40 : 5, History: examMode === "official" ? 30 : 5, Polity: examMode === "official" ? 30 : 5 };
-      }
-    } else {
-      distribution = { [selectedSubject]: totalQuestions };
+  const handleStartExam = async () => {
+    const effectiveExamName = selectedExam === "__custom__" ? customExamName.trim() : selectedExam;
+    if (!effectiveExamName) {
+      setResolveError("Enter an exam name first.");
+      return;
     }
 
-    const blueprintObj = {
-      exam: selectedExam,
-      questions: totalQuestions,
-      durationMinutes: duration,
-      difficulty: { easy: 0, medium: totalQuestions, hard: 0 },
-      distribution,
-      // Custom attributes read by interceptor
-      year: selectedYear,
-      language: selectedLanguage,
-      sourceType: sourceType,
-      mode: examMode,
-      targetTopic: selectedSubject
-    };
+    setResolveError(null);
+    setIsResolvingBlueprint(true);
+    try {
+      // Real blueprint (duration/marking/sections) resolved server-side —
+      // examBlueprintService.js's hardcoded fast-path for well-known exams,
+      // or an LLM-generated realistic pattern for anything else (any board/
+      // class/subject, GATE, Railway, a state PSC, ...). This replaces the
+      // old client-hardcoded nested-ternary guesses that only recognized 5
+      // exam names and silently gave every other exam an arbitrary, likely
+      // wrong duration/section/marking scheme.
+      const res = await axiosInstance.get("/assessment/blueprint", { params: { examName: effectiveExamName } });
+      const resolvedBlueprint = res.data?.blueprint;
+      if (!resolvedBlueprint || !Array.isArray(resolvedBlueprint.sections) || resolvedBlueprint.sections.length === 0) {
+        throw new Error("Blueprint resolver returned no sections");
+      }
 
-    setBlueprint(blueprintObj);
-    setIsOpen(true);
+      const quickQuestionsPerSection = 5;
+
+      let distribution: Record<string, number> = {};
+      if (selectedSubject === "Full Exam") {
+        for (const sec of resolvedBlueprint.sections) {
+          distribution[sec.name] = examMode === "official" ? sec.questionCount : Math.min(quickQuestionsPerSection, sec.questionCount);
+        }
+      } else {
+        // A specific subject was picked — use just that section's real
+        // question count if the resolved blueprint has a matching section
+        // name, else fall back to a flat 10/30 (e.g. this page's preset
+        // subject list didn't exactly match the resolver's section naming).
+        const matchedSection = resolvedBlueprint.sections.find(
+          (s: { name: string; questionCount: number }) => s.name.toLowerCase() === selectedSubject.toLowerCase()
+        );
+        const fallbackCount = examMode === "official" ? 30 : 10;
+        distribution = { [selectedSubject]: matchedSection ? (examMode === "official" ? matchedSection.questionCount : Math.min(quickQuestionsPerSection, matchedSection.questionCount)) : fallbackCount };
+      }
+
+      const totalQuestions = Object.values(distribution).reduce((sum, n) => sum + n, 0);
+      const duration = examMode === "official" ? resolvedBlueprint.durationMinutes : 10;
+
+      const blueprintObj = {
+        exam: effectiveExamName,
+        questions: totalQuestions,
+        durationMinutes: duration,
+        difficulty: { easy: 0, medium: totalQuestions, hard: 0 },
+        distribution,
+        markingScheme: resolvedBlueprint.markingScheme,
+        // Custom attributes read by interceptor
+        year: selectedYear,
+        language: selectedLanguage,
+        sourceType: sourceType,
+        mode: examMode,
+        targetTopic: selectedSubject
+      };
+
+      setBlueprint(blueprintObj);
+      setIsOpen(true);
+    } catch (err) {
+      console.error("[ExamSimulatorPage] Failed to resolve exam blueprint:", err);
+      setResolveError("Couldn't resolve this exam's pattern right now. Please try again.");
+    } finally {
+      setIsResolvingBlueprint(false);
+    }
   };
 
   return (
@@ -160,6 +204,19 @@ export default function ExamSimulatorPage() {
                     ))}
                   </select>
                 </div>
+
+                {selectedExam === "__custom__" && (
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Exam Name</label>
+                    <input
+                      type="text"
+                      value={customExamName}
+                      onChange={(e) => setCustomExamName(e.target.value)}
+                      placeholder="e.g. GATE Computer Science, Railway RRB NTPC, ICSE Class 9 Physics"
+                      className="w-full bg-background border border-border rounded-lg p-2.5 outline-none text-[13px] text-foreground focus:border-primary"
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Subject / Topic</label>
@@ -259,13 +316,26 @@ export default function ExamSimulatorPage() {
             </div>
 
             {/* Start CTA */}
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end gap-2">
+              {resolveError && (
+                <p className="text-[12px] font-semibold text-red-600">{resolveError}</p>
+              )}
               <button
                 onClick={handleStartExam}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                disabled={isResolvingBlueprint}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <span>Generate & Start Exam</span>
-                <ArrowRight className="w-4 h-4" />
+                {isResolvingBlueprint ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Resolving exam pattern...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Generate & Start Exam</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           </div>

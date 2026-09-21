@@ -19,6 +19,13 @@ export interface AssessmentBlueprint {
   // Board exams (CBSE/ICSE/State Board) mix mcq/short_answer/long_answer
   // sections instead of being pure MCQ; a missing entry defaults to 'mcq'.
   sectionTypes?: Record<string, 'mcq' | 'short_answer' | 'long_answer'>;
+  // The real, backend-resolved marking scheme (examBlueprintService.js —
+  // hardcoded for well-known exams, LLM-generated with real-pattern
+  // grounding for anything else). When present, FullExamSimulator uses this
+  // instead of guessing from the exam name string, which only recognized a
+  // handful of hardcoded name substrings and silently defaulted everything
+  // else (any board exam, Banking, CA, ...) to a fixed +2/-0.
+  markingScheme?: { correct: number; incorrect: number };
 }
 
 export class AssessmentQuestionRepository {

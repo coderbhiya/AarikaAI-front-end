@@ -104,12 +104,36 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
   useEffect(() => {
     if (!adapterRef.current) {
+      // Stable per-exam-config draft key (no Date.now()) so a refresh/crash
+      // mid-exam can actually find and resume this session — the previous
+      // timestamp-based id changed every mount, so the adapter's resume path
+      // could never find a match and the "autosaved every 10 seconds" footer
+      // claim below was false; nothing was ever actually recoverable.
       const cleanExamSlug = (blueprint.exam || 'practice_exam').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-      const sessionId = `exam_${cleanExamSlug}_${Date.now()}_${blueprint.questions}`;
-      adapterRef.current = new AssessmentRuntimeAdapter(blueprint, sessionId, (idx, status) => {
+      const sessionId = `exam_draft_${cleanExamSlug}_${blueprint.questions}`;
+      const newAdapter = new AssessmentRuntimeAdapter(blueprint, sessionId, (idx, status) => {
         // When status updates, re-render if it's the current question
         forceRender(prev => prev + 1);
       });
+      adapterRef.current = newAdapter;
+
+      if (newAdapter.resumed) {
+        const resumedAnswers: Record<number, string> = {};
+        newAdapter.getAllAnswers().forEach((val, key) => { resumedAnswers[key] = val; });
+        const reviewSet = new Set(newAdapter.getReviewIndices());
+        const resumedStatuses: Record<number, QuestionStatus> = {};
+        const resumedIndex = newAdapter.getCurrentIndex();
+        for (let i = 0; i < blueprint.questions; i++) {
+          if (reviewSet.has(i)) resumedStatuses[i] = 'review';
+          else if (resumedAnswers[i]) resumedStatuses[i] = 'answered';
+          else if (i <= resumedIndex) resumedStatuses[i] = 'not_attempted';
+          else resumedStatuses[i] = 'not_visited';
+        }
+        setAnswers(resumedAnswers);
+        setStatuses(resumedStatuses);
+        setActiveQuestionIdx(resumedIndex);
+        setTimeLeft(Math.max(0, (blueprint.durationMinutes || 120) * 60 - newAdapter.getElapsedSeconds()));
+      }
     }
   }, [blueprint]);
 
@@ -160,6 +184,19 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   }, [answers, statuses]);
 
   const markingScheme = useMemo(() => {
+    // Prefer the real, backend-resolved scheme (examBlueprintService.js)
+    // whenever the blueprint carries one — it's accurate for the 5
+    // hardcoded exams and realistically LLM-generated for everything else
+    // (any board exam, Banking, CA, CAT, GATE, ...), unlike the name-guess
+    // heuristic below which only recognizes a few hardcoded substrings.
+    // Backend convention stores `incorrect` as <= 0 (a penalty); the rest of
+    // this component subtracts it as a positive magnitude.
+    if (blueprint.markingScheme) {
+      return {
+        correct: blueprint.markingScheme.correct,
+        incorrect: Math.abs(blueprint.markingScheme.incorrect),
+      };
+    }
     const examLower = (blueprint.exam || "").toLowerCase();
     if (examLower.includes("jee") || examLower.includes("neet")) {
       return { correct: 4.0, incorrect: 1.0 };
@@ -171,7 +208,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       return { correct: 2.0, incorrect: 0.5 };
     }
     return { correct: 2.0, incorrect: 0.0 };
-  }, [blueprint.exam]);
+  }, [blueprint.exam, blueprint.markingScheme]);
 
   const [timeLeft, setTimeLeft] = useState((blueprint.durationMinutes || 120) * 60);
   const [isPaused, setIsPaused] = useState(false);
@@ -260,9 +297,29 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
   useEffect(() => {
     if (isPaused || isSubmitted || timeLeft <= 0) return;
-    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    const timer = setInterval(() => {
+      setTimeLeft(t => {
+        const next = t - 1;
+        // Persists elapsed time into the adapter's autosaved draft (throttled
+        // to every 10s internally) so a resumed session restores roughly the
+        // right time remaining instead of always resetting to the full
+        // duration.
+        adapter?.updateTimer((blueprint.durationMinutes || 120) * 60 - next);
+        return next;
+      });
+    }, 1000);
     return () => clearInterval(timer);
-  }, [isPaused, isSubmitted, timeLeft]);
+  }, [isPaused, isSubmitted, timeLeft, adapter, blueprint.durationMinutes]);
+
+  // The countdown effect above just stops ticking once timeLeft hits 0 — it
+  // never actually ended the exam, so a user could keep answering
+  // indefinitely past the time limit with the clock frozen at 00:00:00. This
+  // is what makes it an actually-timed exam.
+  useEffect(() => {
+    if (timeLeft <= 0 && !isSubmitted && !isInitialLoading) {
+      handleSubmitExam();
+    }
+  }, [timeLeft, isSubmitted, isInitialLoading]);
 
   // Derived stats
   const stats = useMemo(() => {
@@ -309,6 +366,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const handleOptionSelect = (opt: string) => {
     if (isSubmitted || !currentQuestion) return;
     setAnswers(prev => ({ ...prev, [activeQuestionIdx]: opt }));
+    adapter?.submitAnswer(activeQuestionIdx, opt);
   };
 
   const handleSaveAndNext = () => {
@@ -326,6 +384,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const handleMarkForReview = () => {
     if (!currentQuestion) return;
     setStatuses(prev => ({ ...prev, [activeQuestionIdx]: 'review' }));
+    adapter?.toggleReview(activeQuestionIdx);
     goToNextQuestion();
   };
 
@@ -337,6 +396,50 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       return next;
     });
     setStatuses(prev => ({ ...prev, [activeQuestionIdx]: 'not_attempted' }));
+    adapter?.clearAnswer(activeQuestionIdx);
+  };
+
+  // Extracted so it can fire from every place an exam can end — reaching the
+  // last question, the timer running out, or Exit Exam — instead of only
+  // the "natural" last-question path (the timer-expiry case in particular
+  // used to just freeze the clock with no submission at all).
+  const handleSubmitExam = () => {
+    setIsSubmitted(true);
+    // Fire-and-forget: submit analytics to backend
+    if (adapter) {
+      const allQuestions = adapter.getAllLoadedQuestions?.() ?? [];
+      const currentAnswers = answersRef.current;
+      const currentStatuses = statusesRef.current;
+      const getSectionSubject = (index: number) => {
+        let acc = 0;
+        for (const [subj, count] of Object.entries(blueprint.distribution || {})) {
+          acc += count;
+          if (index < acc) return subj;
+        }
+        const keys = Object.keys(blueprint.distribution || {});
+        return keys[keys.length - 1] || 'General';
+      };
+
+      const answersPayload = allQuestions.map((q: Question, idx: number) => ({
+        questionId: q._id ?? null,
+        subject: getSectionSubject(idx),
+        selectedAnswer: currentAnswers[idx] ?? null,
+        correctAnswer: q.correctAnswer,
+        isCorrect: checkIfAnswerIsCorrect(currentAnswers[idx], q),
+        skipped: !currentAnswers[idx],
+        timeTaken: null,
+        markedForReview: currentStatuses[idx] === 'review',
+      }));
+      const score = allQuestions.filter((q: Question, idx: number) => checkIfAnswerIsCorrect(currentAnswers[idx], q)).length;
+      axiosInstance.post('/assessment/submit-exam', {
+          examName: blueprint.exam,
+          sessionId: adapterRef.current?.sessionId,
+          answers: answersPayload,
+          score,
+          totalQuestions: blueprint.questions,
+          timeTaken: (blueprint.durationMinutes * 60 - timeLeft) * 1000,
+        }).catch((err: unknown) => console.error('[FullExamSimulator] submit-exam analytics failed:', err));
+    }
   };
 
   const goToNextQuestion = () => {
@@ -348,42 +451,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
         [nextIdx]: prev[nextIdx] === 'not_visited' ? 'not_attempted' : prev[nextIdx]
       }));
     } else {
-      setIsSubmitted(true);
-      // Fire-and-forget: submit analytics to backend
-      if (adapter) {
-        const allQuestions = adapter.getAllLoadedQuestions?.() ?? [];
-        const currentAnswers = answersRef.current;
-        const currentStatuses = statusesRef.current;
-        const getSectionSubject = (index: number) => {
-          let acc = 0;
-          for (const [subj, count] of Object.entries(blueprint.distribution || {})) {
-            acc += count;
-            if (index < acc) return subj;
-          }
-          const keys = Object.keys(blueprint.distribution || {});
-          return keys[keys.length - 1] || 'General';
-        };
-
-        const answersPayload = allQuestions.map((q: Question, idx: number) => ({
-          questionId: q._id ?? null,
-          subject: getSectionSubject(idx),
-          selectedAnswer: currentAnswers[idx] ?? null,
-          correctAnswer: q.correctAnswer,
-          isCorrect: checkIfAnswerIsCorrect(currentAnswers[idx], q),
-          skipped: !currentAnswers[idx],
-          timeTaken: null,
-          markedForReview: currentStatuses[idx] === 'review',
-        }));
-        const score = allQuestions.filter((q: Question, idx: number) => checkIfAnswerIsCorrect(currentAnswers[idx], q)).length;
-        axiosInstance.post('/assessment/submit-exam', {
-          examName: blueprint.exam,
-          sessionId: adapterRef.current?.sessionId,
-          answers: answersPayload,
-          score,
-          totalQuestions: blueprint.questions,
-          timeTaken: (blueprint.durationMinutes * 60 - timeLeft) * 1000,
-        }).catch((err: unknown) => console.error('[FullExamSimulator] submit-exam analytics failed:', err));
-      }
+      handleSubmitExam();
     }
   };
 
@@ -495,6 +563,11 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
         timeSpentSeconds: (blueprint.durationMinutes * 60) - timeLeft,
         answers: answerBreakdown
       }).catch(err => console.warn("[FullExamSimulator] Auto-save attempt warning:", err));
+
+      // The attempt is now recorded server-side — clear the local autosaved
+      // draft so reopening this exam later starts a fresh attempt instead of
+      // resuming a completed one.
+      adapter.clearSession();
     }
   }, [isSubmitted, hasSavedAttempt, adapter, answers, blueprint, timeLeft, sections]);
 
@@ -886,11 +959,11 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                         )
                       ) : item.isCorrect ? (
                         <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold text-[10px]">
-                          CORRECT (+2.0)
+                          CORRECT (+{markingScheme.correct.toFixed(1)})
                         </span>
                       ) : item.isAnswered ? (
                         <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold text-[10px]">
-                          INCORRECT (-0.66)
+                          INCORRECT (-{markingScheme.incorrect.toFixed(2)})
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded bg-gray-200 text-gray-700 font-bold text-[10px]">
@@ -1096,7 +1169,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             <AlertCircle className="w-3.5 h-3.5" /> Report an Issue
           </button>
           <button
-            onClick={() => setIsSubmitted(true)}
+            onClick={handleSubmitExam}
             className="px-4 py-1.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-[12px] font-bold transition-all"
           >
             Exit Exam
@@ -1106,7 +1179,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
 
       {/* MOBILE HEADER */}
       <div className="flex md:hidden sticky top-0 bg-white h-14 items-center justify-between px-4 shrink-0 shadow-sm z-50 border-b border-gray-200">
-        <button onClick={() => setIsSubmitted(true)} className="flex items-center text-primary text-sm font-semibold">
+        <button onClick={handleSubmitExam} className="flex items-center text-primary text-sm font-semibold">
           <ChevronLeft className="w-5 h-5" /> Exit Exam
         </button>
         <div className="flex flex-col items-center">
@@ -1144,11 +1217,11 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                 </div>
                 <div className="flex flex-col items-center border-l border-gray-100 pl-2">
                   <span className="text-[10px] text-gray-500 font-medium">Marks</span>
-                  <span className="font-bold text-gray-900 text-sm">2.0</span>
+                  <span className="font-bold text-gray-900 text-sm">{markingScheme.correct.toFixed(1)}</span>
                 </div>
                 <div className="flex flex-col items-center border-l border-gray-100 pl-2">
                   <span className="text-[10px] text-gray-500 font-medium">Negative</span>
-                  <span className="font-bold text-gray-900 text-sm">0.66</span>
+                  <span className="font-bold text-gray-900 text-sm">{markingScheme.incorrect.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -1164,8 +1237,8 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-gray-900">Q. {activeQuestionIdx + 1}</span>
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-bold text-[10px] rounded border border-blue-100">+2.0</span>
-                <span className="px-2 py-0.5 bg-red-50 text-red-600 font-bold text-[10px] rounded border border-red-100">-0.66</span>
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-bold text-[10px] rounded border border-blue-100">+{markingScheme.correct.toFixed(1)}</span>
+                <span className="px-2 py-0.5 bg-red-50 text-red-600 font-bold text-[10px] rounded border border-red-100">-{markingScheme.incorrect.toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => setLanguage('Hi')} className="border border-gray-200 rounded px-2 py-0.5 text-xs font-bold text-gray-600">हिं</button>
