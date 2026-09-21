@@ -772,21 +772,27 @@ const Sidebar = () => {
                   <Settings size={14} className="text-gray-500" />
                   Settings & Profile
                 </button>
-                <button
-                  onClick={() => {
-                    navigate.push("/subscription");
-                    if (isMobile) toggleSidebar();
-                  }}
-                  className="flex items-center justify-between w-full px-2.5 py-1.5 font-medium text-muted-foreground hover:bg-gray-100 rounded-md transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Sparkles size={14} className="text-amber-500" />
-                    Upgrade Plan
-                  </div>
-                  <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded">
-                    Pro
-                  </span>
-                </button>
+                {/* School-student accounts are blocked server-side from
+                    subscribing (see paymentController.js/createOrder and
+                    SubscriptionPage.tsx's redirect) — don't show the button
+                    at all rather than let them click through to a redirect. */}
+                {!navConfig.isSchoolStudent && (
+                  <button
+                    onClick={() => {
+                      navigate.push("/subscription");
+                      if (isMobile) toggleSidebar();
+                    }}
+                    className="flex items-center justify-between w-full px-2.5 py-1.5 font-medium text-muted-foreground hover:bg-gray-100 rounded-md transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Sparkles size={14} className="text-amber-500" />
+                      Upgrade Plan
+                    </div>
+                    <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded">
+                      Pro
+                    </span>
+                  </button>
+                )}
                 <div className="h-px bg-gray-100 my-1 mx-1" />
                 <button
                   onClick={handleLogout}
