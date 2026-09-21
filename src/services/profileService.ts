@@ -264,6 +264,6 @@ export const getDynamicNavigation = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching dynamic navigation:", error);
-    return { showExamSimulator: false, showPlacementPrep: true };
+    return { showExamSimulator: false, showPlacementPrep: true, isSchoolStudent: false };
   }
 };

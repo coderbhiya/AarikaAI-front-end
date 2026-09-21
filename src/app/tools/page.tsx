@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Wrench,
@@ -28,6 +28,12 @@ import Sidebar from "@/components/Sidebar";
 import { AI_TOOLS } from "@/lib/tools";
 import { AITool } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { getDynamicNavigation } from "@/services/profileService";
+
+// Job/resume/placement/roadmap tools assume a job-hunting adult — not
+// appropriate to show a Class 7-12 school student. Exam prep and study
+// guides still apply (board exams, revision), so those stay.
+const SCHOOL_STUDENT_HIDDEN_CATEGORIES = new Set(["campus", "resume", "career"]);
 
 const toolIconMap: Record<string, React.ReactNode> = {
   Building2: <Building2 className="w-6 h-6 text-blue-500" />,
@@ -71,9 +77,26 @@ export default function ToolsPage() {
   const { toggleSidebar } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [isSchoolStudent, setIsSchoolStudent] = useState(false);
+
+  useEffect(() => {
+    getDynamicNavigation()
+      .then((config) => setIsSchoolStudent(!!config.isSchoolStudent))
+      .catch(() => setIsSchoolStudent(false));
+  }, []);
+
+  const visibleTools = useMemo(() => {
+    if (!isSchoolStudent) return AI_TOOLS;
+    return AI_TOOLS.filter((tool) => !SCHOOL_STUDENT_HIDDEN_CATEGORIES.has(tool.category));
+  }, [isSchoolStudent]);
+
+  const visibleCategories = useMemo(() => {
+    if (!isSchoolStudent) return CATEGORIES;
+    return CATEGORIES.filter((cat) => cat.id === "all" || !SCHOOL_STUDENT_HIDDEN_CATEGORIES.has(cat.id));
+  }, [isSchoolStudent]);
 
   const filteredTools = useMemo(() => {
-    return AI_TOOLS.filter((tool) => {
+    return visibleTools.filter((tool) => {
       const matchesCategory = selectedCategory === "all" || tool.category === selectedCategory;
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
@@ -83,7 +106,7 @@ export default function ToolsPage() {
         (tool.samplePrompts && tool.samplePrompts.some((p) => p.toLowerCase().includes(q)));
       return matchesCategory && matchesSearch;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [visibleTools, searchQuery, selectedCategory]);
 
   const handleLaunchTool = (toolId: string, promptText?: string) => {
     let url = `/chat?tool=${toolId}`;
@@ -174,7 +197,7 @@ export default function ToolsPage() {
 
           {/* Category Filter Tabs */}
           <div className="flex items-center justify-center gap-2 overflow-x-auto scrollbar-none pb-2 pt-2">
-            {CATEGORIES.map((cat) => {
+            {visibleCategories.map((cat) => {
               const isActive = selectedCategory === cat.id;
               return (
                 <button
@@ -295,7 +318,9 @@ export default function ToolsPage() {
             </div>
           )}
 
-          {/* Footer Banner */}
+          {/* Footer Banner — promotes Placement Prep (campus_prep), so hide it
+              for school students same as the tool card itself is hidden */}
+          {!isSchoolStudent && (
           <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 relative overflow-hidden">
             <div className="space-y-2 max-w-xl z-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-blue-300 text-[11px] font-bold">
@@ -314,6 +339,7 @@ export default function ToolsPage() {
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
+          )}
 
         </main>
       </div>

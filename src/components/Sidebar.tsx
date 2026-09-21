@@ -250,6 +250,7 @@ const Sidebar = () => {
   const [navConfig, setNavConfig] = useState({
     showExamSimulator: false,
     showPlacementPrep: true,
+    isSchoolStudent: false,
   });
 
   React.useEffect(() => {
@@ -266,6 +267,7 @@ const Sidebar = () => {
           setNavConfig({
             showExamSimulator: !!config.showExamSimulator,
             showPlacementPrep: !!config.showPlacementPrep,
+            isSchoolStudent: !!config.isSchoolStudent,
           });
         }
       })
@@ -541,7 +543,7 @@ const Sidebar = () => {
                 active={pathname === "/dashboard/learning"}
               />
             ) */}
-            {features.communityModuleEnabled && (
+            {features.communityModuleEnabled && !navConfig.isSchoolStudent && (
               <NavLink
                 to="/community"
                 icon={<Users size={16} />}

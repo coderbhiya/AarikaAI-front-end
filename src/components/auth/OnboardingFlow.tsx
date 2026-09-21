@@ -11,7 +11,6 @@ import {
   Briefcase,
   Search,
   Compass,
-  CheckCircle2,
   Sparkles,
   MessageSquare,
   TrendingUp,
@@ -21,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import axiosInstance from "@/lib/axios";
 import { useRouter } from "next/navigation";
+import BrainLogo from "@/components/BrainLogo";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC DATA
@@ -77,23 +77,23 @@ function OptionCard({
   className?: string;
 }) {
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
       className={cn(
-        "cursor-pointer relative p-4 rounded-xl border-2 transition-all duration-150",
+        // Same look as the login page's input fields (LoginPage.tsx) — soft
+        // gray field by default, white + primary ring when "active" (here,
+        // selected instead of focused) — rather than a colored pill/card.
+        // Full-width and stacked one below another, like a list of fields.
+        "cursor-pointer flex items-center gap-2 w-full h-11 px-4 rounded-lg border text-sm font-medium transition-all duration-300",
         selected
-          ? "border-blue-600 bg-blue-50/60 dark:bg-blue-950/40 shadow-sm"
-          : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700",
+          ? "border-primary/40 bg-white text-[#202124] dark:text-white ring-4 ring-primary/5 shadow-sm"
+          : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400 hover:border-gray-300 dark:hover:border-slate-600",
         className
       )}
     >
-      {selected && (
-        <div className="absolute top-2.5 right-2.5 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center pointer-events-none">
-          <CheckCircle2 className="w-3 h-3 text-white" />
-        </div>
-      )}
       {children}
-    </div>
+    </button>
   );
 }
 
@@ -112,26 +112,22 @@ function StepWho({
     {
       id: "student",
       label: "Student",
-      desc: "School / College / Higher Ed",
-      icon: <GraduationCap className="w-5 h-5 text-blue-600" />,
+      icon: <GraduationCap className="w-4 h-4" />,
     },
     {
       id: "professional",
       label: "Working Professional",
-      desc: "Already working in industry",
-      icon: <Briefcase className="w-5 h-5 text-emerald-600" />,
+      icon: <Briefcase className="w-4 h-4" />,
     },
     {
       id: "job_seeker",
       label: "Job Seeker",
-      desc: "Looking for job opportunities",
-      icon: <Search className="w-5 h-5 text-amber-600" />,
+      icon: <Search className="w-4 h-4" />,
     },
     {
       id: "other",
       label: "Career Switcher",
-      desc: "Exploring a new career domain",
-      icon: <Compass className="w-5 h-5 text-purple-600" />,
+      icon: <Compass className="w-4 h-4" />,
     },
   ];
 
@@ -145,27 +141,15 @@ function StepWho({
           We'll personalize your experience based on where you are.
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col gap-2">
         {options.map((opt) => (
           <OptionCard
             key={opt.id}
             selected={value === opt.id}
             onClick={() => onChange(opt.id)}
           >
-            <div className="mb-3">{opt.icon}</div>
-            <h3
-              className={cn(
-                "text-sm font-bold",
-                value === opt.id
-                  ? "text-blue-900 dark:text-blue-300"
-                  : "text-slate-800 dark:text-slate-200"
-              )}
-            >
-              {opt.label}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
-              {opt.desc}
-            </p>
+            {opt.icon}
+            {opt.label}
           </OptionCard>
         ))}
       </div>
@@ -194,56 +178,20 @@ function StepSchoolOrCollege({
           This helps us tailor the right tools for you.
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex flex-col gap-2">
         <OptionCard
           selected={value === "school"}
           onClick={() => onChange("school")}
         >
-          <div className="flex flex-col items-center text-center gap-3 py-3">
-            <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-              <span className="text-3xl">🏫</span>
-            </div>
-            <div>
-              <h3
-                className={cn(
-                  "text-sm font-bold",
-                  value === "school"
-                    ? "text-blue-900 dark:text-blue-300"
-                    : "text-slate-800 dark:text-slate-200"
-                )}
-              >
-                School
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Class 7th – 12th
-              </p>
-            </div>
-          </div>
+          <span>🏫</span>
+          School (Class 7th–12th)
         </OptionCard>
         <OptionCard
           selected={value === "college"}
           onClick={() => onChange("college")}
         >
-          <div className="flex flex-col items-center text-center gap-3 py-3">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-              <span className="text-3xl">🎓</span>
-            </div>
-            <div>
-              <h3
-                className={cn(
-                  "text-sm font-bold",
-                  value === "college"
-                    ? "text-blue-900 dark:text-blue-300"
-                    : "text-slate-800 dark:text-slate-200"
-                )}
-              >
-                College / University
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                UG, PG & Beyond
-              </p>
-            </div>
-          </div>
+          <span>🎓</span>
+          College / University
         </OptionCard>
       </div>
     </div>
@@ -257,11 +205,21 @@ function StepSchoolOrCollege({
 function StepClass({
   value,
   onChange,
+  stream,
+  onStreamChange,
 }: {
   value: string;
   onChange: (v: string) => void;
+  stream: string;
+  onStreamChange: (v: string) => void;
 }) {
   const classes = ["7", "8", "9", "10", "11", "12"];
+  const showStream = value === "11" || value === "12";
+  const streams = [
+    { id: "SCIENCE", label: "Science", emoji: "🔬" },
+    { id: "COMMERCE", label: "Commerce", emoji: "💼" },
+    { id: "ARTS", label: "Arts", emoji: "🎨" },
+  ];
 
   return (
     <div className="space-y-4">
@@ -273,32 +231,43 @@ function StepClass({
           We'll curate content and exam paths for your class.
         </p>
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+      <div className="flex flex-col gap-2">
         {classes.map((c) => (
           <OptionCard
             key={c}
             selected={value === c}
             onClick={() => onChange(c)}
           >
-            <div className="text-center py-2">
-              <span
-                className={cn(
-                  "text-xl font-extrabold block",
-                  value === c
-                    ? "text-blue-600"
-                    : "text-slate-700 dark:text-slate-300"
-                )}
-              >
-                {c}
-                <sup className="text-xs font-semibold">th</sup>
-              </span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block">
-                Class
-              </span>
-            </div>
+            Class {c}
+            <sup className="text-xs">th</sup>
           </OptionCard>
         ))}
       </div>
+
+      {showStream && (
+        <div className="space-y-3 pt-2">
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-4">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              Which stream?
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Helps us tailor subjects and exam prep for Class {value}.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {streams.map((s) => (
+              <OptionCard
+                key={s.id}
+                selected={stream === s.id}
+                onClick={() => onStreamChange(s.id)}
+              >
+                <span>{s.emoji}</span>
+                {s.label}
+              </OptionCard>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -345,7 +314,7 @@ function StepBoardAndExam({
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex flex-col gap-2">
           {boardOptions.map((opt) => (
             <OptionCard
               key={opt.id}
@@ -355,22 +324,8 @@ function StepBoardAndExam({
                 if (opt.id !== "STATE") setStateBoard("");
               }}
             >
-              <div className="text-center py-1">
-                <span className="text-2xl block mb-1.5">{opt.emoji}</span>
-                <h3
-                  className={cn(
-                    "text-xs font-bold leading-tight",
-                    board === opt.id
-                      ? "text-blue-900 dark:text-blue-300"
-                      : "text-slate-800 dark:text-slate-200"
-                  )}
-                >
-                  {opt.label}
-                </h3>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  {opt.badge}
-                </p>
-              </div>
+              <span>{opt.emoji}</span>
+              {opt.label}
             </OptionCard>
           ))}
         </div>
@@ -430,35 +385,20 @@ function StepBoardAndExam({
           </button>
         </div>
 
-        {/* Exam Grid */}
+        {/* Exam Chips */}
         {wantsExamPrep && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="flex flex-col gap-2">
             {EXAM_OPTIONS.map((ex) => {
               const isSelected = targetExams.includes(ex.value);
               return (
-                <div
+                <OptionCard
                   key={ex.value}
-                  id={`exam-${ex.value.toLowerCase()}`}
+                  selected={isSelected}
                   onClick={() => toggleExam(ex.value)}
-                  className={cn(
-                    "cursor-pointer p-2.5 rounded-xl border-2 text-center transition-all duration-150",
-                    isSelected
-                      ? "border-blue-600 bg-blue-50/60 dark:bg-blue-950/40"
-                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700"
-                  )}
                 >
-                  <span className="text-xl block mb-1">{ex.emoji}</span>
-                  <p
-                    className={cn(
-                      "text-[11px] font-semibold leading-tight",
-                      isSelected
-                        ? "text-blue-700 dark:text-blue-300"
-                        : "text-slate-700 dark:text-slate-300"
-                    )}
-                  >
-                    {ex.label}
-                  </p>
-                </div>
+                  <span>{ex.emoji}</span>
+                  {ex.label}
+                </OptionCard>
               );
             })}
           </div>
@@ -480,42 +420,12 @@ function StepGoal({
   onChange: (v: string) => void;
 }) {
   const goalOptions = [
-    {
-      id: "get_job",
-      label: "Get a Job",
-      desc: "Find opportunities & crack interviews",
-      icon: <Briefcase className="w-4 h-4 text-blue-600" />,
-    },
-    {
-      id: "upskill",
-      label: "Upskill & Grow",
-      desc: "Learn new skills & technologies",
-      icon: <TrendingUp className="w-4 h-4 text-emerald-600" />,
-    },
-    {
-      id: "exam_prep",
-      label: "Prepare for Exams",
-      desc: "Crack competitive or academic exams",
-      icon: <BookOpen className="w-4 h-4 text-amber-600" />,
-    },
-    {
-      id: "switch_career",
-      label: "Career Transition",
-      desc: "Switch into a completely new field",
-      icon: <Compass className="w-4 h-4 text-purple-600" />,
-    },
-    {
-      id: "build_profile",
-      label: "Build Personal Brand",
-      desc: "Optimize resume, LinkedIn & portfolio",
-      icon: <FileText className="w-4 h-4 text-rose-600" />,
-    },
-    {
-      id: "explore",
-      label: "Explore Options",
-      desc: "Not sure yet, want AI guidance",
-      icon: <Sparkles className="w-4 h-4 text-indigo-600" />,
-    },
+    { id: "get_job", label: "Get a Job", icon: <Briefcase className="w-4 h-4" /> },
+    { id: "upskill", label: "Upskill & Grow", icon: <TrendingUp className="w-4 h-4" /> },
+    { id: "exam_prep", label: "Prepare for Exams", icon: <BookOpen className="w-4 h-4" /> },
+    { id: "switch_career", label: "Career Transition", icon: <Compass className="w-4 h-4" /> },
+    { id: "build_profile", label: "Build Personal Brand", icon: <FileText className="w-4 h-4" /> },
+    { id: "explore", label: "Explore Options", icon: <Sparkles className="w-4 h-4" /> },
   ];
 
   return (
@@ -528,32 +438,15 @@ function StepGoal({
           AarikaAI will focus on what matters most to you.
         </p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="flex flex-col gap-2">
         {goalOptions.map((opt) => (
           <OptionCard
             key={opt.id}
             selected={value === opt.id}
             onClick={() => onChange(opt.id)}
-            className="flex items-start gap-3"
           >
-            <div className="mt-0.5 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0">
-              {opt.icon}
-            </div>
-            <div className="flex-1 min-w-0 pr-4">
-              <h3
-                className={cn(
-                  "text-xs font-bold",
-                  value === opt.id
-                    ? "text-blue-900 dark:text-blue-300"
-                    : "text-slate-800 dark:text-slate-200"
-                )}
-              >
-                {opt.label}
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                {opt.desc}
-              </p>
-            </div>
+            {opt.icon}
+            {opt.label}
           </OptionCard>
         ))}
       </div>
@@ -573,18 +466,8 @@ function StepTone({
   onChange: (v: string) => void;
 }) {
   const toneOptions = [
-    {
-      id: "Friendly & Casual (Hinglish)",
-      title: "Friendly & Casual (Hinglish)",
-      desc: "Conversational Hinglish like a mentor friend",
-      badge: "Popular in India 🇮🇳",
-    },
-    {
-      id: "Professional & Formal",
-      title: "Professional & Formal",
-      desc: "Crisp, structured formal English",
-      badge: "Standard Professional",
-    },
+    { id: "Friendly & Casual (Hinglish)", title: "Friendly & Casual (Hinglish) 🇮🇳" },
+    { id: "Professional & Formal", title: "Professional & Formal" },
   ];
 
   return (
@@ -597,37 +480,15 @@ function StepTone({
           Choose your preferred communication style.
         </p>
       </div>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {toneOptions.map((opt) => (
           <OptionCard
             key={opt.id}
             selected={value === opt.id}
             onClick={() => onChange(opt.id)}
-            className="flex items-start gap-3"
           >
-            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 shrink-0 mt-0.5">
-              <MessageSquare className="w-4 h-4" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <h3
-                  className={cn(
-                    "text-sm font-bold",
-                    value === opt.id
-                      ? "text-blue-900 dark:text-blue-300"
-                      : "text-slate-800 dark:text-slate-200"
-                  )}
-                >
-                  {opt.title}
-                </h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
-                  {opt.badge}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {opt.desc}
-              </p>
-            </div>
+            <MessageSquare className="w-4 h-4" />
+            {opt.title}
           </OptionCard>
         ))}
       </div>
@@ -659,6 +520,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   // ── Step 3 (school): Which class? ──
   const [schoolClass, setSchoolClass] = useState("");
+  const [stream, setStream] = useState(""); // only meaningful for class 11/12
 
   // ── Step 4 (school): Board + Exam Prep ──
   const [board, setBoard] = useState("");
@@ -715,7 +577,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     if (step === 1) return !!currentStatus;
     if (step === 2) return isStudent ? !!educationLevel : !!primaryGoal;
     if (step === 3) {
-      if (isSchoolPath) return !!schoolClass;
+      if (isSchoolPath) {
+        if (!schoolClass) return false;
+        if ((schoolClass === "11" || schoolClass === "12") && !stream) return false;
+        return true;
+      }
       if (isCollegeStudent) return !!primaryGoal;
       return !!communicationStyle;
     }
@@ -744,6 +610,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setCurrentStatus(v);
     setEducationLevel("");
     setSchoolClass("");
+    setStream("");
     setBoard("");
     setStateBoard("");
     setWantsExamPrep(false);
@@ -753,10 +620,16 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const handleEducationLevelChange = (v: string) => {
     setEducationLevel(v);
     setSchoolClass("");
+    setStream("");
     setBoard("");
     setStateBoard("");
     setWantsExamPrep(false);
     setTargetExams([]);
+  };
+
+  const handleSchoolClassChange = (v: string) => {
+    setSchoolClass(v);
+    if (v !== "11" && v !== "12") setStream("");
   };
 
   const toggleExam = (value: string) => {
@@ -787,6 +660,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           board: effectiveBoard,
           wantsExamPrep,
           targetExams: wantsExamPrep ? targetExams : [],
+          ...((schoolClass === "11" || schoolClass === "12") && { stream }),
         }),
       };
 
@@ -826,8 +700,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         {/* ── HEADER ── */}
         <header className="h-[60px] flex items-center justify-between px-6 lg:px-12 shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-extrabold text-sm shadow-sm">
-              A
+            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0">
+              <BrainLogo size={32} />
             </div>
             <span className="font-extrabold text-lg text-slate-900 dark:text-white tracking-tight">
               Aarika<span className="text-blue-600">.AI</span>
@@ -862,7 +736,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             />
           )}
           {stepKey === "class" && (
-            <StepClass value={schoolClass} onChange={setSchoolClass} />
+            <StepClass
+              value={schoolClass}
+              onChange={handleSchoolClassChange}
+              stream={stream}
+              onStreamChange={setStream}
+            />
           )}
           {stepKey === "board_exam" && (
             <StepBoardAndExam
@@ -885,36 +764,40 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               onChange={setCommunicationStyle}
             />
           )}
-        </div>
 
-        {/* ── BOTTOM NAV ── */}
-        <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-slate-200/60 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
-          <Button
-            variant="ghost"
-            onClick={goBack}
-            disabled={step === 1 || loading}
-            className="gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
+          {/* ── NAV BUTTONS — same look as the login page's Sign In button,
+              placed right below the options in the normal page flow instead
+              of a separate sticky bottom bar ── */}
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              id="onboarding-next-btn"
+              onClick={goNext}
+              disabled={!canProceed() || loading}
+              className="w-full h-11 rounded-lg bg-[#202124] text-white text-sm font-bold hover:bg-primary hover:shadow-lg active:scale-[0.98] disabled:opacity-50 shadow-md transition-all duration-300 gap-2"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : isLastStep ? (
+                "Let's Go 🚀"
+              ) : (
+                <>
+                  Next <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </Button>
 
-          <Button
-            id="onboarding-next-btn"
-            onClick={goNext}
-            disabled={!canProceed() || loading}
-            className="h-11 px-8 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 transition-all gap-2"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : isLastStep ? (
-              "Let's Go 🚀"
-            ) : (
-              <>
-                Next <ArrowRight className="w-4 h-4" />
-              </>
+            {step > 1 && (
+              <Button
+                variant="ghost"
+                onClick={goBack}
+                disabled={loading}
+                className="w-full h-11 gap-2 text-gray-500 hover:text-[#202124] dark:text-slate-400 dark:hover:text-white"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -24,7 +24,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Script from "next/script";
+import { toast } from "sonner";
 import { createRazorpayOrder, verifyRazorpayPayment } from "@/services/paymentService";
+import { getDynamicNavigation } from "@/services/profileService";
 
 const SubscriptionPage = () => {
   const { toggleSidebar, user } = useAuth();
@@ -61,6 +63,20 @@ const SubscriptionPage = () => {
   const [activeOrderId, setActiveOrderId] = useState("");
   const [amountPaid, setAmountPaid] = useState(0);
   const [simulatorError, setSimulatorError] = useState("");
+
+  // These plans are entirely job-seeker-framed (resume review, LinkedIn,
+  // salary negotiation) and this page leads to a real Razorpay payment —
+  // not appropriate to let a school-student account reach at all.
+  React.useEffect(() => {
+    getDynamicNavigation()
+      .then((config) => {
+        if (config?.isSchoolStudent) {
+          toast.info("Subscriptions aren't available for school-student accounts.");
+          navigate.push("/tools");
+        }
+      })
+      .catch(() => {});
+  }, [navigate]);
 
   // Bug #14 fix: Use Date.now()-based deadline to measure remaining seconds.
   // setTimeout is throttled by browsers when tab is backgrounded, so a simple countdown

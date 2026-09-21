@@ -97,7 +97,15 @@ export function NotificationBell() {
     const handleNotificationClick = (n: any) => {
         markAsRead(n);
         if (n.link) {
-            navigate.push(n.link);
+            // Government job/exam alerts link straight to the real official
+            // source (no internal detail page exists for these) — router.push
+            // only knows how to navigate within this app, so an external URL
+            // needs a real browser navigation instead.
+            if (/^https?:\/\//i.test(n.link)) {
+                window.open(n.link, "_blank", "noopener,noreferrer");
+            } else {
+                navigate.push(n.link);
+            }
             setOpen(false);
         }
     };

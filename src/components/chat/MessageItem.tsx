@@ -603,7 +603,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
 
         const cleanText = text.replace(collegeTagRegex, "").trim();
         return (
-          <div className="flex flex-col gap-2 w-full max-w-2xl">
+          <div className="flex flex-col gap-2 w-full max-w-4xl">
             {cleanText && <Markdown text={cleanText} />}
             <CollegeCard colleges={colleges} />
           </div>
