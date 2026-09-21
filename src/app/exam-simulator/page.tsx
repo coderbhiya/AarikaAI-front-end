@@ -12,9 +12,11 @@ import {
   Zap,
   Layers,
   Loader2,
+  Menu,
 } from "lucide-react";
 import FullExamSimulator from "@/components/chat/cards/FullExamSimulator";
 import axiosInstance from "@/lib/axios";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Exam names here just need to reach the backend's blueprint resolver
 // (examBlueprintService.js) with a recognizable name — "IIT JEE"/"NEET"/
@@ -49,6 +51,8 @@ const DIFFICULTIES = ["Beginner", "Medium", "Experienced", "Hard"];
 const YEARS = [2020, 2021, 2022, 2023, 2024, 2025];
 
 export default function ExamSimulatorPage() {
+  const { toggleSidebar } = useAuth();
+
   // Configuration State
   const [selectedExam, setSelectedExam] = useState("IIT JEE");
   const [customExamName, setCustomExamName] = useState("");
@@ -142,9 +146,19 @@ export default function ExamSimulatorPage() {
       </Suspense>
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Header */}
-        <header className="h-14 border-b border-border/60 flex items-center justify-between px-6 shrink-0 bg-background/50 backdrop-blur-md z-10">
-          <div className="flex items-center gap-2">
+        {/* Header — Sidebar is hidden by default (off-screen) on mobile and
+            only opens via a per-page toggle button; this page previously had
+            none, so a mobile user landing here had no way to navigate back
+            to chat or anywhere else in the app. */}
+        <header className="h-14 border-b border-border/60 flex items-center justify-between px-3 md:px-6 shrink-0 bg-background/50 backdrop-blur-md z-10">
+          <div className="flex items-center gap-2 md:gap-3">
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 md:p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors active:scale-95"
+              title="Toggle Sidebar"
+            >
+              <Menu className="w-4.5 h-4.5 md:w-5 md:h-5" />
+            </button>
             <GraduationCap className="w-5 h-5 text-primary" />
             <h1 className="text-[15px] font-semibold tracking-tight">Real Exam Simulator</h1>
           </div>
