@@ -111,10 +111,14 @@ export const sendChatMessage = async (
   activeVideoId?: string,
   isPersonalized?: boolean,
   isVisualIntel?: boolean,
-  selectedTool?: string
+  selectedTool?: string,
+  // The learning workspace's UserCourse id — without this, the backend has
+  // no way to know a message belongs to a course-tutor session (it can't be
+  // derived from threadId alone), so course-grounded tutoring never turns on.
+  courseId?: string
 ): Promise<{ reply: string; citations: any[]; artifact?: any; FileAttachments?: any[] }> => {
   return streamChatRequest(
-    { message, fileAttachments, webSearch, engine, threadId, activeVideoId, isPersonalized, isVisualIntel, selectedTool },
+    { message, fileAttachments, webSearch, engine, threadId, activeVideoId, isPersonalized, isVisualIntel, selectedTool, courseId },
     onChunk,
     signal
   );

@@ -117,7 +117,11 @@ const WorkspaceChatArea: React.FC<WorkspaceChatAreaProps> = ({ embeddedContext, 
           },
           abortController.signal,
           threadId,
-          activeVideoId
+          activeVideoId,
+          undefined,
+          undefined,
+          undefined,
+          courseId
         );
       } catch (err: any) {
         if (err.message === "AbortError" || err.name === "AbortError") {
