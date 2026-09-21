@@ -27,6 +27,13 @@ const ProfilePage = () => {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'journey' | 'leaderboard' | 'reports'>('profile');
 
+  // A school student (Class 7-12) has no work history — the Experience card
+  // is a fixed part of every persona's profile today, so this is the one
+  // exception carved out for them (PersonalInfo.tsx handles the rest of the
+  // persona-specific field differences within its own card).
+  const isSchoolStudent = user?.UserProfile?.personaType === "STUDENT"
+    && user?.UserProfile?.studentDetails?.educationLevel === "school";
+
   useEffect(() => {
     // Sync profile on mount to ensure we have the latest pendingResumeSnapshot
     // if the user just navigated here from uploading a resume on another page.
@@ -183,10 +190,12 @@ const ProfilePage = () => {
                     <PersonalInfo />
                   </div>
 
-                  {/* Experience Card */}
-                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                    <Experience />
-                  </div>
+                  {/* Experience Card — not applicable to school students */}
+                  {!isSchoolStudent && (
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                      <Experience />
+                    </div>
+                  )}
 
                   {/* Education Card */}
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
