@@ -143,8 +143,14 @@ const SubscriptionPage = () => {
       setLoadingPlan(plan.name);
       setSimulatorError("");
 
-      // Validate fields before proceeding
-      if (paymentMethod === "card") {
+      const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_T6MH1qLeqDkah4";
+      const isLiveMode = keyId.startsWith("rzp_live");
+
+      // Validate fields before proceeding — only for the built-in test
+      // simulator. In live mode the real Razorpay popup collects card/UPI/
+      // netbanking details itself, so this page must not ask for (or gate on)
+      // raw card numbers/CVV.
+      if (!isLiveMode && paymentMethod === "card") {
         if (!cardNumber || cardNumber.replace(/\s/g, "").length < 15) {
           alert("Please enter a valid card number.");
           setLoadingPlan(null);
@@ -165,7 +171,7 @@ const SubscriptionPage = () => {
           setLoadingPlan(null);
           return;
         }
-      } else if (paymentMethod === "upi") {
+      } else if (!isLiveMode && paymentMethod === "upi") {
         if (!upiId || !upiId.includes("@")) {
           alert("Please enter a valid UPI ID (e.g., username@upi).");
           setLoadingPlan(null);
@@ -173,28 +179,26 @@ const SubscriptionPage = () => {
         }
       }
 
-      // Amount in paise
-      let amountPaise = parseInt(plan.price) * 100;
-      if (isYearly) {
-        amountPaise = amountPaise * 12; // Billed yearly
-      }
+      // Display-only estimate for the success screen; the server computes
+      // the real chargeable amount from plan + cycle and returns it.
+      const estimatedPaise = Math.round(parseInt(plan.price) * 100 * (isYearly ? 12 : 1) * 1.18);
+      setAmountPaid(estimatedPaise);
 
-      // Add 18% GST to match the checkout visual breakup
-      amountPaise = Math.round(amountPaise * 1.18);
-      setAmountPaid(amountPaise);
-
-      console.log(`[SubscriptionPage] Creating order of amount: ${amountPaise} paise for plan: ${plan.name}`);
-      const orderData = await createRazorpayOrder(amountPaise);
+      console.log(`[SubscriptionPage] Creating order for plan: ${plan.name} (${isYearly ? "yearly" : "monthly"})`);
+      const orderData = await createRazorpayOrder(plan.name, isYearly ? "yearly" : "monthly");
+      if (orderData?.amount) setAmountPaid(orderData.amount);
 
       if (!orderData || !orderData.success || !orderData.order_id) {
         throw new Error(orderData.message || "Failed to create order on server");
       }
 
       // If it is Live Mode, bypass the custom simulator and launch the real Razorpay payment gateway popup
-      const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_T6MH1qLeqDkah4";
-      const isLiveMode = keyId.startsWith("rzp_live");
-
       if (isLiveMode) {
+        if (!(window as any).Razorpay) {
+          alert("Payment gateway is still loading. Please wait a moment and try again.");
+          setLoadingPlan(null);
+          return;
+        }
         console.log("[SubscriptionPage] Live mode key detected. Launching real Razorpay popup...");
         
         const options: any = {

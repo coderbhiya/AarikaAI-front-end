@@ -1,10 +1,13 @@
 import axiosInstance from "@/lib/axios";
 
-export const createRazorpayOrder = async (amount: number, currency: string = "INR") => {
+// The server decides the price from plan + cycle — the client no longer
+// sends an amount (it used to, which let anyone pay any amount they edited
+// the request to).
+export const createRazorpayOrder = async (plan: string, cycle: "monthly" | "yearly") => {
   try {
     const response = await axiosInstance.post("/api/payment/create-order", {
-      amount,
-      currency,
+      plan,
+      cycle,
     });
     return response.data;
   } catch (error) {
