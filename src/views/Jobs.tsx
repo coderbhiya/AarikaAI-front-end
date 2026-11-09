@@ -5,13 +5,14 @@ import axiosInstance from "@/lib/axios";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import {
-  ArrowLeft, ArrowRight, Search, MapPin, Briefcase, Filter, Menu, User, Bookmark, Building2,
+  ArrowLeft, ArrowRight, Search, MapPin, Briefcase, Filter, Menu, User, Building2,
   Loader2, Trophy, Globe, Clock, Zap, Shield, DollarSign, CheckCircle2, IndianRupee, X,
   ChevronDown, SlidersHorizontal, Wifi, Star
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
+import SmartApplyPanel from "@/components/jobs/SmartApplyPanel";
 
 const Jobs = () => {
   const { toggleSidebar } = useAuth();
@@ -24,7 +25,10 @@ const Jobs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPersonalized, setIsPersonalized] = useState(false);
-  const [hasResume, setHasResume] = useState(false);
+  const [needsProfile, setNeedsProfile] = useState(false);
+  const [notEligible, setNotEligible] = useState<string | null>(null);
+  const [minMatch, setMinMatch] = useState<number | null>(null);
+  const [smartApply, setSmartApply] = useState<{ jobId: number; title: string; company: string } | null>(null);
   const [eligibility, setEligibility] = useState<any>({ canApply: true, message: "", lowProficiencySkills: [], notAttemptedSkills: [] });
 
   // Selection State
@@ -73,7 +77,9 @@ const Jobs = () => {
       const fetchedJobs = response.data.jobs;
       setJobs(fetchedJobs);
       setIsPersonalized(!!response.data.isPersonalized);
-      setHasResume(!!response.data.hasResume);
+      setNeedsProfile(!!response.data.needsProfile);
+      setNotEligible(response.data.notEligible || null);
+      setMinMatch(response.data.minMatch ?? null);
       setEligibility({ canApply: true, message: "", lowProficiencySkills: [], notAttemptedSkills: [] });
       setPagination((prev) => ({
         ...prev,
@@ -92,7 +98,7 @@ const Jobs = () => {
       // Bug #12 fix: only auto-select first job when no job is already selected.
       // Previously, every fetchJobs call (including page changes) would override the user's selection.
       if (!isMobile && fetchedJobs.length > 0 && !selectedJob) {
-        fetchJobDetail(fetchedJobs[0].id);
+        fetchJobDetail(fetchedJobs[0]);
       }
 
       setError(null);
@@ -148,15 +154,18 @@ const Jobs = () => {
   const [applying, setApplying] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
 
-  const fetchJobDetail = async (id: string) => {
-    if (!id) return;
+  // Company (AarikaAI-posted) and external job ids overlap, so every lookup says which.
+  const fetchJobDetail = async (job: any) => {
+    if (!job?.id) return;
+    const source = job.isCompanyJob ? "company" : "public";
     try {
       setIsDetailLoading(true);
       setHasApplied(false);
-      const response = await axiosInstance.get(`/jobs/company-listings/${id}`);
-      setSelectedJob(response.data.job);
+      const response = await axiosInstance.get(`/jobs/company-listings/${job.id}`, { params: { source } });
+      // Keep the feed's match score and reasons alongside the full detail.
+      setSelectedJob({ ...response.data.job, matchPercentage: job.matchPercentage, matchReasons: job.matchReasons, isCompanyJob: job.isCompanyJob });
       try {
-        const statusRes = await axiosInstance.get(`/jobs/company-listings/${id}/apply-status`);
+        const statusRes = await axiosInstance.get(`/jobs/company-listings/${job.id}/apply-status`, { params: { source } });
         if (statusRes.data.hasApplied) setHasApplied(true);
       } catch {
         // silent — not critical
@@ -171,8 +180,8 @@ const Jobs = () => {
   const handleApply = async () => {
     if (!selectedJob || hasApplied || applying) return;
     
-    if (!selectedJob.isCompanyJob && selectedJob.link) {
-      window.open(selectedJob.link, "_blank");
+    if (!selectedJob.isCompanyJob) {
+      setSmartApply({ jobId: selectedJob.id, title: selectedJob.title, company: selectedJob.company });
       return;
     }
 
@@ -244,9 +253,9 @@ const Jobs = () => {
 
   const handleJobClick = (job: any) => {
     if (isMobile) {
-      navigate.push(`/job/detail/?id=${job.id}&source=company`);
+      navigate.push(`/job/detail/?id=${job.id}&source=${job.isCompanyJob ? "company" : "public"}`);
     } else {
-      fetchJobDetail(job.id);
+      fetchJobDetail(job);
     }
   };
 
@@ -461,30 +470,20 @@ const Jobs = () => {
 
           {/* List header */}
           <div className="px-4 py-3 border-b border-gray-100 bg-white">
-            {isPersonalized ? (
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-[15px] font-bold text-[#202124]">Top picks for you</h2>
-                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-sm">
-                      <Star size={8} fill="currentColor" /> AI Personalized
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-indigo-500 font-semibold mt-0.5">
-                    {hasResume ? "✓ Matched to your resume" : "✓ Matched to your profile"}
-                  </p>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[15px] font-bold text-[#202124]">Jobs that match you</h2>
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-sm">
+                    <Star size={8} fill="currentColor" /> AI matched
+                  </span>
                 </div>
-                <span className="text-[11px] text-gray-400 font-medium shrink-0">{pagination.total} jobs</span>
+                <p className="text-[11px] text-indigo-500 font-semibold mt-0.5">
+                  {minMatch ? `Only roles that fit your profile (${minMatch}%+ match)` : "Matched to your profile"}
+                </p>
               </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-[15px] font-bold text-[#202124]">Top job picks for you</h2>
-                  <p className="text-[11px] text-gray-400 font-medium mt-0.5">Based on your profile</p>
-                </div>
-                <span className="text-[11px] text-gray-400 font-medium">{pagination.total} jobs</span>
-              </div>
-            )}
+              <span className="text-[11px] text-gray-400 font-medium shrink-0">{pagination.total} jobs</span>
+            </div>
           </div>
 
           {/* Active filter chips */}
@@ -537,20 +536,43 @@ const Jobs = () => {
                 <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Briefcase size={22} className="text-gray-300" />
                 </div>
-                <h3 className="text-base font-bold text-[#202124]">No jobs found</h3>
-                <p className="text-gray-400 text-sm mt-1">Try adjusting your filters.</p>
-                <button onClick={resetFilters} className="mt-4 px-4 py-1.5 text-xs font-bold text-primary border border-primary/30 rounded-full hover:bg-primary/5 transition-all">
-                  Clear filters
-                </button>
+                {notEligible === "school" ? (
+                  <>
+                    <h3 className="text-base font-bold text-[#202124]">Jobs open up after school</h3>
+                    <p className="text-gray-500 text-sm mt-1">Focus on your exams and skills for now — your job feed will be ready when you are.</p>
+                  </>
+                ) : needsProfile ? (
+                  <>
+                    <h3 className="text-base font-bold text-[#202124]">Tell us what you&apos;re looking for</h3>
+                    <p className="text-gray-500 text-sm mt-1 max-w-xs mx-auto">Add your target role and a few skills (or upload your resume) and we&apos;ll show only jobs that fit you.</p>
+                    <button onClick={() => navigate.push("/profile")} className="mt-4 px-4 py-1.5 text-xs font-bold text-white bg-primary rounded-full hover:bg-blue-600 transition-all">
+                      Complete profile
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-base font-bold text-[#202124]">No matching jobs right now</h3>
+                    <p className="text-gray-400 text-sm mt-1 max-w-xs mx-auto">
+                      {filters.search || filters.location || filters.employmentType
+                        ? "Try removing a filter."
+                        : "New jobs arrive several times a day. Adding more skills to your profile widens your matches."}
+                    </p>
+                    {(filters.search || filters.location || filters.employmentType) && (
+                      <button onClick={resetFilters} className="mt-4 px-4 py-1.5 text-xs font-bold text-primary border border-primary/30 rounded-full hover:bg-primary/5 transition-all">
+                        Clear filters
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
                 {jobs.map((job) => (
                   <div
-                    key={job.id}
+                    key={`${job.isCompanyJob ? "c" : "p"}-${job.id}`}
                     onClick={() => handleJobClick(job)}
                     className={`p-4 cursor-pointer transition-all border-l-[3px] group ${
-                      !isMobile && selectedJob?.id === job.id
+                      !isMobile && selectedJob?.id === job.id && !!selectedJob?.isCompanyJob === !!job.isCompanyJob
                         ? "bg-[#edf3f8] border-[#0a66c2]"
                         : "bg-white border-transparent hover:bg-[#f9fafb] hover:border-gray-200"
                     }`}
@@ -614,6 +636,9 @@ const Jobs = () => {
                                 job.matchPercentage >= 50 ? 'text-amber-600' : 'text-gray-400'
                               }`}>{job.matchPercentage}% match</span>
                             </div>
+                            {job.matchReasons?.[0] && (
+                              <p className="mt-1 text-[10.5px] text-gray-500 truncate">{job.matchReasons[0]}</p>
+                            )}
                           </div>
                         )}
                       </div>
@@ -680,8 +705,12 @@ const Jobs = () => {
                           <span>{selectedJob.location || 'Remote'}</span>
                           <span className="opacity-30">•</span>
                           <span>{formatDate(selectedJob.postedDate)}</span>
-                          <span className="opacity-30">•</span>
-                          <span className="text-emerald-600 font-bold">12 applicants</span>
+                          {selectedJob.publisher && !selectedJob.isCompanyJob && selectedJob.publisher !== selectedJob.company && (
+                            <>
+                              <span className="opacity-30">•</span>
+                              <span>via {selectedJob.publisher}</span>
+                            </>
+                          )}
                         </div>
 
                         <div className="w-full">
@@ -696,7 +725,8 @@ const Jobs = () => {
                                 disabled={applying}
                                 className="px-6 py-2 bg-primary text-white font-bold text-[14px] rounded-full hover:bg-blue-600 shadow-md shadow-primary/10 transition-all flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-70"
                               >
-                                {applying ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} fill="currentColor" />} Apply
+                                {applying ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} fill="currentColor" />}
+                                {selectedJob.isCompanyJob ? "Apply in one click" : "Smart Apply"}
                               </button>
                             ) : (
                               <button
@@ -713,10 +743,27 @@ const Jobs = () => {
                             >
                               <Trophy size={14} /> Analyze
                             </button>
-                            <button className="px-5 py-2 border border-gray-300 text-[#202124] font-bold text-[14px] rounded-full hover:bg-gray-50 transition-all flex items-center justify-center gap-2 whitespace-nowrap shrink-0">
-                              <Bookmark size={14} /> Save
-                            </button>
+                            {!selectedJob.isCompanyJob && selectedJob.link && (
+                              <a
+                                href={selectedJob.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-5 py-2 border border-gray-300 text-[#202124] font-bold text-[14px] rounded-full hover:bg-gray-50 transition-all flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+                              >
+                                <Globe size={14} /> View job post
+                              </a>
+                            )}
                           </div>
+                          {selectedJob.matchReasons?.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {selectedJob.matchPercentage != null && (
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">{selectedJob.matchPercentage}% match</span>
+                              )}
+                              {selectedJob.matchReasons.map((r: string) => (
+                                <span key={r} className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-50 text-gray-600 border border-gray-200">{r}</span>
+                              ))}
+                            </div>
+                          )}
                           {!eligibility?.canApply && eligibility?.message && (
                             <p className="text-[11px] text-red-500 font-bold max-w-[250px] leading-tight truncate mt-2">
                               {eligibility?.message}
@@ -850,6 +897,14 @@ const Jobs = () => {
           </button>
         </div>
       )}
+      <SmartApplyPanel
+        open={!!smartApply}
+        onOpenChange={(o) => !o && setSmartApply(null)}
+        jobId={smartApply?.jobId}
+        jobTitle={smartApply?.title}
+        company={smartApply?.company}
+        onApplied={() => setHasApplied(true)}
+      />
     </div>
   );
 };

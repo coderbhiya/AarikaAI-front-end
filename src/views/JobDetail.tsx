@@ -26,11 +26,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import SmartApplyPanel from "@/components/jobs/SmartApplyPanel";
 
 const JobDetail = () => {
   const { toggleSidebar } = useAuth();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
+  // Company (AarikaAI-posted) and external job ids overlap; the list passes which one.
+  const source = searchParams.get("source") === "public" ? "public" : searchParams.get("source") === "company" ? "company" : undefined;
   const navigate = useRouter();
   const isMobile = useIsMobile();
 
@@ -39,17 +42,18 @@ const JobDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [smartApplyOpen, setSmartApplyOpen] = useState(false);
 
   const fetchJobDetail = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/jobs/company-listings/${id}`);
+      const response = await axiosInstance.get(`/jobs/company-listings/${id}`, { params: { source } });
       setJob(response.data.job);
       setError(null);
 
       // Check if user has already applied
       try {
-        const statusRes = await axiosInstance.get(`/jobs/company-listings/${id}/apply-status`);
+        const statusRes = await axiosInstance.get(`/jobs/company-listings/${id}/apply-status`, { params: { source: response.data.job?.isCompanyJob ? "company" : "public" } });
         if (statusRes.data.hasApplied) setHasApplied(true);
       } catch {
         // silent — not critical
@@ -64,13 +68,13 @@ const JobDetail = () => {
 
   useEffect(() => {
     if (id) fetchJobDetail();
-  }, [id]);
+  }, [id, source]);
 
   const handleApply = async () => {
     if (hasApplied || applying) return;
 
-    if (job && !job.isCompanyJob && job.link) {
-      window.open(job.link, "_blank");
+    if (job && !job.isCompanyJob) {
+      setSmartApplyOpen(true);
       return;
     }
 
@@ -210,7 +214,7 @@ const JobDetail = () => {
                   className="w-full py-4 bg-primary text-white font-semibold text-[16px] rounded-[20px] transition-all hover:bg-blue-600 active:scale-[0.98] shadow-lg shadow-primary/20 flex items-center justify-center gap-2 mb-12 disabled:opacity-70"
                 >
                   {applying ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} fill="currentColor" />}
-                  Launch Application
+                  {job.isCompanyJob ? "Apply in one click" : "Smart Apply"}
                 </button>
               )}
 
@@ -292,6 +296,16 @@ const JobDetail = () => {
           </div>
         </div>
       </div>
+      {job && !job.isCompanyJob && (
+        <SmartApplyPanel
+          open={smartApplyOpen}
+          onOpenChange={setSmartApplyOpen}
+          jobId={job.id}
+          jobTitle={job.title}
+          company={job.company}
+          onApplied={() => setHasApplied(true)}
+        />
+      )}
     </div>
   );
 };

@@ -557,6 +557,15 @@ const Sidebar = () => {
                 active={pathname === "/dashboard/learning"}
               />
             )}
+            {/* Resume Builder: everyone who applies for jobs/internships — not school students. */}
+            {!navConfig.isSchoolStudent && (
+              <NavLink
+                to="/resume-builder"
+                icon={<FileText size={16} />}
+                label="Resume Builder"
+                active={pathname === "/resume-builder"}
+              />
+            )}
             {features.communityModuleEnabled && !navConfig.isSchoolStudent && (
               <NavLink
                 to="/community"
@@ -576,7 +585,7 @@ const Sidebar = () => {
                 <NavLink
                   to="/agent"
                   icon={<Sparkles size={16} />}
-                  label="Auto-Apply Agent"
+                  label="Job Agent"
                   active={pathname === "/agent"}
                 />
               </>
