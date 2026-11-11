@@ -1,6 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Behind nginx, `next start -H 127.0.0.1` makes request.url's host
+// "localhost:3001", so `new URL(path, request.url)` sent visitors of
+// aarikaai.in to https://localhost:3001. Build redirects from the host the
+// browser actually used (nginx forwards it in Host / X-Forwarded-Host).
+function redirectTo(request: NextRequest, path: string) {
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const proto = request.headers.get('x-forwarded-proto') || request.nextUrl.protocol.replace(':', '');
+  const base = host && !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) ? `${proto}://${host}` : request.url;
+  return NextResponse.redirect(new URL(path, base));
+}
+
 export function middleware(request: NextRequest) {
   // Read the authToken from the cookies
   const authToken = request.cookies.get('authToken')?.value;
@@ -33,12 +44,12 @@ export function middleware(request: NextRequest) {
 
   // If there's no auth token and the user is trying to access a protected route
   if (!authToken && !isPublicPage) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return redirectTo(request, '/');
   }
 
   // If there IS an auth token and they are on login/register pages, redirect to chat
   if (authToken && isAuthOnlyPage) {
-    return NextResponse.redirect(new URL('/chat', request.url));
+    return redirectTo(request, '/chat');
   }
 
   return NextResponse.next();
