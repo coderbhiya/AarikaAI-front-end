@@ -252,26 +252,42 @@ const Sidebar = () => {
     communityModuleEnabled: true,
   });
 
-  const [navConfig, setNavConfig] = useState({
+  // Which tools this user's persona gets — GET /profile/navigation
+  // (careerai_be services/personaNavigation.js). Null until it answers.
+  type NavConfig = {
+    showExamSimulator: boolean;
+    isSchoolStudent: boolean;
+    showCareerDiscovery: boolean;
+    showExamCalendar: boolean;
+    showInternships: boolean;
+    showMockInterview: boolean;
+    showJobs: boolean;
+    showResumeBuilder: boolean;
+    showCommunity: boolean;
+  };
+  const [serverNav, setServerNav] = useState<NavConfig | null>(null);
+
+  const fieldSet = getProfileFieldSet(user);
+  const profileKnown = !!user?.UserProfile;
+  // Until the server answers (or if it can't), go by the profile already in
+  // context: job/resume tools stay hidden for school students and govt
+  // aspirants, and persona-specific tools stay hidden for everyone.
+  const clientJobTools = profileKnown && !["school", "govt_aspirant"].includes(fieldSet);
+  const navConfig: NavConfig = serverNav ?? {
     showExamSimulator: false,
-    showPlacementPrep: true,
-    isSchoolStudent: false,
+    isSchoolStudent: fieldSet === "school",
     showCareerDiscovery: false,
     showExamCalendar: false,
     showInternships: false,
     showMockInterview: false,
-  });
-
-  // Job-hunting features (Mission Hunt, Auto-Apply) don't apply to a school
-  // student or a government-exam aspirant — neither is browsing/applying to
-  // private-sector job listings. getDynamicNavigation only returns
-  // isSchoolStudent today, so this reads the field-set directly off the
-  // profile already in context instead of a second persona-derivation.
-  const hideJobSearch = ["school", "govt_aspirant"].includes(getProfileFieldSet(user));
+    showJobs: clientJobTools,
+    showResumeBuilder: clientJobTools,
+    showCommunity: profileKnown && fieldSet !== "school",
+  };
   // Freshers (college students + job seekers) are the focus segment: their sidebar leads with the
   // core loop — practise an interview, fix the resume, find and apply to jobs. Other personas keep
   // the original order.
-  const isFresher = ["college", "job_seeker"].includes(getProfileFieldSet(user));
+  const isFresher = ["college", "job_seeker"].includes(fieldSet);
 
   React.useEffect(() => {
     let active = true;
@@ -280,27 +296,38 @@ const Sidebar = () => {
         if (active) setFeatures(flags);
       })
       .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
+  // Re-fetched when the persona changes (onboarding finishes, or the user
+  // switches persona on their profile) so the menu follows without a reload.
+  React.useEffect(() => {
+    if (!user?.uid) return;
+    let active = true;
     getDynamicNavigation()
       .then((config) => {
         if (active && config) {
-          setNavConfig({
+          setServerNav({
             showExamSimulator: !!config.showExamSimulator,
-            showPlacementPrep: !!config.showPlacementPrep,
             isSchoolStudent: !!config.isSchoolStudent,
             showCareerDiscovery: !!config.showCareerDiscovery,
             showExamCalendar: !!config.showExamCalendar,
             showInternships: !!config.showInternships,
             showMockInterview: !!config.showMockInterview,
+            // Older backends don't send these; derive them as they used to be.
+            showJobs: config.showJobs ?? !["school", "govt_aspirant"].includes(fieldSet),
+            showResumeBuilder: config.showResumeBuilder ?? !config.isSchoolStudent,
+            showCommunity: config.showCommunity ?? !config.isSchoolStudent,
           });
         }
       })
       .catch(() => {});
-
     return () => {
       active = false;
     };
-  }, []);
+  }, [user?.uid, fieldSet]);
 
   const { data: conversationsData } = useQuery({
     queryKey: ["conversations"],
@@ -445,9 +472,8 @@ const Sidebar = () => {
 
   const navItems: { key: string; show: boolean; el: React.ReactNode }[] = [
     { key: "tools", show: true, el: <NavLink to="/tools" icon={<Wrench size={16} />} label="AI Tools" active={pathname === "/tools" || !!activeToolParam} /> },
-    // Exam Simulator: server-computed per persona — school students only if they opted into exam prep at
-    // onboarding; college students, govt aspirants, and anyone with exams selected get it; plain job
-    // seekers/professionals/career switchers don't.
+    // Exam Simulator: school students who opted into exam prep, college students and govt aspirants.
+    // Job seekers, professionals and career switchers never get it, whatever exams their profile lists.
     { key: "exam-simulator", show: navConfig.showExamSimulator, el: <NavLink to="/exam-simulator" icon={<GraduationCap size={16} />} label="Exam Simulator" active={pathname === "/exam-simulator"} /> },
     // Persona tools — flags come from GET /profile/navigation.
     { key: "career-discovery", show: navConfig.showCareerDiscovery, el: <NavLink to="/career-discovery" icon={<Compass size={16} />} label="Career Discovery" active={pathname === "/career-discovery"} /> },
@@ -456,11 +482,11 @@ const Sidebar = () => {
     { key: "mock-interview", show: navConfig.showMockInterview, el: <NavLink to="/mock-interview" icon={<Mic size={16} />} label="Mock Interview" active={pathname === "/mock-interview"} /> },
     // No "Placement Prep" item: it was only the "Placement Prep" tab of AI Tools (/tools?category=campus).
     { key: "learning", show: !!features.learningModuleEnabled, el: <NavLink to="/dashboard/learning" icon={<BookOpen size={16} />} label="My Learning" active={pathname === "/dashboard/learning"} /> },
-    // Resume Builder: everyone who applies for jobs/internships — not school students.
-    { key: "resume-builder", show: !navConfig.isSchoolStudent, el: <NavLink to="/resume-builder" icon={<FileText size={16} />} label="Resume Builder" active={pathname === "/resume-builder"} /> },
-    { key: "community", show: !!features.communityModuleEnabled && !navConfig.isSchoolStudent, el: <NavLink to="/community" icon={<Users size={16} />} label="Community" active={pathname === "/community"} /> },
-    { key: "jobs", show: !!features.jobRecommendationsEnabled && !hideJobSearch, el: <NavLink to="/jobs" icon={<Briefcase size={16} />} label="Mission Hunt" active={pathname === "/jobs"} /> },
-    { key: "agent", show: !!features.jobRecommendationsEnabled && !hideJobSearch, el: <NavLink to="/agent" icon={<Sparkles size={16} />} label="Job Agent" active={pathname === "/agent"} /> },
+    // Resume Builder and job tools: people applying for private-sector jobs — not school students or govt aspirants.
+    { key: "resume-builder", show: navConfig.showResumeBuilder, el: <NavLink to="/resume-builder" icon={<FileText size={16} />} label="Resume Builder" active={pathname === "/resume-builder"} /> },
+    { key: "community", show: !!features.communityModuleEnabled && navConfig.showCommunity, el: <NavLink to="/community" icon={<Users size={16} />} label="Community" active={pathname === "/community"} /> },
+    { key: "jobs", show: !!features.jobRecommendationsEnabled && navConfig.showJobs, el: <NavLink to="/jobs" icon={<Briefcase size={16} />} label="Mission Hunt" active={pathname === "/jobs"} /> },
+    { key: "agent", show: !!features.jobRecommendationsEnabled && navConfig.showJobs, el: <NavLink to="/agent" icon={<Sparkles size={16} />} label="Job Agent" active={pathname === "/agent"} /> },
   ];
   const FRESHER_FIRST = ["mock-interview", "resume-builder", "jobs", "agent", "internships"];
   const orderedNav = (isFresher

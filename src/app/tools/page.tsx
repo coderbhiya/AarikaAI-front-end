@@ -85,7 +85,7 @@ function ToolsContent() {
 
   useEffect(() => {
     getDynamicNavigation()
-      .then((config) => setIsSchoolStudent(!!config.isSchoolStudent))
+      .then((config) => setIsSchoolStudent(!!config?.isSchoolStudent))
       .catch(() => setIsSchoolStudent(false));
   }, []);
 
