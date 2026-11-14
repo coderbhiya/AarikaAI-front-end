@@ -264,6 +264,8 @@ export const getDynamicNavigation = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching dynamic navigation:", error);
-    return { showExamSimulator: false, showPlacementPrep: true, isSchoolStudent: false };
+    // null: the sidebar keeps its profile-based fallback instead of showing
+    // defaults that ignore the persona (e.g. Resume Builder for a school student).
+    return null;
   }
 };

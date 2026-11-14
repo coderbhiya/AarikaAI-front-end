@@ -7,9 +7,9 @@ const NAV: Record<Persona, { show: string[]; hide: string[] }> = {
   school12: { show: ["nav-career-discovery", "nav-exam-calendar", "nav-exam-simulator"], hide: ["nav-jobs", "nav-agent", "nav-mock-interview"] },
   college: { show: ["nav-internships", "nav-mock-interview", "nav-resume-builder", "nav-exam-simulator"], hide: ["nav-career-discovery", "nav-exam-calendar"] },
   professional: { show: ["nav-mock-interview", "nav-resume-builder"], hide: ["nav-career-discovery", "nav-exam-calendar", "nav-internships", "nav-exam-simulator"] },
-  jobSeeker: { show: ["nav-internships", "nav-mock-interview"], hide: ["nav-career-discovery", "nav-exam-calendar"] },
-  switcher: { show: ["nav-mock-interview"], hide: ["nav-career-discovery", "nav-exam-calendar", "nav-internships"] },
-  govt: { show: ["nav-exam-calendar", "nav-exam-simulator"], hide: ["nav-jobs", "nav-agent", "nav-career-discovery", "nav-mock-interview", "nav-internships"] },
+  jobSeeker: { show: ["nav-internships", "nav-mock-interview", "nav-resume-builder"], hide: ["nav-career-discovery", "nav-exam-calendar", "nav-exam-simulator"] },
+  switcher: { show: ["nav-mock-interview", "nav-resume-builder"], hide: ["nav-career-discovery", "nav-exam-calendar", "nav-internships", "nav-exam-simulator"] },
+  govt: { show: ["nav-exam-calendar", "nav-exam-simulator"], hide: ["nav-jobs", "nav-agent", "nav-resume-builder", "nav-career-discovery", "nav-mock-interview", "nav-internships"] },
 };
 
 for (const [persona, nav] of Object.entries(NAV) as [Persona, (typeof NAV)[Persona]][]) {
