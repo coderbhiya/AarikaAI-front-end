@@ -45,9 +45,11 @@ const toQuestionMarkdown = (text?: string): string => {
 /** Renders question/option/explanation text through the shared Markdown
  * renderer (code blocks, LaTeX, tables) instead of a plain whitespace-pre-wrap
  * paragraph, so exam content reads the same as the rest of the app. */
-const QuestionMarkdown: React.FC<{ text?: string; className?: string }> = ({ text, className }) => (
+const QuestionMarkdown: React.FC<{ text?: string; className?: string; raw?: boolean }> = ({ text, className, raw }) => (
   <div className={className}>
-    <Markdown text={toQuestionMarkdown(text)} />
+    {/* `raw`: text is already Markdown (e.g. company coding problems) — skip the
+        looks-like-code auto-wrap, which misfires on any statement saying "return". */}
+    <Markdown text={raw ? text || "" : toQuestionMarkdown(text)} />
   </div>
 );
 
@@ -159,6 +161,8 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
         setCodeResult(null);
         if (answers[activeQuestionIdx]) {
           setCodeText(answers[activeQuestionIdx]);
+        } else if (q?.starterCode?.javascript) {
+          setCodeText(q.starterCode.javascript);
         } else {
           setCodeText(`function solution(input) {\n  // Write your solution for Problem ${activeQuestionIdx + 1} here\n  return input;\n}`);
         }
@@ -220,6 +224,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const [codeResult, setCodeResult] = useState<any>(null);
 
   const isCodingQuestion = useMemo(() => {
+    if (currentQuestion?.type === 'coding') return true;
     const examLower = (blueprint.exam || "").toLowerCase();
     const qText = (currentQuestion?.question || "").toLowerCase();
     return (
@@ -275,20 +280,34 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
     }
   }, [isCodingQuestion, isDescriptiveQuestion]);
 
+  // Results of a run belong to the question it was started on; ignore them if
+  // the user has moved to another question by the time they arrive.
+  const activeQuestionIdxRef = useRef(activeQuestionIdx);
+  activeQuestionIdxRef.current = activeQuestionIdx;
+
   const handleRunCode = async () => {
+    const runIdx = activeQuestionIdx;
+    // Run against this question's own test cases: its visible examples plus
+    // its hidden cases, which only travel as a sealed token the server opens.
+    const testCases = (currentQuestion?.testCases || []).map(({ input, output }) => ({ input, output }));
+    const hiddenTestToken = currentQuestion?.hiddenTestToken || undefined;
+    if (testCases.length === 0 && !hiddenTestToken) {
+      setCodeResult({ noTestCases: true });
+      return;
+    }
     try {
       setCodeRunning(true);
       setCodeResult(null);
       const response = await axiosInstance.post('/company-assessment/run-code', {
         code: codeText,
         language: codeLanguage,
-        testCases: [
-          { input: "5", output: "10" },
-          { input: "12", output: "24" },
-        ],
+        testCases,
+        ...(hiddenTestToken ? { hiddenTestToken } : {}),
       });
+      if (activeQuestionIdxRef.current !== runIdx) return;
       setCodeResult(response.data?.data || response.data);
     } catch (err: any) {
+      if (activeQuestionIdxRef.current !== runIdx) return;
       setCodeResult({
         success: false,
         error: err?.response?.data?.error || err?.response?.data?.message || err.message,
@@ -1483,16 +1502,49 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                         <span className="text-xs font-semibold text-gray-500">Coding Assessment Format</span>
                       </div>
 
-                      <QuestionMarkdown text={currentQuestion.question} className="prose max-w-none text-gray-800 font-medium text-sm leading-relaxed" />
+                      <QuestionMarkdown text={currentQuestion.question} raw={currentQuestion.type === 'coding'} className="prose max-w-none text-gray-800 font-medium text-sm leading-relaxed" />
 
-                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                        <h5 className="text-xs font-bold uppercase tracking-wider text-gray-500">Sample Constraints:</h5>
-                        <ul className="text-xs font-mono text-gray-700 space-y-1 list-disc pl-4">
-                          <li>1 &lt;= N &lt;= 10^5</li>
-                          <li>-10^9 &lt;= Node.val &lt;= 10^9</li>
-                          <li>Expected Time Complexity: O(N)</li>
-                          <li>Expected Auxiliary Space: O(H)</li>
-                        </ul>
+                      {currentQuestion.constraints && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                          <h5 className="text-xs font-bold uppercase tracking-wider text-gray-500">Constraints:</h5>
+                          <QuestionMarkdown text={currentQuestion.constraints} raw className="prose prose-sm max-w-none text-xs font-mono text-gray-700" />
+                        </div>
+                      )}
+
+                      {/* The question's own test cases — "Run Code Sandbox" checks against these (plus any hidden ones). */}
+                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-gray-500">Examples:</h5>
+                        {currentQuestion.testCases && currentQuestion.testCases.length > 0 ? (
+                          <>
+                            {currentQuestion.testCases.map((tc, i) => (
+                              <div key={i} className="rounded-lg border border-gray-200 bg-white p-3 text-xs space-y-1.5">
+                                <div className="font-semibold text-gray-600">Example {i + 1}</div>
+                                <div>
+                                  <span className="text-gray-500">Input:</span>
+                                  <pre className="mt-0.5 whitespace-pre-wrap break-words font-mono bg-gray-50 border border-gray-100 rounded px-2 py-1 text-gray-800">{tc.input === "" ? "(empty string)" : tc.input}</pre>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Expected output:</span>
+                                  <pre className="mt-0.5 whitespace-pre-wrap break-words font-mono bg-gray-50 border border-gray-100 rounded px-2 py-1 text-gray-800">{tc.output}</pre>
+                                </div>
+                                {tc.explanation && <p className="text-gray-500">{tc.explanation}</p>}
+                              </div>
+                            ))}
+                            {!!currentQuestion.hiddenTestCount && (
+                              <p className="text-xs text-gray-500">
+                                Plus {currentQuestion.hiddenTestCount} hidden test case{currentQuestion.hiddenTestCount === 1 ? "" : "s"}, checked when you run your code.
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500">
+                              {currentQuestion.solutionContract ||
+                                "solution(input) receives the input as a string (a plain number arrives as a Number). Return the answer; it's compared as String(result)."}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            This question has no test cases, so Run Code Sandbox can't check your answer here. Your code is still saved with your answer.
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1538,18 +1590,20 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                       </div>
 
                       {/* Execution Output Panel */}
-                      {codeResult && (codeResult.error || codeResult.supported === false) && (
+                      {codeResult && (codeResult.error || codeResult.supported === false || codeResult.noTestCases) && (
                         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs space-y-1">
                           <div className="font-bold border-b border-slate-800 pb-2">Execution Console</div>
                           <p className={codeResult.error ? "text-red-400 pt-1" : "text-amber-400 pt-1"}>
-                            {codeResult.error
+                            {codeResult.noTestCases
+                              ? "This question has no test cases, so there's nothing to run your code against. Your code is still saved with your answer."
+                              : codeResult.error
                               ? `Couldn't run your code: ${codeResult.error}`
                               : (codeResult.message || "Running isn't available for this language yet. Switch to JavaScript to test your solution here.")}
                           </p>
                         </div>
                       )}
-                      {codeResult && !codeResult.error && codeResult.supported !== false && (
-                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs space-y-2 max-h-40 overflow-y-auto">
+                      {codeResult && !codeResult.error && codeResult.supported !== false && !codeResult.noTestCases && (
+                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs space-y-2 max-h-64 overflow-y-auto">
                           <div className="flex items-center justify-between font-bold border-b border-slate-800 pb-2">
                             <span>Execution Console</span>
                             <span className={codeResult.allPassed ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
@@ -1559,16 +1613,25 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                           {codeResult.results?.map((r: any, idx: number) => (
                             <div key={idx} className="py-1 border-b border-slate-800/50">
                               <div className="flex items-center justify-between">
-                                <span>Test Case #{r.testCaseIndex}</span>
+                                <span>{r.hidden ? `Hidden test ${r.testCaseIndex - (codeResult.sampleCount || 0)}` : `Example ${r.testCaseIndex}`}</span>
                                 <span className={r.status === "PASSED" ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
                                   {r.status} ({r.executionTimeMs}ms)
                                 </span>
                               </div>
+                              {!r.hidden && r.status === "WRONG_ANSWER" && (
+                                <p className="mt-1 font-mono text-[11px] text-slate-300 break-words">
+                                  Expected <span className="text-emerald-300">{JSON.stringify(r.expectedOutput)}</span>, got{" "}
+                                  <span className="text-red-300">{JSON.stringify(r.actualOutput)}</span>
+                                </p>
+                              )}
                               {r.errorMessage && (
                                 <p className="mt-1 font-mono text-[11px] text-red-300/80 break-words">{r.errorMessage}</p>
                               )}
                             </div>
                           ))}
+                          {codeResult.hiddenTestsUnavailable && (
+                            <p className="pt-1 text-amber-400">Hidden test cases couldn't be loaded, so only the examples were checked.</p>
+                          )}
                         </div>
                       )}
                     </div>
