@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -14,6 +14,14 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
+
+// Local/E2E testing only: route Firebase Auth to the emulator so test sign-ups
+// never touch the real Firebase project. Unset in production.
+const authEmulatorHost = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST;
+if (authEmulatorHost && typeof window !== 'undefined' && !(window as any).__aarikaAuthEmulator) {
+  connectAuthEmulator(auth, `http://${authEmulatorHost}`, { disableWarnings: true });
+  (window as any).__aarikaAuthEmulator = true;
+}
 
 // Auth utility functions
 export const getStoredUser = () => {

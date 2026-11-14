@@ -11,7 +11,7 @@ import jsPDF from "jspdf";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getChats, uploadFile, getWelcomeMessage, truncateChat } from "@/services/chatService";
+import { getChats, uploadFile, getWelcome, truncateChat, WelcomeData } from "@/services/chatService";
 import { autoFillProfileFromResume } from "@/services/profileService";
 import { detectResume } from "@/utils/resumeDetector";
 import { NotificationBell } from "./notifications/NotificationBell";
@@ -386,6 +386,23 @@ interface ChatAreaProps {
     embeddedContext?: string;
 }
 
+
+// Card styles cycled across persona starter prompts.
+const STARTER_STYLES = [
+    { icon: <Lightbulb size={16} />, color: "text-purple-600", bg: "bg-purple-50" },
+    { icon: <FileText size={16} />, color: "text-rose-500", bg: "bg-rose-50" },
+    { icon: <Compass size={16} />, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { icon: <Sparkles size={16} />, color: "text-blue-600", bg: "bg-blue-50" },
+];
+
+// Renders **bold** segments of the welcome text without pulling in a markdown renderer.
+const renderBold = (text: string) =>
+    text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+        part.startsWith("**") && part.endsWith("**")
+            ? <strong key={i} className="text-[#1F2937]">{part.slice(2, -2)}</strong>
+            : <React.Fragment key={i}>{part}</React.Fragment>
+    );
+
 const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const isMobile = useIsMobile();
     const navigate = useRouter();
@@ -592,20 +609,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     }, [searchParams, isChatsLoading]);
 
     // Fix 1 & 3: Welcome Message Logic & Memory Leak Fix
+    // The greeting + persona starter prompts are shown in the empty-chat state (not injected as a
+    // chat message — injecting it hid the empty state and rendered nothing).
     const hasFetchedWelcome = useRef(false);
+    const [welcome, setWelcome] = useState<WelcomeData | null>(null);
     useEffect(() => {
         let isMounted = true;
 
         if (!isChatsLoading && !hasFetchedWelcome.current) {
             hasFetchedWelcome.current = true;
-            getWelcomeMessage().then((msg) => {
-                if (msg && isMounted) {
-                    queryClient.setQueryData<Message[]>(["chats", activeThreadKey], (old) => {
-                        const existing = old || [];
-                        if (existing.some(m => m.id === msg.id || m.message === msg.message)) return existing;
-                        return [...existing, msg];
-                    });
-                }
+            getWelcome().then((data) => {
+                if (data && isMounted) setWelcome(data);
             }).catch((err) => {
                 if (isMounted) console.error("Welcome message fetch failed:", err);
             });
@@ -1030,20 +1044,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                 <h2 className="text-[28px] md:text-[32px] font-bold text-[#1F2937] tracking-tight mb-2 text-center">
                                     Hi {user?.displayName?.split(' ')[0] || (user as any)?.name?.split(' ')[0] || 'User'}! 👋
                                 </h2>
-                                <p className="text-[#6B7280] text-[15px] max-w-sm text-center mb-8 font-medium">
-                                    Your AI Career Companion is ready to help you grow.
+                                <p className="text-[#6B7280] text-[15px] max-w-md text-center mb-8 font-medium whitespace-pre-line" data-testid="welcome-text">
+                                    {welcome
+                                        ? renderBold(welcome.message.replace(/^Hi \*\*[^*]+\*\*! 👋\s*/, ""))
+                                        : "Your AI Career Companion is ready to help you grow."}
                                 </p>
 
                                 {/* Action Cards — Slim ChatGPT-style horizontal rows */}
                                 <div className="flex flex-col gap-2 w-full max-w-xl px-2 md:px-0">
-                                    {[
-                                        { label: "Doubt Solving", desc: "Instant help with your academic questions", icon: <Lightbulb size={16} />, color: "text-purple-600", bg: "bg-purple-50", msg: "I have a doubt, can you help me solve it?" },
-                                        { label: "Exam Prep", desc: "Structured plans & mock tests", icon: <FileText size={16} />, color: "text-rose-500", bg: "bg-rose-50", msg: "Help me prepare for my upcoming exams" },
-                                        { label: "Resume Build", desc: "ATS-friendly resume analysis", icon: <Code size={16} />, color: "text-blue-600", bg: "bg-blue-50", msg: "Can you help me build and review my resume?" },
-                                        { label: "Career Guide", desc: "Map out your dream career path", icon: <Compass size={16} />, color: "text-emerald-600", bg: "bg-emerald-50", msg: "I need career guidance and a roadmap" },
-                                    ].map((item) => (
+                                    {(welcome?.starterPrompts?.length
+                                        ? welcome.starterPrompts.slice(0, 4).map((prompt, i) => ({
+                                            ...STARTER_STYLES[i % STARTER_STYLES.length],
+                                            label: prompt,
+                                            desc: "",
+                                            msg: prompt,
+                                        }))
+                                        : [
+                                            { label: "Doubt Solving", desc: "Instant help with your academic questions", icon: <Lightbulb size={16} />, color: "text-purple-600", bg: "bg-purple-50", msg: "I have a doubt, can you help me solve it?" },
+                                            { label: "Exam Prep", desc: "Structured plans & mock tests", icon: <FileText size={16} />, color: "text-rose-500", bg: "bg-rose-50", msg: "Help me prepare for my upcoming exams" },
+                                            { label: "Career Guide", desc: "Map out your dream career path", icon: <Compass size={16} />, color: "text-emerald-600", bg: "bg-emerald-50", msg: "I need career guidance and a roadmap" },
+                                        ]
+                                    ).map((item) => (
                                         <div
                                             key={item.label}
+                                            data-testid="starter-prompt"
                                             onClick={() => handleSendMessage(item.msg)}
                                             className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/20 cursor-pointer transition-all duration-200 group shadow-2xs"
                                         >
@@ -1052,7 +1076,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                                             </div>
                                             <div className="flex-1 min-w-0 text-left">
                                                 <p className="text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{item.label}</p>
-                                                <p className="text-[11.5px] text-gray-400 truncate leading-tight mt-0.5">{item.desc}</p>
+                                                {item.desc && <p className="text-[11.5px] text-gray-400 truncate leading-tight mt-0.5">{item.desc}</p>}
                                             </div>
                                             <ArrowRight size={14} className="text-gray-300 group-hover:text-primary/60 transition-colors flex-shrink-0" />
                                         </div>

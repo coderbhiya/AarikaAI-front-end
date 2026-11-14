@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 .next
+.next-localtest
 out
 out.zip
 
@@ -30,3 +31,6 @@ dist-ssr
 
 # Scratch scripts
 update_simulator.js
+/e2e-report
+/test-results
+/playwright/.cache

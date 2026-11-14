@@ -82,7 +82,7 @@ export const RegisterPage: React.FC = () => {
 
                 toast({
                     title: "Registration Complete",
-                    description: "Your professional profile has been created.",
+                    description: "Your account is ready. Let's set up your profile.",
                 });
 
                 setTimeout(() => {
@@ -94,6 +94,11 @@ export const RegisterPage: React.FC = () => {
             let message = "Could not create account";
             if (error.code === 'auth/email-already-in-use') {
                 message = 'An account with this email already exists.';
+            } else if (error?.response?.status === 409) {
+                // Our backend refused (phone/email already used): remove the just-created
+                // Firebase login so the user can fix the form and try again.
+                message = error.response.data?.message || message;
+                try { await auth.currentUser?.delete(); } catch { /* best effort */ }
             }
 
             toast({

@@ -413,7 +413,7 @@ function StepBoardAndExam({
           >
             <span
               className={cn(
-                "absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200",
+                "absolute left-0 top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200",
                 wantsExamPrep ? "translate-x-7" : "translate-x-1"
               )}
             />
@@ -618,6 +618,149 @@ function StepGoal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STEP: COLLEGE DETAILS (college students)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DEGREE_OPTIONS = ["B.Tech / B.E.", "B.Sc", "B.Com", "BBA", "BCA", "B.A.", "MBBS / Medical", "Diploma", "M.Tech / M.E.", "MBA", "MCA", "M.Sc / M.A. / M.Com", "Other"];
+const CURRENT_YEAR = new Date().getFullYear();
+
+function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
+  return (
+    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+      {children}
+      {optional && <span className="ml-1 font-normal text-slate-400">(optional)</span>}
+    </label>
+  );
+}
+
+function StepCollegeDetails({
+  degree, setDegree, branch, setBranch, yearOfStudy, setYearOfStudy,
+  graduationYear, setGraduationYear, institution, setInstitution,
+  targetRole, setTargetRole, skills, setSkills,
+}: {
+  degree: string; setDegree: (v: string) => void;
+  branch: string; setBranch: (v: string) => void;
+  yearOfStudy: string; setYearOfStudy: (v: string) => void;
+  graduationYear: string; setGraduationYear: (v: string) => void;
+  institution: string; setInstitution: (v: string) => void;
+  targetRole: string; setTargetRole: (v: string) => void;
+  skills: string; setSkills: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Tell us about your college</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">We use this to find internships and placements that fit.</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <FieldLabel>Degree</FieldLabel>
+          <select id="onb-degree" className={selectClasses} value={degree} onChange={(e) => setDegree(e.target.value)}>
+            <option value="">Select degree</option>
+            {DEGREE_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Year of study</FieldLabel>
+          <select id="onb-year" className={selectClasses} value={yearOfStudy} onChange={(e) => {
+            setYearOfStudy(e.target.value);
+            if (!graduationYear && e.target.value) setGraduationYear(String(CURRENT_YEAR + Math.max(0, 4 - Number(e.target.value))));
+          }}>
+            <option value="">Select year</option>
+            {[1, 2, 3, 4, 5].map((y) => <option key={y} value={String(y)}>{y === 5 ? "5th year / final" : `${y}${["st", "nd", "rd", "th"][y - 1]} year`}</option>)}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel optional>Branch / specialisation</FieldLabel>
+          <input id="onb-branch" className={textInputClasses} placeholder="e.g. Computer Science" value={branch} onChange={(e) => setBranch(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel optional>Graduation year</FieldLabel>
+          <select id="onb-grad-year" className={selectClasses} value={graduationYear} onChange={(e) => setGraduationYear(e.target.value)}>
+            <option value="">Select</option>
+            {Array.from({ length: 7 }, (_, i) => CURRENT_YEAR - 1 + i).map((y) => <option key={y} value={String(y)}>{y}</option>)}
+          </select>
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <FieldLabel optional>College name</FieldLabel>
+          <input id="onb-institution" className={textInputClasses} placeholder="e.g. RTU Kota" value={institution} onChange={(e) => setInstitution(e.target.value)} />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <FieldLabel optional>Role you&apos;re aiming for</FieldLabel>
+          <input id="onb-target-role" className={textInputClasses} placeholder="e.g. Data Analyst, Software Engineer" value={targetRole} onChange={(e) => setTargetRole(e.target.value)} />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <FieldLabel optional>Skills (comma separated)</FieldLabel>
+          <input id="onb-skills" className={textInputClasses} placeholder="e.g. Python, SQL, Excel" value={skills} onChange={(e) => setSkills(e.target.value)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STEP: WORK DETAILS (professional / job seeker / career switcher)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EXPERIENCE_OPTIONS = [
+  { value: "0", label: "Fresher (0 years)" },
+  { value: "1", label: "1 year" },
+  { value: "2", label: "2 years" },
+  { value: "4", label: "3–5 years" },
+  { value: "8", label: "6–10 years" },
+  { value: "12", label: "10+ years" },
+];
+
+function StepWorkDetails({
+  isSwitcher, isJobSeeker,
+  currentRole, setCurrentRole, experienceYears, setExperienceYears,
+  targetRole, setTargetRole, skills, setSkills, preferredLocation, setPreferredLocation,
+}: {
+  isSwitcher: boolean; isJobSeeker: boolean;
+  currentRole: string; setCurrentRole: (v: string) => void;
+  experienceYears: string; setExperienceYears: (v: string) => void;
+  targetRole: string; setTargetRole: (v: string) => void;
+  skills: string; setSkills: (v: string) => void;
+  preferredLocation: string; setPreferredLocation: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          {isSwitcher ? "Where are you, and where do you want to go?" : "Tell us about your work"}
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">This makes job matches and advice specific to you.</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <FieldLabel optional={isJobSeeker}>{isSwitcher ? "Current role / field" : isJobSeeker ? "Last or current role" : "Current role"}</FieldLabel>
+          <input id="onb-current-role" className={textInputClasses} placeholder={isSwitcher ? "e.g. School Teacher" : "e.g. Software Engineer"} value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Experience</FieldLabel>
+          <select id="onb-experience" className={selectClasses} value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)}>
+            <option value="">Select</option>
+            {EXPERIENCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <FieldLabel optional={!isSwitcher}>{isSwitcher ? "Role or field you want to move into" : "Target role"}</FieldLabel>
+          <input id="onb-target-role" className={textInputClasses} placeholder={isSwitcher ? "e.g. Product Manager" : "e.g. Senior Software Engineer"} value={targetRole} onChange={(e) => setTargetRole(e.target.value)} />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <FieldLabel optional>Top skills (comma separated)</FieldLabel>
+          <input id="onb-skills" className={textInputClasses} placeholder="e.g. Java, AWS, Stakeholder management" value={skills} onChange={(e) => setSkills(e.target.value)} />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <FieldLabel optional>Preferred city</FieldLabel>
+          <input id="onb-location" className={textInputClasses} placeholder="e.g. Bengaluru, Remote" value={preferredLocation} onChange={(e) => setPreferredLocation(e.target.value)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // STEP: COMMUNICATION TONE (non-school paths)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -705,72 +848,79 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [govtQualification, setGovtQualification] = useState("");
   const [govtAttemptYear, setGovtAttemptYear] = useState("");
 
+  // College + work details
+  const [degree, setDegree] = useState("");
+  const [branch, setBranch] = useState("");
+  const [yearOfStudy, setYearOfStudy] = useState("");
+  const [graduationYear, setGraduationYear] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [currentRole, setCurrentRole] = useState("");
+  const [experienceYears, setExperienceYears] = useState("");
+  const [targetRole, setTargetRole] = useState("");
+  const [skillsText, setSkillsText] = useState("");
+  const [preferredLocation, setPreferredLocation] = useState("");
+
   // ── Derived path flags ──
   const isStudent = currentStatus === "student";
   const isSchoolPath = isStudent && educationLevel === "school";
   const isCollegeStudent = isStudent && educationLevel === "college";
   const isGovtAspirant = currentStatus === "govt_aspirant";
 
-  // Total steps: student paths = 4, others = 3
-  const totalSteps = isStudent || currentStatus === "" ? 4 : 3;
+  const isSwitcher = currentStatus === "other";
+  const isJobSeeker = currentStatus === "job_seeker";
+  const isWorkPath = currentStatus === "professional" || isJobSeeker || isSwitcher;
 
   // Effective board value for submission
   const getEffectiveBoard = () => (board === "STATE" ? stateBoard : board);
 
-  // ── Step key mapping ──
+  // ── Steps per path ──
   type StepKey =
     | "who"
     | "school_or_college"
     | "class"
     | "board_exam"
+    | "college_details"
+    | "work_details"
     | "govt_details"
     | "goal"
     | "tone";
 
-  const getStepKey = (): StepKey => {
-    if (step === 1) return "who";
-    if (step === 2) {
-      if (isStudent) return "school_or_college";
-      if (isGovtAspirant) return "govt_details";
-      return "goal";
+  const stepOrder: StepKey[] = (() => {
+    if (isStudent) {
+      if (isSchoolPath) return ["who", "school_or_college", "class", "board_exam"];
+      if (isCollegeStudent) return ["who", "school_or_college", "college_details", "goal", "tone"];
+      return ["who", "school_or_college", "class", "board_exam"]; // not chosen yet
     }
-    if (step === 3) {
-      if (isSchoolPath) return "class";
-      if (isCollegeStudent) return "goal";
-      return "tone"; // non-student last step
-    }
-    if (step === 4) {
-      return isSchoolPath ? "board_exam" : "tone"; // college last step
-    }
-    return "who";
-  };
+    if (isGovtAspirant) return ["who", "govt_details", "tone"];
+    if (isWorkPath) return ["who", "work_details", "goal", "tone"];
+    return ["who", "work_details", "goal", "tone"]; // nothing chosen yet: typical length for the step counter
+  })();
 
-  const stepKey = getStepKey();
-  const isLastStep =
-    (step === 3 && !isSchoolPath && !isCollegeStudent) || step === 4;
+  const totalSteps = stepOrder.length;
+  const stepKey: StepKey = stepOrder[Math.min(step, totalSteps) - 1];
+  const isLastStep = step === totalSteps && currentStatus !== "";
 
   // ── Proceed guard ──
   const canProceed = (): boolean => {
-    if (step === 1) return !!currentStatus;
-    if (step === 2) {
-      if (isStudent) return !!educationLevel;
-      if (isGovtAspirant) return govtTargetExams.length > 0 && !!govtAge && !!govtState;
-      return !!primaryGoal;
-    }
-    if (step === 3) {
-      if (isSchoolPath) {
+    switch (stepKey) {
+      case "who": return !!currentStatus;
+      case "school_or_college": return !!educationLevel;
+      case "class":
         if (!schoolClass) return false;
         if ((schoolClass === "11" || schoolClass === "12") && !stream) return false;
         return true;
-      }
-      if (isCollegeStudent) return !!primaryGoal;
-      return !!communicationStyle;
+      case "board_exam": return !!getEffectiveBoard();
+      case "govt_details": return govtTargetExams.length > 0 && !!govtAge && !!govtState;
+      case "college_details": return !!degree && !!yearOfStudy;
+      case "work_details":
+        if (!experienceYears) return false;
+        if (isSwitcher) return !!targetRole.trim();
+        if (currentStatus === "professional") return !!currentRole.trim();
+        return true;
+      case "goal": return !!primaryGoal;
+      case "tone": return !!communicationStyle;
+      default: return true;
     }
-    if (step === 4) {
-      if (isSchoolPath) return !!getEffectiveBoard();
-      return !!communicationStyle;
-    }
-    return true;
   };
 
   // ── Navigation ──
@@ -802,6 +952,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setGovtState("");
     setGovtQualification("");
     setGovtAttemptYear("");
+    setPrimaryGoal(v === "other" ? "switch_career" : v === "professional" ? "upskill" : "get_job");
   };
 
   const handleEducationLevelChange = (v: string) => {
@@ -857,6 +1008,25 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           targetExams: wantsExamPrep ? targetExams : [],
           ...((schoolClass === "11" || schoolClass === "12") && { stream }),
         }),
+        ...(isCollegeStudent && {
+          degree,
+          branch,
+          yearOfStudy,
+          graduationYear,
+          institution,
+          ...(targetRole.trim() && { targetRole: targetRole.trim() }),
+        }),
+        ...(isWorkPath && {
+          currentRole,
+          experienceYears,
+          preferredLocation,
+          ...(isSwitcher
+            ? { currentDomain: currentRole, targetDomain: targetRole }
+            : targetRole.trim() && { targetRole: targetRole.trim() }),
+        }),
+        ...((isCollegeStudent || isWorkPath) && skillsText.trim() && {
+          skills: skillsText.split(",").map((x) => x.trim()).filter(Boolean).slice(0, 10),
+        }),
         ...(isGovtAspirant && {
           govtTargetExams,
           govtCategory,
@@ -894,6 +1064,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     class: "Tell us about your class",
     board_exam: "Almost done!",
     govt_details: "Tell us more about yourself",
+    college_details: "Your college",
+    work_details: "Your experience",
     goal: "What's your goal?",
     tone: "One last thing",
   };
@@ -973,6 +1145,28 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               setQualification={setGovtQualification}
               attemptYear={govtAttemptYear}
               setAttemptYear={setGovtAttemptYear}
+            />
+          )}
+          {stepKey === "college_details" && (
+            <StepCollegeDetails
+              degree={degree} setDegree={setDegree}
+              branch={branch} setBranch={setBranch}
+              yearOfStudy={yearOfStudy} setYearOfStudy={setYearOfStudy}
+              graduationYear={graduationYear} setGraduationYear={setGraduationYear}
+              institution={institution} setInstitution={setInstitution}
+              targetRole={targetRole} setTargetRole={setTargetRole}
+              skills={skillsText} setSkills={setSkillsText}
+            />
+          )}
+          {stepKey === "work_details" && (
+            <StepWorkDetails
+              isSwitcher={isSwitcher}
+              isJobSeeker={isJobSeeker}
+              currentRole={currentRole} setCurrentRole={setCurrentRole}
+              experienceYears={experienceYears} setExperienceYears={setExperienceYears}
+              targetRole={targetRole} setTargetRole={setTargetRole}
+              skills={skillsText} setSkills={setSkillsText}
+              preferredLocation={preferredLocation} setPreferredLocation={setPreferredLocation}
             />
           )}
           {stepKey === "goal" && (

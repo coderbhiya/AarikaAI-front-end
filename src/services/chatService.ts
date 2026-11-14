@@ -148,11 +148,31 @@ export const uploadFile = async (file: File): Promise<FileAttachment> => {
   return response.data.file;
 };
 
-export const getWelcomeMessage = async (threadId?: string): Promise<Message | null> => {
+export interface WelcomeData {
+  message: string;
+  persona: string | null;
+  starterPrompts: string[];
+}
+
+/** Persona-aware greeting + starter prompts for an empty chat. */
+export const getWelcome = async (threadId?: string): Promise<WelcomeData | null> => {
   const response = await axiosInstance.get("/chat/welcome", {
     params: threadId ? { threadId } : {}
   });
-  return response.data.message || null;
+  const data = response.data || {};
+  if (!data.message) return null;
+  return {
+    message: String(data.message),
+    persona: data.persona ?? null,
+    starterPrompts: Array.isArray(data.starterPrompts) ? data.starterPrompts : [],
+  };
+};
+
+/** The welcome greeting as a renderable assistant message (the API returns plain text). */
+export const getWelcomeMessage = async (threadId?: string): Promise<Message | null> => {
+  const welcome = await getWelcome(threadId);
+  if (!welcome) return null;
+  return { id: "welcome", role: "assistant", message: welcome.message, createdAt: new Date().toISOString() };
 };
 
 export const truncateChat = async (messageId: number): Promise<void> => {

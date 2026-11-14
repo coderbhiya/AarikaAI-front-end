@@ -28,6 +28,7 @@ import Sidebar from "@/components/Sidebar";
 import { AI_TOOLS } from "@/lib/tools";
 import { AITool } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { getDynamicNavigation } from "@/services/profileService";
 
 // Job/resume/placement/roadmap tools assume a job-hunting adult — not
@@ -350,7 +351,7 @@ function ToolsContent() {
   );
 }
 
-export default function ToolsPage() {
+function ToolsPageInner() {
   return (
     <React.Suspense
       fallback={
@@ -361,5 +362,14 @@ export default function ToolsPage() {
     >
       <ToolsContent />
     </React.Suspense>
+  );
+}
+
+// Auth + onboarding gate (the page renders its own Sidebar, so no layout shell).
+export default function ToolsPage() {
+  return (
+    <ProtectedRoute withLayout={false}>
+      <ToolsPageInner />
+    </ProtectedRoute>
   );
 }

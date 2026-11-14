@@ -27,6 +27,10 @@ import {
   BarChart3,
   MapPin,
   ChevronRight,
+  Compass,
+  CalendarDays,
+  Rocket,
+  Mic,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -252,6 +256,10 @@ const Sidebar = () => {
     showExamSimulator: false,
     showPlacementPrep: true,
     isSchoolStudent: false,
+    showCareerDiscovery: false,
+    showExamCalendar: false,
+    showInternships: false,
+    showMockInterview: false,
   });
 
   // Job-hunting features (Mission Hunt, Auto-Apply) don't apply to a school
@@ -276,6 +284,10 @@ const Sidebar = () => {
             showExamSimulator: !!config.showExamSimulator,
             showPlacementPrep: !!config.showPlacementPrep,
             isSchoolStudent: !!config.isSchoolStudent,
+            showCareerDiscovery: !!config.showCareerDiscovery,
+            showExamCalendar: !!config.showExamCalendar,
+            showInternships: !!config.showInternships,
+            showMockInterview: !!config.showMockInterview,
           });
         }
       })
@@ -394,6 +406,7 @@ const Sidebar = () => {
   }) => (
     <button
       onClick={() => handleNavClick(to)}
+      data-testid={`nav-${to.split("?")[0].replace(/^\//, "").replace(/\//g, "-")}`}
       title={!isExpanded ? label : undefined}
       className={`transition-colors duration-100 ${
         isExpanded
@@ -534,6 +547,40 @@ const Sidebar = () => {
                 icon={<GraduationCap size={16} />}
                 label="Exam Simulator"
                 active={pathname === "/exam-simulator"}
+              />
+            )}
+
+            {/* Persona tools — flags come from GET /profile/navigation. */}
+            {navConfig.showCareerDiscovery && (
+              <NavLink
+                to="/career-discovery"
+                icon={<Compass size={16} />}
+                label="Career Discovery"
+                active={pathname === "/career-discovery"}
+              />
+            )}
+            {navConfig.showExamCalendar && (
+              <NavLink
+                to="/exam-calendar"
+                icon={<CalendarDays size={16} />}
+                label="Exams & Scholarships"
+                active={pathname === "/exam-calendar"}
+              />
+            )}
+            {navConfig.showInternships && (
+              <NavLink
+                to="/internships"
+                icon={<Rocket size={16} />}
+                label="Internships"
+                active={pathname === "/internships"}
+              />
+            )}
+            {navConfig.showMockInterview && (
+              <NavLink
+                to="/mock-interview"
+                icon={<Mic size={16} />}
+                label="Mock Interview"
+                active={pathname === "/mock-interview"}
               />
             )}
 

@@ -17,6 +17,7 @@ import {
 import FullExamSimulator from "@/components/chat/cards/FullExamSimulator";
 import axiosInstance from "@/lib/axios";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Exam names here just need to reach the backend's blueprint resolver
 // (examBlueprintService.js) with a recognizable name — "IIT JEE"/"NEET"/
@@ -50,7 +51,7 @@ const LANGUAGES = [
 const DIFFICULTIES = ["Beginner", "Medium", "Experienced", "Hard"];
 const YEARS = [2020, 2021, 2022, 2023, 2024, 2025];
 
-export default function ExamSimulatorPage() {
+function ExamSimulatorPageInner() {
   const { toggleSidebar } = useAuth();
 
   // Configuration State
@@ -365,5 +366,14 @@ export default function ExamSimulatorPage() {
         document.body
       )}
     </div>
+  );
+}
+
+// Auth + onboarding gate (the page renders its own Sidebar, so no layout shell).
+export default function ExamSimulatorPage() {
+  return (
+    <ProtectedRoute withLayout={false}>
+      <ExamSimulatorPageInner />
+    </ProtectedRoute>
   );
 }
