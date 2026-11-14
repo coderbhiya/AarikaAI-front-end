@@ -5,6 +5,7 @@ import LandingAuthRedirect from "@/components/landing/LandingAuthRedirect";
 import PersonaTabs from "@/components/landing/PersonaTabs";
 import { displaySerif } from "@/components/landing/fonts";
 import { FAQS, PLANS } from "@/components/landing/content";
+import { Shot, type Tone } from "@/components/landing/Shot";
 
 // Design: editorial and quiet. Near-monochrome ink on white/ivory, a serif for
 // headlines, real product screenshots, thin rules instead of boxes and icons.
@@ -12,6 +13,8 @@ import { FAQS, PLANS } from "@/components/landing/content";
 // if something leaves the Sidebar, remove it here too.
 
 const serif = displaySerif.className;
+
+
 
 const PERSONAS = ["School students", "College students", "Job seekers", "Working professionals", "Career switchers", "Govt exam aspirants"];
 
@@ -22,6 +25,7 @@ const SHOWCASE = [
     body: "Practise HR, technical and behavioral rounds in text, or join a live voice interview where Aarika asks, listens and follows up. Every answer is scored, with a stronger sample answer to learn from. Your camera preview never leaves your device.",
     link: { href: "/register", label: "Practise an interview" },
     shot: "/landing/mock-interview.webp",
+    tone: "violet" as Tone,
     alt: "Aarika.AI Mock Interview: start a live voice interview or practise HR, technical and behavioral rounds with instant AI feedback",
     w: 1400,
     h: 1050,
@@ -32,6 +36,7 @@ const SHOWCASE = [
     body: "The Job Agent scans company career pages for roles that fit your target role and skills, and tells you why each one matches. Smart Apply then prepares a tailored resume, ATS score, cover letter and form answers, so applying takes minutes.",
     link: { href: "/register", label: "Meet your job agent" },
     shot: "/landing/job-agent.webp",
+    tone: "green" as Tone,
     alt: "Aarika.AI Job Agent with matching jobs, match scores and Smart Apply",
     w: 1400,
     h: 1050,
@@ -42,11 +47,14 @@ const SHOWCASE = [
     body: "Timed papers with negative marking, instant scores and an explanation for every question. JEE, NEET, UPSC, SSC CGL, IBPS PO, CAT and CA Foundation follow their official patterns, and you can practise in English, Hindi or Hinglish.",
     link: { href: "/register", label: "Take a mock exam" },
     shot: "/landing/exam-simulator.webp",
+    tone: "amber" as Tone,
     alt: "Aarika.AI Exam Simulator setup: choose exam, difficulty, language and paper type",
     w: 1400,
     h: 1050,
   },
 ];
+
+const DOTS = ["bg-[#3b6cf6]", "bg-[#e0607e]", "bg-[#e8913a]", "bg-[#2fa77a]", "bg-[#8b5cf6]", "bg-[#0ea5e9]", "bg-[#3b6cf6]", "bg-[#2fa77a]"];
 
 const MORE = [
   { name: "AI career chat", desc: "Career answers that use your profile, in English, Hindi or Hinglish." },
@@ -94,26 +102,13 @@ const FOOTER_COLUMNS = [
   },
 ];
 
-function Shot({ src, alt, w, h, priority = false }: { src: string; alt: string; w: number; h: number; priority?: boolean }) {
-  return (
-    <div className="rounded-[20px] bg-[#f0eee6] p-2 sm:p-3">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={alt}
-        width={w}
-        height={h}
-        loading={priority ? "eager" : "lazy"}
-        fetchPriority={priority ? "high" : undefined}
-        decoding="async"
-        className="block h-auto w-full rounded-[14px] border border-black/[0.06] bg-white"
-      />
-    </div>
-  );
-}
-
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-[13px] font-medium text-[#77756e]">{children}</p>;
+  return (
+    <p className="inline-flex items-center gap-2 text-[13px] font-medium text-[#3b6cf6]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[#3b6cf6]" aria-hidden />
+      {children}
+    </p>
+  );
 }
 
 export default function Landing() {
@@ -153,7 +148,7 @@ export default function Landing() {
             <SectionLabel>Aarika.AI · the AI career co-pilot for India</SectionLabel>
             <h1 id="hero-title" className={`${serif} mt-5 text-[44px] leading-[1.02] tracking-[-0.02em] sm:text-[72px] lg:text-[88px]`}>
               From your first exam
-              <br className="hidden sm:block" /> to your <em className="italic">next job.</em>
+              <br className="hidden sm:block" /> to your <em className="bg-gradient-to-r from-[#2f5fe8] to-[#7c4dff] bg-clip-text pr-2 italic text-transparent">next job.</em>
             </h1>
             <p className="mx-auto mt-7 max-w-2xl text-[17px] leading-relaxed text-[#5f5e5a] sm:text-[19px]">
               Plan your career, practise interviews with an AI interviewer, build your resume and find jobs that actually fit,
@@ -162,14 +157,14 @@ export default function Landing() {
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/register"
-                className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#141413] px-7 py-3.5 text-[15px] font-medium text-white transition-colors hover:bg-black/80 sm:w-auto"
+                className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#2f5fe8] px-7 py-3.5 text-[15px] font-medium text-white shadow-[0_10px_30px_-10px_rgba(47,95,232,0.7)] transition-colors hover:bg-[#2550d0] sm:w-auto"
               >
                 Get started, it&apos;s free
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
               </Link>
               <Link
                 href="/login"
-                className="inline-flex w-full items-center justify-center rounded-full px-7 py-3.5 text-[15px] font-medium text-[#141413] ring-1 ring-inset ring-black/15 transition-colors hover:bg-black/[0.03] sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-full bg-white px-7 py-3.5 text-[15px] font-medium text-[#141413] ring-1 ring-inset ring-black/15 transition-colors hover:bg-black/[0.03] sm:w-auto"
               >
                 Log in
               </Link>
@@ -177,8 +172,10 @@ export default function Landing() {
             <p className="mt-5 text-[13px] text-[#77756e]">Sign up with email, Google or LinkedIn. No card needed.</p>
           </div>
 
-          <figure className="mt-16 sm:mt-20">
+          <figure className="relative mt-16 sm:mt-20">
+            <div className="absolute inset-x-0 -top-10 bottom-10 -z-10 rounded-[48px] bg-[radial-gradient(60%_60%_at_30%_30%,rgba(59,108,246,0.18),transparent),radial-gradient(50%_50%_at_75%_40%,rgba(139,92,246,0.16),transparent)] blur-2xl" aria-hidden />
             <Shot
+              tone="blue"
               src="/landing/hero-job-agent.webp"
               alt="The Aarika.AI app: the Job Agent dashboard with matching jobs, match scores and Smart Apply"
               w={1600}
@@ -225,7 +222,7 @@ export default function Landing() {
                     </Link>
                   </div>
                   <div className={`min-w-0 lg:col-span-7 ${i % 2 === 1 ? "lg:order-1" : ""}`}>
-                    <Shot src={s.shot} alt={s.alt} w={s.w} h={s.h} />
+                    <Shot src={s.shot} alt={s.alt} w={s.w} h={s.h} tone={s.tone} />
                   </div>
                 </article>
               ))}
@@ -235,9 +232,12 @@ export default function Landing() {
             <div className="mt-28 sm:mt-36">
               <h3 className={`${serif} text-[32px] leading-tight sm:text-[40px]`}>And the rest of your toolkit</h3>
               <ul className="mt-10 grid border-t border-black/[0.08] sm:grid-cols-2 lg:grid-cols-4">
-                {MORE.map((m) => (
+                {MORE.map((m, i) => (
                   <li key={m.name} className="border-b border-black/[0.08] py-6 sm:pr-8">
-                    <p className="text-[15px] font-medium">{m.name}</p>
+                    <p className="flex items-center gap-2.5 text-[15px] font-medium">
+                      <span className={`h-2 w-2 rounded-full ${DOTS[i % DOTS.length]}`} aria-hidden />
+                      {m.name}
+                    </p>
                     <p className="mt-1.5 text-[14px] leading-relaxed text-[#5f5e5a]">{m.desc}</p>
                   </li>
                 ))}
@@ -272,8 +272,8 @@ export default function Landing() {
           </h2>
           <div className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
             {PRINCIPLES.map((p, i) => (
-              <div key={p.title} className="border-t border-[#141413] pt-6">
-                <p className="text-[13px] text-[#77756e]">0{i + 1}</p>
+              <div key={p.title} className="border-t-2 border-[#141413] pt-6">
+                <p className={`${serif} text-[40px] leading-none text-[#3b6cf6]`}>0{i + 1}</p>
                 <h3 className="mt-3 text-[18px] font-medium">{p.title}</h3>
                 <p className="mt-2 text-[15px] leading-relaxed text-[#5f5e5a]">{p.body}</p>
               </div>
@@ -298,7 +298,7 @@ export default function Landing() {
                 return (
                   <article
                     key={plan.name}
-                    className={`flex flex-col rounded-[20px] p-7 sm:p-8 ${popular ? "bg-[#141413] text-white" : "bg-[#f6f5f0] text-[#141413]"}`}
+                    className={`flex flex-col rounded-[20px] p-7 sm:p-8 ${popular ? "bg-gradient-to-br from-[#14213f] via-[#1b2f6b] to-[#3a2f8f] text-white shadow-[0_30px_60px_-25px_rgba(30,50,140,0.6)]" : "bg-[#f6f5f0] text-[#141413]"}`}
                   >
                     <div className="flex items-center justify-between">
                       <h3 className="text-[17px] font-medium">{plan.name}</h3>
@@ -364,10 +364,10 @@ export default function Landing() {
         </section>
 
         {/* Closing CTA */}
-        <section aria-labelledby="cta-title" className="bg-[#f6f5f0]">
+        <section aria-labelledby="cta-title" className="bg-gradient-to-br from-[#dfe8ff] via-[#efe9ff] to-[#fde9e4]">
           <div className="mx-auto max-w-[1200px] px-5 py-24 text-center sm:px-8 sm:py-32">
             <h2 id="cta-title" className={`${serif} mx-auto max-w-3xl text-[44px] leading-[1.02] tracking-[-0.02em] sm:text-[72px]`}>
-              Your next step starts <em className="italic">here.</em>
+              Your next step starts <em className="bg-gradient-to-r from-[#2f5fe8] to-[#7c4dff] bg-clip-text pr-2 italic text-transparent">here.</em>
             </h2>
             <p className="mx-auto mt-6 max-w-md text-[17px] text-[#5f5e5a]">Create your free account and let Aarika build your plan today.</p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">

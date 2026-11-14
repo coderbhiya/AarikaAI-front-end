@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { displaySerif } from "@/components/landing/fonts";
+import { Shot, type Tone } from "@/components/landing/Shot";
 
 // What each persona actually gets. Mirrors the persona route rules in
 // src/components/auth/ProtectedRoute.tsx and the backend personaGuard
@@ -12,6 +13,8 @@ import { displaySerif } from "@/components/landing/fonts";
 const PERSONAS = [
   {
     id: "college",
+    tone: "blue" as Tone,
+    dot: "#3b6cf6",
     who: "college student",
     label: "College students",
     title: "Land your first internship and placement",
@@ -28,6 +31,8 @@ const PERSONAS = [
   },
   {
     id: "jobseeker",
+    tone: "green" as Tone,
+    dot: "#2fa77a",
     who: "job seeker",
     label: "Job seekers",
     title: "Let your job agent do the searching",
@@ -44,6 +49,8 @@ const PERSONAS = [
   },
   {
     id: "professional",
+    tone: "sky" as Tone,
+    dot: "#0ea5e9",
     who: "professional",
     label: "Professionals & switchers",
     title: "Move up, or move across, with a plan",
@@ -60,6 +67,8 @@ const PERSONAS = [
   },
   {
     id: "school",
+    tone: "violet" as Tone,
+    dot: "#8b5cf6",
     who: "school student",
     label: "School students",
     title: "Choose your stream with confidence",
@@ -76,6 +85,8 @@ const PERSONAS = [
   },
   {
     id: "govt",
+    tone: "amber" as Tone,
+    dot: "#e8913a",
     who: "govt exam aspirant",
     label: "Govt exam aspirants",
     title: "Prepare like it's exam day",
@@ -110,10 +121,11 @@ export default function PersonaTabs() {
             aria-selected={active === p.id}
             aria-controls={`panel-${p.id}`}
             onClick={() => setActive(p.id)}
-            className={`-mb-px shrink-0 border-b-2 pb-4 text-[15px] transition-colors ${
-              active === p.id ? "border-[#141413] text-[#141413]" : "border-transparent text-[#77756e] hover:text-[#141413]"
+            className={`-mb-px flex shrink-0 items-center gap-2 border-b-2 pb-4 text-[15px] transition-colors ${
+              active === p.id ? "border-[#2f5fe8] font-medium text-[#141413]" : "border-transparent text-[#77756e] hover:text-[#141413]"
             }`}
           >
+            <span className="h-2 w-2 rounded-full" style={{ background: p.dot }} aria-hidden />
             {p.label}
           </button>
         ))}
@@ -145,18 +157,7 @@ export default function PersonaTabs() {
             </Link>
           </div>
           <figure className="min-w-0 lg:col-span-7">
-            <div className="rounded-[20px] bg-white/70 p-2 sm:p-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.shot}
-                alt={p.alt}
-                width={1400}
-                height={p.shot.includes("mission-hunt") ? 875 : 1050}
-                loading="eager"
-                decoding="async"
-                className="block h-auto w-full rounded-[14px] border border-black/[0.06] bg-white"
-              />
-            </div>
+            <Shot src={p.shot} alt={p.alt} w={1400} h={1050} tone={p.tone} eager />
             <figcaption className="mt-4 text-center text-[13px] text-[#77756e]">{p.caption}</figcaption>
           </figure>
         </div>
