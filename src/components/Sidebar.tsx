@@ -374,12 +374,23 @@ const Sidebar = () => {
     handleNavClick(`/chat?tool=${toolId}`);
   };
 
+  // useIsMobile() reports false on the first render, so on a phone the drawer
+  // switched to its closed (-translate-x-full) state one render late and the
+  // slide-out animation played on every page load. Only animate once the
+  // closed position has been painted.
+  const [animateDrawer, setAnimateDrawer] = useState(false);
+  useEffect(() => {
+    if (!isMobile) return;
+    const id = requestAnimationFrame(() => setAnimateDrawer(true));
+    return () => cancelAnimationFrame(id);
+  }, [isMobile]);
+
   const isOnChatPage = pathname === "/chat" || pathname?.startsWith("/chat");
   const isLearningWorkspace = pathname?.startsWith("/learning");
   const isExpanded = showSidebar || isMobile;
 
   const sidebarClasses = isMobile
-    ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300`
+    ? `fixed inset-0 z-50 ${showSidebar ? "translate-x-0" : "-translate-x-full"} ${animateDrawer ? "transition-transform duration-300" : ""}`
     : `h-screen bg-background border-r border-border/60 flex flex-col relative z-30 transition-all duration-300 ease-in-out select-none ${
         isLearningWorkspace
           ? showSidebar
@@ -584,17 +595,8 @@ const Sidebar = () => {
               />
             )}
 
-            {/* Placement Prep is the "campus" category in the AI Tools
-                catalog, not a standalone page — there is no /placement-prep
-                route, so this links into that tab directly. */}
-            {navConfig.showPlacementPrep && (
-              <NavLink
-                to="/tools?category=campus"
-                icon={<Briefcase size={16} />}
-                label="Placement Prep"
-                active={pathname === "/tools" && activeToolParam === null && searchParams.get("category") === "campus"}
-              />
-            )}
+            {/* No "Placement Prep" item: it was only the "Placement Prep" tab of
+                AI Tools (/tools?category=campus), a second entry for the same page. */}
 
             {features.learningModuleEnabled && (
               <NavLink

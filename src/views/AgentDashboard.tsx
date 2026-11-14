@@ -4,10 +4,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Sparkles, Play, CheckCircle2, Sliders, FileText, Briefcase, ExternalLink, AlertTriangle, Clock,
-  Menu, Loader2, Zap, Building2, MapPin, X, Info,
+  Loader2, Zap, Building2, MapPin, X, Info,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { PAGE_COLUMN, PageHeader } from "@/components/layout/PageHeader";
 import SmartApplyPanel from "@/components/jobs/SmartApplyPanel";
 import {
   AgentConfig, Application, JobMatch, JobSources, applyInternal, dismissApplication, getAgentConfig,
@@ -63,7 +63,6 @@ function ChipInput({ label, values, onChange, placeholder }: { label: string; va
 }
 
 export default function AgentDashboard() {
-  const { toggleSidebar } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("matches");
   const [config, setConfig] = useState<AgentConfig | null>(null);
@@ -174,19 +173,9 @@ export default function AgentDashboard() {
 
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[#F8FAFC] relative overflow-y-auto">
-      <header className="sticky top-0 z-40 flex items-center justify-between px-4 md:px-8 py-3 bg-white border-b border-gray-200 w-full shadow-sm">
-        <div className="flex items-center gap-3">
-          <button onClick={toggleSidebar} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Toggle Sidebar">
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="font-bold text-gray-900 text-sm md:text-base">Job Agent</h2>
-          </div>
-        </div>
-      </header>
+      <PageHeader icon={<Sparkles />} title="Job Agent" />
 
-      <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 w-full">
+      <div className={`${PAGE_COLUMN} py-4 sm:py-6 lg:py-8 space-y-6`}>
         {/* Hero */}
         <div className="bg-gradient-to-r from-[#1E293B] via-[#0F172A] to-[#1E1B4B] rounded-2xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden">
           <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
@@ -231,18 +220,26 @@ export default function AgentDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+        {/* Three equal tabs on a phone (no sideways scroll / cut-off last tab), natural width from sm up. */}
+        <div className="grid grid-cols-3 sm:flex sm:gap-1 border-b border-gray-200">
           {([
-            ["matches", "Matching jobs", <Briefcase key="i" className="w-4 h-4" />],
-            ["applications", `Applications${stats.ready ? ` (${stats.ready} ready)` : ""}`, <FileText key="i" className="w-4 h-4" />],
-            ["settings", "Preferences", <Sliders key="i" className="w-4 h-4" />],
-          ] as const).map(([id, label, icon]) => (
+            ["matches", "Matches", "Matching jobs", <Briefcase key="i" className="w-4 h-4" />, 0],
+            ["applications", "Applications", "Applications", <FileText key="i" className="w-4 h-4" />, stats.ready],
+            ["settings", "Preferences", "Preferences", <Sliders key="i" className="w-4 h-4" />, 0],
+          ] as const).map(([id, short, label, icon, badge]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 whitespace-nowrap ${tab === id ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-800"}`}
+              className={`flex items-center justify-center gap-2 px-1 sm:px-4 py-2.5 text-[13px] sm:text-sm font-semibold border-b-2 -mb-px whitespace-nowrap ${tab === id ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-800"}`}
             >
-              {icon} {label}
+              <span className="hidden sm:inline-flex">{icon}</span>
+              <span className="sm:hidden">{short}</span>
+              <span className="hidden sm:inline">{label}</span>
+              {badge > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold inline-flex items-center justify-center" title={`${badge} ready to submit`}>
+                  {badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -266,7 +263,9 @@ export default function AgentDashboard() {
               {matches.map((m) => {
                 const st = statusOf(m.applicationStatus);
                 return (
-                  <div key={`${m.isCompanyJob ? "c" : "p"}-${m.id}`} className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 flex flex-col sm:flex-row gap-4">
+                  <div key={`${m.isCompanyJob ? "c" : "p"}-${m.id}`} className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    {/* Logo stays beside the title on a phone instead of taking a row of its own. */}
+                    <div className="flex gap-3 sm:gap-4 flex-1 min-w-0">
                     <div className="w-11 h-11 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                       {m.companyLogo ? <img src={m.companyLogo} alt="" className="w-7 h-7 object-contain" /> : <Building2 className="w-5 h-5 text-gray-400" />}
                     </div>
@@ -288,8 +287,9 @@ export default function AgentDashboard() {
                         </div>
                       )}
                     </div>
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
-                      <div className="text-right">
+                    </div>
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 pt-3 sm:pt-0 border-t border-gray-100 sm:border-0">
+                      <div className="flex items-baseline gap-1 sm:block sm:text-right">
                         <p className={`text-lg font-bold ${m.matchScore >= 75 ? "text-emerald-600" : m.matchScore >= 60 ? "text-amber-600" : "text-gray-600"}`}>{m.matchScore}%</p>
                         <p className="text-[10px] text-gray-400 font-semibold uppercase">match</p>
                       </div>
@@ -366,7 +366,7 @@ export default function AgentDashboard() {
           )
         ) : (
           config && (
-            <form onSubmit={saveSettings} className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 space-y-5 max-w-3xl">
+            <form onSubmit={saveSettings} className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 space-y-5">
               <div className="grid sm:grid-cols-2 gap-5">
                 <div>
                   <label className="text-xs font-semibold text-gray-700">Minimum match for the agent: {config.minMatchPercentage}%</label>
@@ -402,7 +402,7 @@ export default function AgentDashboard() {
                 <ChipInput label="Must mention (any of)" values={config.includeKeywords || []} onChange={(v) => setConfig({ ...config, includeKeywords: v })} placeholder="e.g. React" />
                 <ChipInput label="Never apply if it mentions" values={config.excludeKeywords || []} onChange={(v) => setConfig({ ...config, excludeKeywords: v })} placeholder="e.g. unpaid, commission" />
               </div>
-              <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold inline-flex items-center gap-2 disabled:opacity-60">
+              <button type="submit" disabled={saving} className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-primary text-white text-sm font-bold inline-flex items-center justify-center gap-2 hover:bg-blue-600 disabled:opacity-60">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Save preferences
               </button>
             </form>
@@ -412,7 +412,7 @@ export default function AgentDashboard() {
         {/* Where jobs come from */}
         {sources && (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 text-sm">
-            <p className="font-semibold text-gray-900 mb-2">Where your jobs come from</p>
+            <p className="text-sm font-bold text-gray-900 mb-2">Where your jobs come from</p>
             <div className="flex flex-wrap gap-2">
               {sources.activeBySource.map((s) => (
                 <span key={s.source} className="px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-xs text-gray-700">

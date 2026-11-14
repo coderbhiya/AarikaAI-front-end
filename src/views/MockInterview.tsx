@@ -3,10 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  Menu, Mic, Loader2, ChevronDown, ChevronUp, ArrowRight, RotateCcw, Flag, History, Info, AlertTriangle,
+  Mic, Loader2, ChevronDown, ChevronUp, ArrowRight, RotateCcw, Flag, History, Info, AlertTriangle,
   CheckCircle2, TrendingUp, Users, Code2, MessageSquare, Trophy, ChevronLeft,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { PAGE_COLUMN, PageHeader } from "@/components/layout/PageHeader";
 import { getProfile } from "@/services/profileService";
 import {
   Difficulty, InterviewAnswer, InterviewSession, InterviewSessionSummary, InterviewType,
@@ -96,7 +96,6 @@ function EvaluationView({ ev }: { ev: InterviewAnswer }) {
 }
 
 export default function MockInterview() {
-  const { toggleSidebar } = useAuth();
   const [phase, setPhase] = useState<Phase>("setup");
 
   // Setup
@@ -253,28 +252,17 @@ export default function MockInterview() {
 
   return (
     <div className="flex-1 flex flex-col h-full w-full bg-[#F8FAFC] relative overflow-y-auto overflow-x-hidden">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 w-full shadow-sm">
-        {/* Same width and side padding as the content column below, so the title and the End
-            button line up with the cards' edges. */}
-        <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <button onClick={toggleSidebar} className="-ml-2 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Toggle Sidebar">
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2 min-w-0">
-              <Mic className="w-5 h-5 text-primary shrink-0" />
-              <h2 className="font-bold text-gray-900 text-sm md:text-base truncate">AI Mock Interview</h2>
-            </div>
-          </div>
-          {phase === "interview" && session && (
-            <button onClick={finish} disabled={finishing || evaluating} className="-mr-2 text-xs font-semibold text-gray-600 inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-50">
-              <Flag className="w-3.5 h-3.5" /> End
-            </button>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        icon={<Mic />}
+        title="AI Mock Interview"
+        actions={phase === "interview" && session ? (
+          <button onClick={finish} disabled={finishing || evaluating} className="text-xs font-semibold text-gray-600 inline-flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-50">
+            <Flag className="w-3.5 h-3.5" /> End
+          </button>
+        ) : undefined}
+      />
 
-      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-5 w-full">
+      <div className={`${PAGE_COLUMN} py-4 sm:py-6 lg:py-8 space-y-6`}>
         {notEligible ? (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center">
             <Info className="w-8 h-8 text-indigo-500 mx-auto mb-3" />
@@ -286,30 +274,34 @@ export default function MockInterview() {
             {starting ? (
               <Busy text="Preparing your interview…" sub="Our AI interviewer is writing questions for your role. This can take up to 20 seconds." />
             ) : (
-              <form onSubmit={start} className="space-y-5">
-                <a
-                  href="/mock-interview/live"
-                  data-testid="live-interview-entry"
-                  className="block rounded-2xl p-5 sm:p-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl hover:opacity-95 transition-opacity"
-                >
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest bg-white/20 rounded-full px-2.5 py-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> New · Live voice
-                  </span>
-                  <h2 className="mt-2 text-lg sm:text-2xl font-bold tracking-tight">Live interview: real HR or technical round</h2>
-                  <p className="text-emerald-50 text-sm mt-1.5 leading-relaxed">
-                    A video-call style interview with an AI interviewer who talks to you, listens, asks follow-ups and runs a coding round. Hands-free once you join.
-                  </p>
-                  <span className="mt-3 inline-flex items-center gap-2 text-sm font-bold">Join a live interview <ArrowRight className="w-4 h-4" /></span>
-                </a>
+              <form onSubmit={start} className="space-y-6">
+                {/* Same hero treatment as the Job Agent page: the two ways to practise side by side. */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <a
+                    href="/mock-interview/live"
+                    data-testid="live-interview-entry"
+                    className="flex flex-col rounded-2xl p-5 sm:p-7 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl hover:opacity-95 transition-opacity"
+                  >
+                    <span className="self-start inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest bg-white/20 rounded-full px-2.5 py-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> New · Live voice
+                    </span>
+                    <h2 className="mt-3 text-xl sm:text-2xl font-bold tracking-tight">Live interview: real HR or technical round</h2>
+                    <p className="text-emerald-50 text-sm mt-2 leading-relaxed">
+                      A video-call style interview with an AI interviewer who talks to you, listens, asks follow-ups and runs a coding round. Hands-free once you join.
+                    </p>
+                    <span className="mt-auto pt-4 inline-flex items-center gap-2 text-sm font-bold">Join a live interview <ArrowRight className="w-4 h-4" /></span>
+                  </a>
 
-                <div className="bg-gradient-to-r from-[#1E293B] via-[#0F172A] to-[#1E1B4B] rounded-2xl p-5 sm:p-6 text-white shadow-xl">
-                  <h1 className="text-lg sm:text-2xl font-bold tracking-tight">Practise interviews with instant AI feedback</h1>
-                  <p className="text-gray-300 text-sm mt-1.5 leading-relaxed">
-                    Answer 6 questions for your target role. Each answer is scored on clarity, relevance and structure, with a stronger sample answer to learn from.
-                  </p>
+                  <div className="flex flex-col bg-gradient-to-r from-[#1E293B] via-[#0F172A] to-[#1E1B4B] rounded-2xl p-5 sm:p-7 text-white shadow-xl">
+                    <span className="self-start text-[11px] font-bold uppercase tracking-widest bg-white/10 rounded-full px-2.5 py-1">Text practice</span>
+                    <h1 className="mt-3 text-xl sm:text-2xl font-bold tracking-tight">Practise interviews with instant AI feedback</h1>
+                    <p className="text-gray-300 text-sm mt-2 leading-relaxed">
+                      Answer 6 questions for your target role. Each answer is scored on clarity, relevance and structure, with a stronger sample answer to learn from.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 space-y-5">
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 space-y-5">
                   <div>
                     <label htmlFor="mi-role" className="text-sm font-semibold text-gray-800">Target role</label>
                     <input
@@ -377,7 +369,7 @@ export default function MockInterview() {
                   <button onClick={loadHistory} className="text-xs font-bold text-primary">Retry</button>
                 </div>
               ) : history.length === 0 ? (
-                <p className="text-sm text-gray-500 rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center">No interviews yet. Your results will appear here.</p>
+                <p className="text-sm text-gray-500 rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-center">No interviews yet. Your results will appear here.</p>
               ) : (
                 <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-100">
                   {history.map((h) => (
