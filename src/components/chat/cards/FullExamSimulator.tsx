@@ -289,7 +289,10 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       });
       setCodeResult(response.data?.data || response.data);
     } catch (err: any) {
-      setCodeResult({ success: false, error: err.message });
+      setCodeResult({
+        success: false,
+        error: err?.response?.data?.error || err?.response?.data?.message || err.message,
+      });
     } finally {
       setCodeRunning(false);
     }
@@ -1501,7 +1504,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Language:</span>
                           <select
                             value={codeLanguage}
-                            onChange={(e: any) => setCodeLanguage(e.target.value)}
+                            onChange={(e: any) => { setCodeLanguage(e.target.value); setCodeResult(null); }}
                             className="bg-slate-800 text-white text-xs font-bold py-1 px-3 rounded border border-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             <option value="javascript">JavaScript (Node.js)</option>
@@ -1535,7 +1538,17 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                       </div>
 
                       {/* Execution Output Panel */}
-                      {codeResult && (
+                      {codeResult && (codeResult.error || codeResult.supported === false) && (
+                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs space-y-1">
+                          <div className="font-bold border-b border-slate-800 pb-2">Execution Console</div>
+                          <p className={codeResult.error ? "text-red-400 pt-1" : "text-amber-400 pt-1"}>
+                            {codeResult.error
+                              ? `Couldn't run your code: ${codeResult.error}`
+                              : (codeResult.message || "Running isn't available for this language yet. Switch to JavaScript to test your solution here.")}
+                          </p>
+                        </div>
+                      )}
+                      {codeResult && !codeResult.error && codeResult.supported !== false && (
                         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs space-y-2 max-h-40 overflow-y-auto">
                           <div className="flex items-center justify-between font-bold border-b border-slate-800 pb-2">
                             <span>Execution Console</span>
@@ -1544,11 +1557,16 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                             </span>
                           </div>
                           {codeResult.results?.map((r: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between py-1 border-b border-slate-800/50">
-                              <span>Test Case #{r.testCaseIndex}</span>
-                              <span className={r.status === "PASSED" ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
-                                {r.status} ({r.executionTimeMs}ms)
-                              </span>
+                            <div key={idx} className="py-1 border-b border-slate-800/50">
+                              <div className="flex items-center justify-between">
+                                <span>Test Case #{r.testCaseIndex}</span>
+                                <span className={r.status === "PASSED" ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
+                                  {r.status} ({r.executionTimeMs}ms)
+                                </span>
+                              </div>
+                              {r.errorMessage && (
+                                <p className="mt-1 font-mono text-[11px] text-red-300/80 break-words">{r.errorMessage}</p>
+                              )}
                             </div>
                           ))}
                         </div>
