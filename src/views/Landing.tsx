@@ -26,18 +26,19 @@ const HERO_ENDINGS = ["next job.", "first offer.", "dream role.", "career switch
 // Logos: monochrome SVGs from simple-icons@13.21.0 (CC0), saved in /public/landing/logos.
 // TCS, Infosys, Wipro and HCL logos already contain the name, so they show alone at a pixel size.
 // Google uses its full-colour wordmark (google-wordmark.svg, from Wikimedia Commons).
-// Positions are relative to the 896px-wide hero text column; the side gutter is 120px.
+// Positions are relative to the 896px-wide hero text column (~460px tall on desktop); the side gutter is 120px.
+// Keep the lowest logo above the hero screenshot (it starts ~80px below the column).
 const HERO_COMPANIES = [
-  { name: "Google", logo: "google-wordmark", color: "#4285F4", image: { w: 124, h: 42 }, cls: "-left-[114px] top-[22px]" },
-  { name: "TCS", logo: "tcs", color: "#EE3984", wordmark: 54, cls: "-left-[24px] top-[140px]" },
-  { name: "Infosys", logo: "infosys", color: "#007CC3", wordmark: 100, cls: "-left-[120px] top-[234px]" },
-  { name: "Flipkart", logo: "flipkart", color: "#2874F0", cls: "-left-[60px] top-[392px] text-[26px]" },
-  { name: "Oracle", logo: "oracle", color: "#F80000", cls: "-left-[116px] top-[508px] text-[26px]" },
-  { name: "Amazon", logo: "amazon", color: "#FF9900", cls: "-right-[104px] top-[36px] text-[30px]" },
-  { name: "Adobe", logo: "adobe", color: "#FF0000", cls: "-right-[120px] top-[160px] text-[28px]" },
-  { name: "Wipro", logo: "wipro", color: "#341C53", wordmark: 72, cls: "-right-[30px] top-[258px]" },
-  { name: "Accenture", logo: "accenture", color: "#A100FF", cls: "-right-[116px] top-[400px] text-[26px]" },
-  { name: "HCL", logo: "hcl", color: "#006BB6", wordmark: 120, cls: "-right-[116px] top-[472px]" },
+  { name: "Google", logo: "google-wordmark", color: "#4285F4", image: { w: 124, h: 42 }, cls: "-left-[114px] top-[17px]" },
+  { name: "TCS", logo: "tcs", color: "#EE3984", wordmark: 54, cls: "-left-[24px] top-[109px]" },
+  { name: "Infosys", logo: "infosys", color: "#007CC3", wordmark: 100, cls: "-left-[120px] top-[183px]" },
+  { name: "Flipkart", logo: "flipkart", color: "#2874F0", cls: "-left-[60px] top-[306px] text-[26px]" },
+  { name: "Oracle", logo: "oracle", color: "#F80000", cls: "-left-[116px] top-[396px] text-[26px]" },
+  { name: "Amazon", logo: "amazon", color: "#FF9900", cls: "-right-[104px] top-[28px] text-[30px]" },
+  { name: "Adobe", logo: "adobe", color: "#FF0000", cls: "-right-[120px] top-[125px] text-[28px]" },
+  { name: "Wipro", logo: "wipro", color: "#341C53", wordmark: 72, cls: "-right-[30px] top-[201px]" },
+  { name: "Accenture", logo: "accenture", color: "#A100FF", cls: "-right-[116px] top-[312px] text-[26px]" },
+  { name: "HCL", logo: "hcl", color: "#006BB6", wordmark: 120, cls: "-right-[116px] top-[368px]" },
 ];
 
 // Paints a monochrome SVG in a brand colour (the file is used as a mask).
@@ -65,14 +66,6 @@ const NAV_LINKS = [
 
 const HERO_PROOF = ["Free to start, no card needed", "English, Hindi or Hinglish", "Pay in rupees via Razorpay"];
 
-const HERO_TOOLS = [
-  { name: "AI career chat", href: "#product", dot: "bg-[#3b6cf6]" },
-  { name: "Mock Interview", href: "#product", dot: "bg-[#8b5cf6]" },
-  { name: "Resume Builder", href: "#product", dot: "bg-[#e0607e]" },
-  { name: "Job Agent", href: "#product", dot: "bg-[#2fa77a]" },
-  { name: "Exam Simulator", href: "#product", dot: "bg-[#e8913a]" },
-  { name: "Career Discovery", href: "#product", dot: "bg-[#0ea5e9]" },
-];
 
 const PERSONAS = ["School students", "College students", "Job seekers", "Working professionals", "Career switchers", "Govt exam aspirants"];
 
@@ -274,8 +267,8 @@ export default function Landing() {
                 Log in
               </Link>
             </div>
-            {/* Proof points, then the core tools as chips. */}
-            <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[13px] text-[#5f5e5a] sm:gap-x-6">
+            {/* Proof points (desktop only). */}
+            <ul className="mt-6 hidden items-center justify-center gap-x-6 gap-y-2 text-[13px] text-[#5f5e5a] lg:flex">
               {HERO_PROOF.map((p) => (
                 <li key={p} className="inline-flex items-center gap-1.5">
                   <Check size={14} strokeWidth={2.5} className="text-[#2fa77a]" aria-hidden />
@@ -283,26 +276,6 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <div className="mt-10 lg:mt-12">
-              <p className="flex items-center justify-center gap-4 text-[12px] font-medium uppercase tracking-[0.12em] text-[#77756e]">
-                <span className="h-px w-12 bg-black/10" aria-hidden />
-                Everything in one app
-                <span className="h-px w-12 bg-black/10" aria-hidden />
-              </p>
-              <ul className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                {HERO_TOOLS.map((t) => (
-                  <li key={t.name}>
-                    <a
-                      href={t.href}
-                      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[13px] text-[#141413] shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-black/[0.08] transition-colors hover:bg-[#f6f5f0] sm:px-3.5 sm:py-2 sm:text-[14px]"
-                    >
-                      <span className={`h-2 w-2 rounded-full ${t.dot}`} aria-hidden />
-                      {t.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
 
             {/* Phones and tablets (< lg): the same employer logos as the desktop side gutters, as a compact, soft cloud. */}
             <ul className="mx-auto mt-10 flex max-w-md flex-wrap items-center justify-center gap-x-6 gap-y-4 opacity-50 sm:max-w-xl lg:hidden" aria-hidden>
