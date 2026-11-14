@@ -20,8 +20,9 @@ const serif = displaySerif.className;
 // Hero headline: "From your first exam to your ___". The first one is the SEO/screen-reader text.
 const HERO_ENDINGS = ["next job.", "first offer.", "dream role.", "career switch."];
 
-// Desktop-only hero extras. Facts only: each is stated elsewhere on this page or in the app.
-// Company logo (+ name where the logo is only a symbol), in brand colours, shown softly beside the hero on xl+ screens.
+// Hero extras (all screen sizes). Facts only: each is stated elsewhere on this page or in the app.
+// Company logo (+ name where the logo is only a symbol), in brand colours, shown softly beside the hero on xl+ screens
+// and as a compact logo cloud under the hero on phones and tablets (< lg).
 // Logos: monochrome SVGs from simple-icons@13.21.0 (CC0), saved in /public/landing/logos.
 // TCS, Infosys, Wipro and HCL logos already contain the name, so they show alone at a pixel size.
 // Google uses its full-colour wordmark (google-wordmark.svg, from Wikimedia Commons).
@@ -54,6 +55,13 @@ function logoMask(logo: string, color: string): React.CSSProperties {
     maskPosition: "center",
   };
 }
+
+const NAV_LINKS = [
+  { href: "#product", label: "Product" },
+  { href: "#for-you", label: "For you" },
+  { href: "#pricing", label: "Pricing" },
+  { href: "#faq", label: "FAQ" },
+];
 
 const HERO_PROOF = ["Free to start, no card needed", "English, Hindi or Hinglish", "Pay in rupees via Razorpay"];
 
@@ -167,7 +175,8 @@ export default function Landing() {
     <div id="top" className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden scroll-smooth bg-white text-[#141413] antialiased selection:bg-[#141413] selection:text-white">
       <LandingAuthRedirect />
 
-      {/* Desktop (lg+): minimal bar, links sit right after the logo, actions on the far right, no divider. */}
+      {/* Minimal bar, no divider. Desktop (lg+): links sit right after the logo, actions on the far right.
+          Phones (< md): just Log in + Get started. */}
       <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-xl lg:bg-white/90">
         <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-5 sm:px-8">
           <Link href="/" className="flex min-w-0 items-center gap-2" aria-label="Aarika.AI home">
@@ -178,12 +187,7 @@ export default function Landing() {
             className="hidden items-center gap-8 text-[14px] text-[#5f5e5a] md:flex lg:ml-12 lg:mr-auto lg:gap-1 lg:text-[#141413]"
             aria-label="Main"
           >
-            {[
-              { href: "#product", label: "Product" },
-              { href: "#for-you", label: "For you" },
-              { href: "#pricing", label: "Pricing" },
-              { href: "#faq", label: "FAQ" },
-            ].map((l) => (
+            {NAV_LINKS.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
@@ -199,22 +203,21 @@ export default function Landing() {
             </Link>
             <Link
               href="/register"
-              className="group rounded-full bg-[#141413] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-black/80 lg:inline-flex lg:items-center lg:gap-1"
+              className="group inline-flex items-center gap-1 rounded-full bg-[#141413] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-black/80"
             >
               Get started
-              <ArrowUpRight size={15} className="hidden transition-transform group-hover:-translate-y-px group-hover:translate-x-px lg:block" aria-hidden />
+              <ArrowUpRight size={15} className="transition-transform group-hover:-translate-y-px group-hover:translate-x-px" aria-hidden />
             </Link>
           </div>
         </div>
-        <div className="h-px bg-black/[0.06] lg:hidden" />
       </header>
 
       <main>
         {/* Hero */}
-        <section aria-labelledby="hero-title" className="mx-auto max-w-[1200px] px-5 pt-16 sm:px-8 sm:pt-24 lg:pt-20">
-          <div className="mx-auto max-w-4xl text-center lg:relative lg:isolate">
-            {/* Desktop-only backdrop: soft colour glow over a faint grid that fades out at the edges. */}
-            <div className="pointer-events-none absolute -top-24 left-1/2 -z-10 hidden h-[760px] w-[1400px] -translate-x-1/2 lg:block" aria-hidden>
+        <section aria-labelledby="hero-title" className="mx-auto max-w-[1200px] px-5 pt-16 max-lg:overflow-x-clip sm:px-8 sm:pt-24 lg:pt-20">
+          <div className="relative isolate mx-auto max-w-4xl text-center">
+            {/* Backdrop: soft colour glow over a faint grid that fades out at the edges (smaller on phones). */}
+            <div className="pointer-events-none absolute -top-16 left-1/2 -z-10 h-[620px] w-[900px] -translate-x-1/2 sm:h-[700px] sm:w-[1200px] lg:-top-24 lg:h-[760px] lg:w-[1400px]" aria-hidden>
               <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(20,20,19,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(20,20,19,0.045)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_55%_60%_at_50%_40%,black,transparent)]" />
               <div className="absolute inset-0 bg-[radial-gradient(35%_40%_at_32%_35%,rgba(59,108,246,0.12),transparent),radial-gradient(30%_38%_at_70%_40%,rgba(139,92,246,0.11),transparent),radial-gradient(25%_30%_at_50%_75%,rgba(232,145,58,0.07),transparent)]" />
             </div>
@@ -271,10 +274,8 @@ export default function Landing() {
                 Log in
               </Link>
             </div>
-            <p className="mt-5 text-[13px] text-[#77756e] lg:hidden">Sign up with email, Google or LinkedIn. No card needed.</p>
-
-            {/* Desktop: proof points, then the core tools as chips. */}
-            <ul className="mt-6 hidden items-center justify-center gap-x-6 gap-y-2 text-[13px] text-[#5f5e5a] lg:flex">
+            {/* Proof points, then the core tools as chips. */}
+            <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[13px] text-[#5f5e5a] sm:gap-x-6">
               {HERO_PROOF.map((p) => (
                 <li key={p} className="inline-flex items-center gap-1.5">
                   <Check size={14} strokeWidth={2.5} className="text-[#2fa77a]" aria-hidden />
@@ -282,7 +283,7 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <div className="mt-12 hidden lg:block">
+            <div className="mt-10 lg:mt-12">
               <p className="flex items-center justify-center gap-4 text-[12px] font-medium uppercase tracking-[0.12em] text-[#77756e]">
                 <span className="h-px w-12 bg-black/10" aria-hidden />
                 Everything in one app
@@ -293,7 +294,7 @@ export default function Landing() {
                   <li key={t.name}>
                     <a
                       href={t.href}
-                      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-white px-3.5 py-2 text-[14px] text-[#141413] shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-black/[0.08] transition-colors hover:bg-[#f6f5f0]"
+                      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[13px] text-[#141413] shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-black/[0.08] transition-colors hover:bg-[#f6f5f0] sm:px-3.5 sm:py-2 sm:text-[14px]"
                     >
                       <span className={`h-2 w-2 rounded-full ${t.dot}`} aria-hidden />
                       {t.name}
@@ -302,6 +303,25 @@ export default function Landing() {
                 ))}
               </ul>
             </div>
+
+            {/* Phones and tablets (< lg): the same employer logos as the desktop side gutters, as a compact, soft cloud. */}
+            <ul className="mx-auto mt-10 flex max-w-md flex-wrap items-center justify-center gap-x-6 gap-y-4 opacity-50 sm:max-w-xl lg:hidden" aria-hidden>
+              {HERO_COMPANIES.map((c) => (
+                <li key={c.name} className="flex items-center gap-[0.3em] whitespace-nowrap text-[14px] font-semibold tracking-tight" style={{ color: c.color }}>
+                  {"image" in c ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={`/landing/logos/${c.logo}.svg`} alt="" width={Math.round((c.image?.w ?? 124) * 0.55)} height={Math.round((c.image?.h ?? 42) * 0.55)} className="block" />
+                  ) : "wordmark" in c ? (
+                    <span className="block" style={{ width: Math.round((c.wordmark ?? 60) * 0.5), height: Math.round((c.wordmark ?? 60) * 0.5), ...logoMask(c.logo, c.color) }} />
+                  ) : (
+                    <>
+                      <span className="block h-[1.1em] w-[1.1em]" style={logoMask(c.logo, c.color)} />
+                      {c.name}
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <figure className="relative mt-16 sm:mt-20">
