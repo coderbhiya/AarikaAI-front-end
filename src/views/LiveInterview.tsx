@@ -14,8 +14,10 @@ import { RealtimeInterviewClient, ToolCall } from "@/lib/liveInterview/realtimeC
 import { CandidateCaptions, captionsSupported } from "@/lib/liveInterview/speechCaptions";
 import { runJavaScript, RunResult } from "@/lib/liveInterview/codeRunner";
 import {
-  startLiveInterview, finishLiveInterview, CodingProblem, LiveInterviewSession, LiveInterviewType, Difficulty, TranscriptTurn,
+  startLiveInterview, finishLiveInterview, getInterviewQuota, getQuotaExceeded,
+  CodingProblem, LiveInterviewSession, LiveInterviewType, Difficulty, TranscriptTurn, InterviewQuota, QuotaExceeded,
 } from "@/services/mockInterviewService";
+import { QuotaCounter, QuotaExceededNotice } from "@/components/mockInterview/InterviewQuota";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Stage = "prejoin" | "joining" | "call" | "finishing" | "report" | "error";
@@ -43,6 +45,14 @@ export default function LiveInterview() {
   const [durationMin, setDurationMin] = useState<15 | 25>(15);
   const [error, setError] = useState<string | null>(null);
   const [fallbackToText, setFallbackToText] = useState(false);
+  const [quota, setQuota] = useState<InterviewQuota | null>(null);
+  const [quotaBlock, setQuotaBlock] = useState<QuotaExceeded | null>(null);
+
+  useEffect(() => {
+    getInterviewQuota()
+      .then((r) => setQuota(r.quota))
+      .catch(() => {}); // informational only; the start call enforces the limit
+  }, []);
 
   // ── media ──
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -234,9 +244,11 @@ export default function LiveInterview() {
     if (!stream) return;
     setError(null);
     setFallbackToText(false);
+    setQuotaBlock(null);
     setStage("joining");
     try {
       const r = await startLiveInterview({ targetRole: targetRole.trim() || undefined, interviewType, difficulty, durationMin });
+      if (r.quota) setQuota(r.quota);
       sessionIdRef.current = r.session.id;
       setProblems(r.codingProblems || []);
       callStartRef.current = Date.now();
@@ -285,6 +297,14 @@ export default function LiveInterview() {
     } catch (e: any) {
       const status = e?.response?.status;
       const data = e?.response?.data;
+      const over = getQuotaExceeded(e);
+      if (over) {
+        setQuotaBlock(over);
+        if (over.quota) setQuota(over.quota);
+        clientRef.current?.close();
+        setStage("prejoin");
+        return;
+      }
       if (status === 503 || data?.fallback === "text") setFallbackToText(true);
       setError(data?.message || e?.message || "Couldn't start the interview. Please try again.");
       clientRef.current?.close();
@@ -390,6 +410,7 @@ export default function LiveInterview() {
             <div className="w-full min-w-0">
               <h1 className="text-2xl sm:text-3xl font-normal text-gray-900">Ready to join?</h1>
               <p className="text-sm text-gray-500 mt-1">Aarika, your AI interviewer, is waiting in the room.</p>
+              {quota && <QuotaCounter quota={quota} className="mt-2" />}
 
               <div className="mt-5 space-y-4">
                 <div>
@@ -419,6 +440,8 @@ export default function LiveInterview() {
                   <li className="flex gap-2"><Monitor className="w-4 h-4 shrink-0" /> {captionsAvailable ? "Live captions are on. Chrome or Edge work best." : "Your browser can't caption your speech, so speech feedback will be limited. Chrome or Edge work best."}</li>
                   <li className="flex gap-2"><Sparkles className="w-4 h-4 shrink-0" /> Once you join, just talk. No buttons needed. The interviewer waits for you to finish.</li>
                 </ul>
+
+                {quotaBlock && <QuotaExceededNotice info={quotaBlock} />}
 
                 {error && (
                   <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert">

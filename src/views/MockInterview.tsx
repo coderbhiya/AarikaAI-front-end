@@ -9,9 +9,10 @@ import {
 import { PAGE_COLUMN, PageHeader } from "@/components/layout/PageHeader";
 import { getProfile } from "@/services/profileService";
 import {
-  Difficulty, InterviewAnswer, InterviewSession, InterviewSessionSummary, InterviewType,
-  finishInterview, getInterview, listInterviews, startInterview, submitInterviewAnswer,
+  Difficulty, InterviewAnswer, InterviewQuota, InterviewSession, InterviewSessionSummary, InterviewType, QuotaExceeded,
+  finishInterview, getInterview, getInterviewQuota, getQuotaExceeded, listInterviews, startInterview, submitInterviewAnswer,
 } from "@/services/mockInterviewService";
+import { QuotaCounter, QuotaExceededNotice } from "@/components/mockInterview/InterviewQuota";
 
 type Phase = "setup" | "interview" | "report";
 
@@ -104,6 +105,8 @@ export default function MockInterview() {
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [starting, setStarting] = useState(false);
   const [notEligible, setNotEligible] = useState<string | null>(null);
+  const [quota, setQuota] = useState<InterviewQuota | null>(null);
+  const [quotaBlock, setQuotaBlock] = useState<QuotaExceeded | null>(null);
 
   // Interview
   const [session, setSession] = useState<InterviewSession | null>(null);
@@ -135,6 +138,9 @@ export default function MockInterview() {
 
   useEffect(() => {
     loadHistory();
+    getInterviewQuota()
+      .then((r) => setQuota(r.quota))
+      .catch(() => {}); // the counter is informational; the start call enforces the limit
     getProfile()
       .then((r: any) => {
         const p = r?.user?.UserProfile;
@@ -167,12 +173,18 @@ export default function MockInterview() {
   const start = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setStarting(true);
+    setQuotaBlock(null);
     try {
       const r = await startInterview({ targetRole: targetRole.trim() || undefined, interviewType, difficulty });
+      if (r.quota) setQuota(r.quota);
       openSession(r.session);
       if (r.questionSource === "fallback") toast.info("Using our standard question set for this round.");
     } catch (err: any) {
-      if (err?.response?.status === 403) setNotEligible(err.response.data?.message || "Mock interviews aren't available for your profile.");
+      const over = getQuotaExceeded(err);
+      if (over) {
+        setQuotaBlock(over);
+        if (over.quota) setQuota(over.quota);
+      } else if (err?.response?.status === 403) setNotEligible(err.response.data?.message || "Mock interviews aren't available for your profile.");
       else toast.error(errMsg(err, "Could not start the interview"));
     } finally {
       setStarting(false);
@@ -352,9 +364,14 @@ export default function MockInterview() {
                     </div>
                   </div>
 
-                  <button type="submit" className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-primary text-white text-sm font-bold inline-flex items-center justify-center gap-2 hover:bg-blue-600">
-                    Start interview <ArrowRight className="w-4 h-4" />
-                  </button>
+                  {quotaBlock && <QuotaExceededNotice info={quotaBlock} />}
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <button type="submit" className="w-full sm:w-auto shrink-0 px-6 py-2.5 rounded-full bg-primary text-white text-sm font-bold inline-flex items-center justify-center gap-2 hover:bg-blue-600">
+                      Start interview <ArrowRight className="w-4 h-4" />
+                    </button>
+                    {quota && <QuotaCounter quota={quota} className="justify-center sm:justify-start" />}
+                  </div>
                 </div>
               </form>
             )}
