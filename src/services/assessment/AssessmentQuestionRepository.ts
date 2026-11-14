@@ -1,11 +1,28 @@
+/** One test case for a coding question: `solution(input)` must return `output` (compared as String(result), trimmed). */
+export interface CodingTestCase {
+  input: string;
+  output: string;
+  explanation?: string;
+}
+
 export interface Question {
   question: string;
   options: string[];
   correctAnswer: string; // for descriptive types, holds the full model answer
   explanation: string; // for descriptive types, holds the marking rubric
-  type?: 'mcq' | 'short_answer' | 'long_answer'; // defaults to 'mcq' when absent
+  type?: 'mcq' | 'short_answer' | 'long_answer' | 'coding'; // defaults to 'mcq' when absent
   maxMarks?: number; // defaults to 1 for mcq
   _id?: number | null; // DB question ID for analytics tracking
+  // Coding questions (company papers from /company-assessment/start) only:
+  // the question's own visible sample cases, plus its hidden cases sealed in
+  // an opaque token. Both go to /company-assessment/run-code.
+  testCases?: CodingTestCase[];
+  hiddenTestToken?: string | null;
+  hiddenTestCount?: number;
+  testCasesVerified?: boolean;
+  constraints?: string | null;
+  solutionContract?: string;
+  starterCode?: Record<string, string>;
 }
 
 export interface AssessmentBlueprint {

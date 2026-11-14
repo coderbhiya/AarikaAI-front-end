@@ -13,7 +13,8 @@ const generateQuestion = async (
     (blueprint.exam || "").toLowerCase().includes("infosys") ||
     (blueprint.exam || "").toLowerCase().includes("amazon") ||
     (blueprint.exam || "").toLowerCase().includes("meta") ||
-    (blueprint.exam || "").toLowerCase().includes("goldman");
+    (blueprint.exam || "").toLowerCase().includes("goldman") ||
+    (blueprint.exam || "").toLowerCase().includes("accenture");
 
   if (isCompany) {
     try {
@@ -25,17 +26,35 @@ const generateQuestion = async (
         const paper = compRes.data.data;
         const allQuestions: any[] = [];
         paper.sections.forEach((sec: any) => {
-          if (sec.questions) allQuestions.push(...sec.questions);
+          if (sec.questions) allQuestions.push(...sec.questions.map((q: any) => ({ ...q, _sectionType: sec.type })));
         });
 
         if (allQuestions[index]) {
           const q = allQuestions[index];
-          return {
+          const isCoding = q._sectionType === "coding";
+          const base: Question = {
             _id: q.id || index + 1,
             question: q.problemStatement || q.question || "Write an algorithm solution.",
             options: q.options || ["Solution Code"],
             correctAnswer: q.correctAnswer || "Solution Code",
             explanation: q.constraints ? `Constraints: ${q.constraints}` : "Execute code against test cases.",
+          };
+          if (!isCoding) return base;
+          return {
+            ...base,
+            type: "coding",
+            // The question's own test cases — "Run Code" checks against these.
+            testCases: Array.isArray(q.sampleTestCases)
+              ? q.sampleTestCases
+                  .filter((tc: any) => tc && typeof tc.input === "string" && typeof tc.output === "string")
+                  .map((tc: any) => ({ input: tc.input, output: tc.output, ...(tc.explanation ? { explanation: tc.explanation } : {}) }))
+              : [],
+            hiddenTestToken: q.hiddenTestToken || null,
+            hiddenTestCount: q.hiddenTestCount || 0,
+            testCasesVerified: !!q.testCasesVerified,
+            constraints: q.constraints || null,
+            solutionContract: q.solutionContract,
+            starterCode: q.starterCode,
           };
         }
       }
