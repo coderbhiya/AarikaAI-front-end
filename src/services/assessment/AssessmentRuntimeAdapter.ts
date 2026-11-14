@@ -20,6 +20,7 @@ export class AssessmentRuntimeAdapter {
   // adapter instead of starting blank, so a refresh/crash mid-exam actually
   // resumes instead of silently discarding everything.
   public resumed: boolean;
+  private discarded = false;
 
   constructor(
     blueprint: AssessmentBlueprint,
@@ -146,12 +147,18 @@ export class AssessmentRuntimeAdapter {
     return this.state.elapsedSeconds;
   }
 
+  // Called after the attempt is saved. Removes the autosaved draft so the
+  // exam starts fresh next time, but keeps this session's questions in memory:
+  // emptying them made the results screen lose every question (blank text,
+  // 0% score) on its next render.
   public clearSession() {
-    this.repository.clear();
+    this.repository.discardSavedDraft();
+    this.discarded = true;
     localStorage.removeItem(`assessment_state_${this.sessionId}`);
   }
 
   private persistState() {
+    if (this.discarded) return;
     try {
       const serialized = JSON.stringify({
         blueprint: this.state.blueprint,

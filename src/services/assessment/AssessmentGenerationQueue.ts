@@ -1,5 +1,6 @@
-import { AssessmentBlueprint, AssessmentQuestionRepository } from "./AssessmentQuestionRepository";
+import type { AssessmentBlueprint, AssessmentQuestionRepository, Question } from "./AssessmentQuestionRepository";
 import { QuestionGenerationEngine } from "./QuestionGenerationEngine";
+import { isCompanyExam } from "./companyPaper";
 
 export type QuestionStatus = "PENDING" | "GENERATING" | "READY" | "FAILED";
 
@@ -13,12 +14,31 @@ export class AssessmentGenerationQueue {
   // faster without hammering the backend/LLM provider.
   private CONCURRENCY = 3;
   private isProcessing = false;
+  // Company tests: the whole paper comes from ONE POST /company-assessment/start
+  // per exam session (this queue lives as long as the session's adapter).
+  // Concurrent generateOne() calls share the in-flight request; a failed
+  // request is dropped so a retry fetches again.
+  private paperPromise: Promise<Question[]> | null = null;
+
+  // Plain fields (not constructor parameter properties) so this module also
+  // loads under Node's type-stripping TS loader, which the logic tests use.
+  private repository: AssessmentQuestionRepository;
+  private blueprint: AssessmentBlueprint;
+  private onStatusChange?: (index: number, status: QuestionStatus) => void;
+  private fetchCompanyPaper: (blueprint: AssessmentBlueprint) => Promise<Question[]>;
 
   constructor(
-    private repository: AssessmentQuestionRepository,
-    private blueprint: AssessmentBlueprint,
-    private onStatusChange?: (index: number, status: QuestionStatus) => void
-  ) {}
+    repository: AssessmentQuestionRepository,
+    blueprint: AssessmentBlueprint,
+    onStatusChange?: (index: number, status: QuestionStatus) => void,
+    fetchCompanyPaper: (blueprint: AssessmentBlueprint) => Promise<Question[]> = (bp) =>
+      QuestionGenerationEngine.fetchCompanyPaper(bp)
+  ) {
+    this.repository = repository;
+    this.blueprint = blueprint;
+    this.onStatusChange = onStatusChange;
+    this.fetchCompanyPaper = fetchCompanyPaper;
+  }
 
   public getStatus(index: number): QuestionStatus {
     if (this.repository.hasQuestion(index)) return "READY";
@@ -74,7 +94,40 @@ export class AssessmentGenerationQueue {
     return "medium";
   }
 
+  private loadCompanyPaper(): Promise<Question[]> {
+    if (!this.paperPromise) {
+      this.paperPromise = this.fetchCompanyPaper(this.blueprint).catch((err) => {
+        this.paperPromise = null;
+        throw err;
+      });
+    }
+    return this.paperPromise;
+  }
+
+  // Saves every paper question at once (persisted with the session), so the
+  // rest of the paper is ready immediately and a reload resumes the same paper.
+  private storeCompanyPaper(paper: Question[]) {
+    const n = Math.min(paper.length, this.blueprint.questions);
+    for (let i = 0; i < n; i++) {
+      if (!this.repository.hasQuestion(i)) this.repository.saveQuestion(i, paper[i]);
+      this.setStatus(i, "READY");
+    }
+  }
+
   private async generateOne(index: number) {
+    if (isCompanyExam(this.blueprint.exam)) {
+      try {
+        this.storeCompanyPaper(await this.loadCompanyPaper());
+        if (this.repository.hasQuestion(index)) return;
+      } catch (error) {
+        // Fall through to a generated question for this index, as before.
+        console.warn("[AssessmentGenerationQueue] Company paper unavailable, generating instead", error);
+      }
+    }
+    if (this.repository.hasQuestion(index)) {
+      this.setStatus(index, "READY");
+      return;
+    }
     try {
       const topic = this.resolveTopic(index);
       const difficulty = this.resolveDifficulty(index);
