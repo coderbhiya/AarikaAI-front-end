@@ -1,23 +1,10 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Mail, Phone, MapPin, ShieldCheck, Lock, Globe, FileText, CheckCircle2 } from "lucide-react";
-import BrainLogo from "@/components/BrainLogo";
-import { useAuth } from "@/contexts/AuthContext";
+import { Mail, Phone, MapPin, Lock, Globe, FileText, CheckCircle2 } from "lucide-react";
+import { PublicPage, SectionLabel, serif } from "@/components/landing/Site";
 
 const Privacy = () => {
-  const navigate = useRouter();
-  const { isAuthenticated } = useAuth();
-
-  const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      navigate.back();
-    } else {
-      navigate.push(isAuthenticated ? "/chat" : "/");
-    }
-  };
-
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -26,37 +13,16 @@ const Privacy = () => {
   };
 
   return (
-    <div className="h-screen w-full overflow-y-auto bg-white text-gray-800 font-sans selection:bg-gray-200 scroll-smooth">
-      {/* ── Top Header Bar (ChatGPT Clean Navigation) ── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 md:px-12 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate.push(isAuthenticated ? "/chat" : "/")}>
-            <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
-              <BrainLogo size={32} />
-            </div>
-            <span className="text-base font-bold text-gray-900 tracking-tight">Aarika.AI</span>
-          </div>
-
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors py-1.5 px-3 rounded-lg hover:bg-gray-100"
-          >
-            <ArrowLeft size={16} /> {isAuthenticated ? "Back to App" : "Back to Home"}
-          </button>
-        </div>
-      </header>
+    <PublicPage cta={false}>
 
       {/* ── Main Article Container ── */}
-      <main className="max-w-3xl mx-auto px-6 py-12 md:py-16">
+      <article className="mx-auto max-w-3xl px-5 pb-24 pt-16 text-gray-800 sm:px-8 sm:pt-24 lg:pt-20">
 
         {/* Title & Effective Date */}
         <div className="mb-10 pb-8 border-b border-gray-100">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-semibold mb-4">
-            <ShieldCheck size={14} className="text-emerald-600" />
-            <span>Official Policy</span>
-          </div>
-          <h1 className="text-3xl md:text-5xl font-bold text-gray-900 tracking-tight leading-tight mb-3">
-            Privacy Policy
+          <SectionLabel>Legal</SectionLabel>
+          <h1 className={`${serif} mt-4 mb-4 text-[48px] leading-[1.02] tracking-[-0.02em] text-[#141413] sm:text-[64px]`}>
+            Privacy policy
           </h1>
           <p className="text-sm font-medium text-gray-500">
             Effective Date: <span className="text-gray-800 font-semibold">August 1, 2026</span>
@@ -249,19 +215,8 @@ const Privacy = () => {
 
         </div>
 
-        {/* Footer info */}
-        <div className="mt-16 pt-8 border-t border-gray-100 text-center text-xs font-medium text-gray-400">
-          <p>
-            © 2026{" "}
-            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-gray-700 transition-colors font-semibold">
-              SenseforgeAI
-            </a>{" "}
-            • AarikaAI. All rights reserved.
-          </p>
-        </div>
-
-      </main>
-    </div>
+      </article>
+    </PublicPage>
   );
 };
 

@@ -103,3 +103,23 @@ export const FAQS: { q: string; a: string }[] = [
     a: "Aarika.AI is built in India by SenseforgeAI.",
   },
 ];
+
+// Shared by the landing page and /about.
+export const PERSONAS = ["School students", "College students", "Job seekers", "Working professionals", "Career switchers", "Govt exam aspirants"];
+
+export const MORE = [
+  { name: "AI career chat", desc: "Career answers that use your profile, in English, Hindi or Hinglish." },
+  { name: "Resume Builder", desc: "Clean PDF resumes, tailored to a job description, with an ATS keyword check." },
+  { name: "Mission Hunt", desc: "A job feed that only shows roles matched to your skills and target role." },
+  { name: "Internships", desc: "Internships and fresher jobs ranked by fit, with an application tracker." },
+  { name: "Career Discovery", desc: "A 30-question quiz that suggests your best-fit stream and careers." },
+  { name: "Exams & Scholarships", desc: "One calendar, with eligibility checked against your profile." },
+  { name: "AI Tools", desc: "Campus placement prep, skill gap & SWOT, roadmaps, study guides and more." },
+  { name: "My Learning", desc: "Your courses in one workspace, with notes saved for each one." },
+];
+
+export const PRINCIPLES = [
+  { title: "What you see is the product", body: "Every screenshot on this page is the real app. No mock-ups, no made-up numbers." },
+  { title: "Private by design", body: "In live interviews your camera stays on your device; only your voice reaches the AI interviewer." },
+  { title: "Made for India", body: "Built by SenseforgeAI for Indian exams, campuses and job markets. Pay in rupees via Razorpay." },
+];

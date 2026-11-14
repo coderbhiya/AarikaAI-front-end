@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, Plus } from "lucide-react";
-import BrainLogo from "@/components/BrainLogo";
 import LandingAuthRedirect from "@/components/landing/LandingAuthRedirect";
 import PersonaTabs from "@/components/landing/PersonaTabs";
-import { displaySerif } from "@/components/landing/fonts";
-import { FAQS, PLANS } from "@/components/landing/content";
+import { ClosingCta, SectionLabel, serif, SiteFooter, SiteHeader } from "@/components/landing/Site";
+import { FAQS, MORE, PERSONAS, PLANS, PRINCIPLES } from "@/components/landing/content";
 import { Shot, type Tone } from "@/components/landing/Shot";
 import RotatingWord from "@/components/landing/RotatingWord";
 
@@ -12,10 +11,6 @@ import RotatingWord from "@/components/landing/RotatingWord";
 // headlines, real product screenshots, thin rules instead of boxes and icons.
 // Every feature named here exists in the app today (audited against the code);
 // if something leaves the Sidebar, remove it here too.
-
-const serif = displaySerif.className;
-
-
 
 // Hero headline: "From your first exam to your ___". The first one is the SEO/screen-reader text.
 const HERO_ENDINGS = ["next job.", "first offer.", "dream role.", "career switch."];
@@ -57,17 +52,7 @@ function logoMask(logo: string, color: string): React.CSSProperties {
   };
 }
 
-const NAV_LINKS = [
-  { href: "#product", label: "Product" },
-  { href: "#for-you", label: "For you" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#faq", label: "FAQ" },
-];
-
 const HERO_PROOF = ["Free to start, no card needed", "English, Hindi or Hinglish", "Pay in rupees via Razorpay"];
-
-
-const PERSONAS = ["School students", "College students", "Job seekers", "Working professionals", "Career switchers", "Govt exam aspirants"];
 
 const SHOWCASE = [
   {
@@ -107,61 +92,6 @@ const SHOWCASE = [
 
 const DOTS = ["bg-[#3b6cf6]", "bg-[#e0607e]", "bg-[#e8913a]", "bg-[#2fa77a]", "bg-[#8b5cf6]", "bg-[#0ea5e9]", "bg-[#3b6cf6]", "bg-[#2fa77a]"];
 
-const MORE = [
-  { name: "AI career chat", desc: "Career answers that use your profile, in English, Hindi or Hinglish." },
-  { name: "Resume Builder", desc: "Clean PDF resumes, tailored to a job description, with an ATS keyword check." },
-  { name: "Mission Hunt", desc: "A job feed that only shows roles matched to your skills and target role." },
-  { name: "Internships", desc: "Internships and fresher jobs ranked by fit, with an application tracker." },
-  { name: "Career Discovery", desc: "A 30-question quiz that suggests your best-fit stream and careers." },
-  { name: "Exams & Scholarships", desc: "One calendar, with eligibility checked against your profile." },
-  { name: "AI Tools", desc: "Campus placement prep, skill gap & SWOT, roadmaps, study guides and more." },
-  { name: "My Learning", desc: "Your courses in one workspace, with notes saved for each one." },
-];
-
-const PRINCIPLES = [
-  { title: "What you see is the product", body: "Every screenshot on this page is the real app. No mock-ups, no made-up numbers." },
-  { title: "Private by design", body: "In live interviews your camera stays on your device; only your voice reaches the AI interviewer." },
-  { title: "Made for India", body: "Built by SenseforgeAI for Indian exams, campuses and job markets. Pay in rupees via Razorpay." },
-];
-
-const FOOTER_COLUMNS = [
-  {
-    title: "Product",
-    links: [
-      { href: "#product", label: "Features" },
-      { href: "#for-you", label: "For you" },
-      { href: "#pricing", label: "Pricing" },
-      { href: "#faq", label: "FAQ" },
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      { href: "/about", label: "About" },
-      { href: "/reviews", label: "Reviews" },
-      { href: "/community", label: "Community" },
-      { href: "/updates-faq", label: "Updates" },
-      { href: "/open-jobs", label: "Open jobs" },
-    ],
-  },
-  {
-    title: "Legal",
-    links: [
-      { href: "/privacy", label: "Privacy policy" },
-      { href: "/terms", label: "Terms of service" },
-    ],
-  },
-];
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="inline-flex items-center gap-2 text-[13px] font-medium text-[#3b6cf6]">
-      <span className="h-1.5 w-1.5 rounded-full bg-[#3b6cf6]" aria-hidden />
-      {children}
-    </p>
-  );
-}
-
 export default function Landing() {
   return (
     // html/body are overflow:hidden app-wide, so the landing page scrolls in its own container.
@@ -170,40 +100,7 @@ export default function Landing() {
 
       {/* Minimal bar, no divider. Desktop (lg+): links sit right after the logo, actions on the far right.
           Phones (< md): just Log in + Get started. */}
-      <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-xl lg:bg-white/90">
-        <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-5 sm:px-8">
-          <Link href="/" className="flex min-w-0 items-center gap-2" aria-label="Aarika.AI home">
-            <BrainLogo size={28} className="rounded-md" />
-            <span className="text-[17px] font-semibold tracking-tight">Aarika.AI</span>
-          </Link>
-          <nav
-            className="hidden items-center gap-8 text-[14px] text-[#5f5e5a] md:flex lg:ml-12 lg:mr-auto lg:gap-1 lg:text-[#141413]"
-            aria-label="Main"
-          >
-            {NAV_LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                className="transition-colors hover:text-[#141413] lg:rounded-full lg:px-3.5 lg:py-2 lg:hover:bg-black/[0.05]"
-              >
-                {l.label}
-              </a>
-            ))}
-          </nav>
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-            <Link href="/login" className="rounded-full px-3.5 py-2 text-[14px] text-[#141413] transition-colors hover:bg-black/[0.04]">
-              Log in
-            </Link>
-            <Link
-              href="/register"
-              className="group inline-flex items-center gap-1 rounded-full bg-[#141413] px-4 py-2 text-[14px] font-medium text-white transition-colors hover:bg-black/80"
-            >
-              Get started
-              <ArrowUpRight size={15} className="transition-transform group-hover:-translate-y-px group-hover:translate-x-px" aria-hidden />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader home />
 
       <main>
         {/* Hero */}
@@ -488,70 +385,10 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Closing CTA */}
-        <section aria-labelledby="cta-title" className="bg-gradient-to-br from-[#dfe8ff] via-[#efe9ff] to-[#fde9e4]">
-          <div className="mx-auto max-w-[1200px] px-5 py-24 text-center sm:px-8 sm:py-32">
-            <h2 id="cta-title" className={`${serif} mx-auto max-w-3xl text-[44px] leading-[1.02] tracking-[-0.02em] sm:text-[72px]`}>
-              Your next step starts <em className="bg-gradient-to-r from-[#2f5fe8] to-[#7c4dff] bg-clip-text pr-2 italic text-transparent">here.</em>
-            </h2>
-            <p className="mx-auto mt-6 max-w-md text-[17px] text-[#5f5e5a]">Create your free account and let Aarika build your plan today.</p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/register"
-                className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#141413] px-7 py-3.5 text-[15px] font-medium text-white transition-colors hover:bg-black/80 sm:w-auto"
-              >
-                Get started, it&apos;s free
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex w-full items-center justify-center rounded-full px-7 py-3.5 text-[15px] font-medium ring-1 ring-inset ring-black/15 transition-colors hover:bg-black/[0.03] sm:w-auto"
-              >
-                Log in
-              </Link>
-            </div>
-          </div>
-        </section>
+        <ClosingCta />
       </main>
 
-      <footer className="border-t border-black/[0.06]">
-        <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-16 sm:px-8 md:grid-cols-12">
-          <div className="md:col-span-6">
-            <Link href="/" className="flex items-center gap-2">
-              <BrainLogo size={26} className="rounded-md" />
-              <span className="text-[16px] font-semibold">Aarika.AI</span>
-            </Link>
-            <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-[#5f5e5a]">
-              The AI career co-pilot for students, job seekers and professionals in India.
-            </p>
-          </div>
-          {FOOTER_COLUMNS.map((col) => (
-            <nav key={col.title} aria-label={col.title} className="md:col-span-2">
-              <h2 className="text-[13px] text-[#77756e]">{col.title}</h2>
-              <ul className="mt-4 space-y-3 text-[14px]">
-                {col.links.map((l) => (
-                  <li key={l.href}>
-                    {l.href.startsWith("#") ? (
-                      <a href={l.href} className="text-[#3d3c39] transition-colors hover:text-[#141413]">{l.label}</a>
-                    ) : (
-                      <Link href={l.href} className="text-[#3d3c39] transition-colors hover:text-[#141413]">{l.label}</Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
-        </div>
-        <div className="mx-auto flex max-w-[1200px] flex-col gap-2 border-t border-black/[0.06] px-5 py-6 text-[13px] text-[#77756e] sm:flex-row sm:justify-between sm:px-8">
-          <p>
-            © {new Date().getFullYear()} Aarika.AI by{" "}
-            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="text-[#3d3c39] hover:underline">
-              SenseforgeAI
-            </a>
-          </p>
-          <p>Made in India</p>
-        </div>
-      </footer>
+      <SiteFooter home />
     </div>
   );
 }

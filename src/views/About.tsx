@@ -1,440 +1,174 @@
-"use client";
+import { Globe, Mail, Phone } from "lucide-react";
+import { PublicPage, SectionLabel, serif } from "@/components/landing/Site";
+import { EXAMS, MORE, PERSONAS, SITE_SUMMARY } from "@/components/landing/content";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  ArrowLeft,
-  Sparkles,
-  ShieldCheck,
-  Cpu,
-  Award,
-  Zap,
-  BookOpen,
-  Users,
-  Briefcase,
-  Mail,
-  Phone,
-  MapPin,
-  CheckCircle2,
-  Target,
-  TrendingUp,
-  Globe,
-  Database,
-  FileText,
-  HelpCircle,
-  ChevronDown
-} from "lucide-react";
-import BrainLogo from "@/components/BrainLogo";
+// About page. Same rule as the landing page: only describe what exists in the app today,
+// no invented stats, rankings or security claims.
 
-interface FaqItem {
-  question: string;
-  answer: string;
-  bullets?: string[];
-}
+const CORE = [
+  { name: "Mock Interview", desc: "HR, technical and behavioral rounds in text, or a live voice interview. Every answer is scored, with a stronger sample answer.", dot: "bg-[#8b5cf6]" },
+  { name: "Job Agent & Smart Apply", desc: "Finds roles that fit your target role and skills, then prepares a tailored resume, cover letter and form answers.", dot: "bg-[#2fa77a]" },
+  { name: "Exam Simulator", desc: "Timed papers with negative marking and an explanation for every question, in English, Hindi or Hinglish.", dot: "bg-[#e8913a]" },
+];
 
-const About = () => {
-  const navigate = useRouter();
-  const { isAuthenticated } = useAuth();
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
+const DOTS = ["bg-[#3b6cf6]", "bg-[#e0607e]", "bg-[#e8913a]", "bg-[#2fa77a]", "bg-[#8b5cf6]", "bg-[#0ea5e9]", "bg-[#3b6cf6]", "bg-[#2fa77a]"];
 
-  const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      navigate.back();
-    } else {
-      navigate.push(isAuthenticated ? "/chat" : "/");
-    }
-  };
+const APPROACH = [
+  { title: "Only real features", body: "Everything on this page is in the app today. No made-up numbers, rankings or testimonials." },
+  { title: "Private by design", body: "In live interviews your camera stays on your device; only your voice reaches the AI interviewer." },
+  { title: "Made for India", body: "Built by SenseforgeAI for Indian exams, campuses and job markets. Pay in rupees via Razorpay." },
+];
 
-  const faqData: FaqItem[] = [
-    {
-      question: "Which competitive exams and use cases are supported on Aarika.AI?",
-      answer: "Aarika.AI supports leading high-stakes competitive examinations and professional skill assessments with authentic PYQ RAG context:",
-      bullets: [
-        "CA Foundation (ICAI Blueprint Alignment & Past Year Questions)",
-        "UPSC Civil Services (Prelims & Mains General Studies)",
-        "NTA NEET UG & JEE Main / Advanced",
-        "NIMCET (MCA Entrance) & GATE",
-        "Skill Assessments & Custom Target Syllabi"
-      ]
-    },
-    {
-      question: "What key features make Aarika.AI different from generic test series?",
-      answer: "Unlike static test PDFs or generic question banks, Aarika.AI delivers an autonomous learning ecosystem with:",
-      bullets: [
-        "Adaptive PYQ RAG Alignment matching authentic exam standards",
-        "AarikaAI MemoryOS learning continuity that tracks weak areas across attempts",
-        "Real-time Difficulty Calibration (20% Easy, 55% Medium, 25% Hard)",
-        "Instant step-by-step mathematical & logical model solutions"
-      ]
-    },
-    {
-      question: "How does Aarika.AI help students and aspirants improve scores?",
-      answer: "Aarika.AI acts as a personal AI mentor to optimize your preparation efficiency:",
-      bullets: [
-        "Pinpoints exact weak topics through automated attempt telemetry",
-        "Eliminates redundant questions you have already mastered",
-        "Provides real-time pacing timers and exam strategy analytics",
-        "Delivers custom practice blueprints for high-yield score maximization"
-      ]
-    },
-    {
-      question: "What is Resume Intelligence & Skill Gap Delta Analysis?",
-      answer: "For job seekers and working professionals, Aarika.AI bridges the gap between your resume and market demand:",
-      bullets: [
-        "Parses uploaded resumes in real-time",
-        "Compares credentials against live industry job requirements",
-        "Identifies missing technical and domain skill gaps",
-        "Generates step-by-step career evolution roadmaps"
-      ]
-    },
-    {
-      question: "Is Aarika.AI free to use for students and aspirants?",
-      answer: "Yes! Aarika.AI offers a free tier allowing students and job seekers to access core AI career guidance, resume scoring, and full-length exam simulations without any mandatory upfront payment or credit card."
-    },
-    {
-      question: "Is my personal data, resume, and test attempt history secure?",
-      answer: "Absolutely. All data is encrypted in transit via TLS 1.3 and at rest using enterprise AES-256 encryption. Senseforge enforces strict privacy policies: your personal information, resumes, and test attempts are NEVER sold, rented, or commercialized to third parties."
-    }
-  ];
+const CONTACT = [
+  { icon: Mail, label: "Email", value: "dave@senseforge.in", href: "mailto:dave@senseforge.in" },
+  { icon: Phone, label: "Phone", value: "+91 91746 99025", href: "tel:+919174699025" },
+  { icon: Globe, label: "Company website", value: "senseforge.in", href: "https://senseforge.in", external: true },
+];
 
-  // JSON-LD Structured Data Schema for Google & AI Answer Engines (ChatGPT, Gemini, Perplexity)
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "@id": "https://aarikaai.in/#organization",
-        "name": "Senseforge",
-        "legalName": "Senseforge Technologies",
-        "url": "https://senseforge.in",
-        "logo": "https://aarikaai.in/aarika-logo.png",
-        "email": "dave@senseforge.in",
-        "telephone": "+91 91746 99025",
-        "sameAs": ["https://senseforge.in", "https://aarikaai.in"],
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "telephone": "+91 91746 99025",
-          "contactType": "customer support",
-          "email": "dave@senseforge.in",
-          "areaServed": "IN"
-        }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "@id": "https://aarikaai.in/#software",
-        "name": "Aarika.AI",
-        "applicationCategory": "EducationalApplication",
-        "operatingSystem": "All",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "INR"
-        },
-        "description": "Aarika.AI is an autonomous AI career co-pilot and adaptive exam simulator for CA Foundation, UPSC, NEET, JEE, and NIMCET aspirants."
-      },
-      {
-        "@type": "FAQPage",
-        "@id": "https://aarikaai.in/about/#faq",
-        "mainEntity": faqData.map((faq) => ({
-          "@type": "Question",
-          "name": faq.question,
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": faq.answer + (faq.bullets ? " " + faq.bullets.join(", ") : "")
-          }
-        }))
-      }
-    ]
-  };
-
+export default function About() {
   return (
-    <div className="h-screen w-full overflow-y-auto bg-white text-gray-800 font-sans selection:bg-primary/20 scroll-smooth">
-      {/* Inject JSON-LD Schema for Search Engines & LLMs */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
-      {/* ── Top Header Navigation ── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 md:px-12 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate.push(isAuthenticated ? "/chat" : "/")}>
-            <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
-              <BrainLogo size={32} />
-            </div>
-            <span className="text-base font-bold text-gray-900 tracking-tight">Aarika.AI</span>
+    <PublicPage>
+      {/* Hero */}
+      <section aria-labelledby="about-title" className="mx-auto max-w-[1200px] px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-24 lg:pt-20">
+        <div className="mx-auto max-w-4xl text-center lg:relative lg:isolate">
+          <div className="pointer-events-none absolute -top-24 left-1/2 -z-10 hidden h-[620px] w-[1400px] -translate-x-1/2 lg:block" aria-hidden>
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(20,20,19,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(20,20,19,0.045)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_55%_60%_at_50%_40%,black,transparent)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(35%_40%_at_32%_35%,rgba(59,108,246,0.12),transparent),radial-gradient(30%_38%_at_70%_40%,rgba(139,92,246,0.11),transparent)]" />
           </div>
-
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors py-1.5 px-3 rounded-lg hover:bg-gray-100"
-          >
-            <ArrowLeft size={16} /> {isAuthenticated ? "Back to App" : "Back to Home"}
-          </button>
-        </div>
-      </header>
-
-      {/* ── Main Content Container ── */}
-      <main className="max-w-4xl mx-auto px-6 py-12 md:py-16">
-
-        {/* Hero Section */}
-        <section className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary mb-6 shadow-2xs">
-            <Sparkles size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">
-              <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="hover:underline">
-                Senseforge AI Network
-              </a>
-            </span>
-          </div>
-
-          <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-tight mb-6">
-            Empowering Career Trajectories Through Autonomous AI Intelligence
+          <SectionLabel>About Aarika.AI</SectionLabel>
+          <h1 id="about-title" className={`${serif} mt-5 text-[44px] leading-[1.02] tracking-[-0.02em] sm:text-[64px] lg:text-[76px]`}>
+            One co-pilot for every step of your{" "}
+            <em className="bg-gradient-to-r from-[#2f5fe8] to-[#7c4dff] bg-clip-text pr-2 italic text-transparent">career.</em>
           </h1>
-
-          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto font-normal leading-relaxed">
-            <strong>Aarika.AI</strong> (developed by{" "}
-            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">
-              Senseforge
-            </a>
-            ) is India&apos;s leading next-generation AI career co-pilot and adaptive examination simulator designed to bridge the gap between academic preparation and professional success.
-          </p>
-        </section>
-
-        {/* Impact Metrics */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50/80 to-blue-100/40 border border-blue-100 text-center shadow-2xs">
-            <p className="text-2xl md:text-3xl font-black text-primary mb-1">100K+</p>
-            <p className="text-xs font-semibold text-gray-600">Aspirants Guided</p>
-          </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-100/40 border border-emerald-100 text-center shadow-2xs">
-            <p className="text-2xl md:text-3xl font-black text-emerald-600 mb-1">99.4%</p>
-            <p className="text-xs font-semibold text-gray-600">Pattern Accuracy</p>
-          </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-50/80 to-indigo-100/40 border border-purple-100 text-center shadow-2xs">
-            <p className="text-2xl md:text-3xl font-black text-purple-600 mb-1">500+</p>
-            <p className="text-xs font-semibold text-gray-600">Exam Blueprints</p>
-          </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-100/40 border border-amber-100 text-center shadow-2xs">
-            <p className="text-2xl md:text-3xl font-black text-amber-600 mb-1">&lt; 50ms</p>
-            <p className="text-xs font-semibold text-gray-600">Response Speed</p>
-          </div>
-        </section>
-
-        {/* What Makes Aarika.AI Unique */}
-        <section className="mb-16">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-3">
-              Why Aarika.AI Ranks #1 for Students, Professionals & Aspirants
-            </h2>
-            <p className="text-sm text-gray-500 max-w-xl mx-auto">
-              Our autonomous AI architecture combines deep domain knowledge with adaptive real-time feedback loops.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 rounded-2xl bg-white border border-gray-200/80 shadow-2xs hover:border-primary/40 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
-                <BookOpen size={20} />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">1. Adaptive Exam Simulator</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Simulates exact ICAI (CA Foundation), NTA (NEET/JEE), UPSC, and NIMCET exam patterns with authentic PYQ RAG alignment, custom difficulty distribution (Easy 20%, Medium 55%, Hard 25%), and step-by-step model solutions.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white border border-gray-200/80 shadow-2xs hover:border-primary/40 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4">
-                <FileText size={20} />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">2. Resume Intelligence & Skill Alignment</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Parses uploaded resumes in real-time, extracts core competencies, detects missing skills, and auto-syncs profile data to generate tailored career growth recommendations.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white border border-gray-200/80 shadow-2xs hover:border-primary/40 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center mb-4">
-                <Cpu size={20} />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">3. AarikaAI MemoryOS Intelligence</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Remembers user learning milestones, weak topics, and assessment attempts over time to deliver continuous, personalized career guidance without repeating baseline questions.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white border border-gray-200/80 shadow-2xs hover:border-primary/40 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-4">
-                <Briefcase size={20} />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">4. Mission & Job Match Routing</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Connects academic preparation directly to active market opportunities, providing interactive roadmaps, SWOT analysis, and skill gap visualization.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Our Mission & Values */}
-        <section className="bg-gray-50 border border-gray-200/80 rounded-3xl p-8 md:p-10 mb-16">
-          <div className="flex items-center gap-3 mb-4">
-            <Target className="w-6 h-6 text-primary" />
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Our Core Mission</h2>
-          </div>
-          <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-6">
-            At{" "}
-            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="font-bold text-gray-900 hover:underline">
-              Senseforge
-            </a>
-            , we believe every aspirant deserves access to top-tier, personalized mentorship and exam preparation regardless of location or background. Aarika.AI was built to democratize high-stakes test preparation and career strategy through state-of-the-art AI technology.
-          </p>
-
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 text-sm text-gray-800 font-medium">
-              <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
-              <span><strong>Zero Compromise on Accuracy:</strong> Multi-gate question validation engines enforce exact legal, mathematical, and logical standards.</span>
-            </div>
-            <div className="flex items-start gap-3 text-sm text-gray-800 font-medium">
-              <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
-              <span><strong>Privacy-First Architecture:</strong> Bank-grade encryption (TLS 1.3 & AES-256) with zero data monetization.</span>
-            </div>
-            <div className="flex items-start gap-3 text-sm text-gray-800 font-medium">
-              <CheckCircle2 size={18} className="text-emerald-600 shrink-0 mt-0.5" />
-              <span><strong>Continuous Innovation:</strong> Real-time RAG integration for 2026-2027 regulatory updates and syllabus shifts.</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Interactive FAQ Section ── */}
-        <section className="mb-16">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-3">
-              <HelpCircle size={14} />
-              <span>Frequently Asked Questions</span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-2">
-              Everything You Need to Know About Aarika.AI
-            </h2>
-            <p className="text-sm text-gray-500 max-w-xl mx-auto">
-              Answers to common questions from students, aspirants, and professionals before starting on our platform.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {faqData.map((faq, idx) => {
-              const isOpen = openFaq === idx;
-              return (
-                <div
-                  key={idx}
-                  className="bg-white border border-gray-200/80 rounded-2xl overflow-hidden transition-all duration-300 shadow-2xs hover:border-primary/30"
-                >
-                  <button
-                    onClick={() => setOpenFaq(isOpen ? null : idx)}
-                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-gray-900 text-sm md:text-base cursor-pointer select-none"
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-gray-100 text-primary text-xs flex items-center justify-center font-bold shrink-0">
-                        {idx + 1}
-                      </span>
-                      {faq.question}
-                    </span>
-                    <ChevronDown
-                      size={18}
-                      className={`text-gray-400 shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180 text-primary" : ""}`}
-                    />
-                  </button>
-
-                  {isOpen && (
-                    <div className="px-5 pb-5 pt-2 text-xs md:text-sm text-gray-600 leading-relaxed border-t border-gray-100 font-normal animate-in fade-in duration-200">
-                      <p className="mb-2.5 font-medium text-gray-800">{faq.answer}</p>
-                      {faq.bullets && faq.bullets.length > 0 && (
-                        <ul className="space-y-1.5 pl-2">
-                          {faq.bullets.map((bullet, bIdx) => (
-                            <li key={bIdx} className="flex items-start gap-2.5 text-gray-700 font-medium">
-                              <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                              <span>{bullet}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Contact & Company Details */}
-        <section className="bg-slate-900 text-white rounded-3xl p-8 md:p-10 shadow-xl relative overflow-hidden">
-          <div className="relative z-10">
-            <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-2">Get in Touch with Senseforge</h2>
-            <p className="text-xs md:text-sm text-gray-300 max-w-xl mb-8">
-              Have questions, partnership inquiries, or feedback? Contact our team directly.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <a
-                href="mailto:dave@senseforge.in"
-                className="flex items-center gap-3 p-4 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-blue-400 shrink-0">
-                  <Mail size={18} />
-                </div>
-                <div className="text-left min-w-0">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email Us</p>
-                  <p className="text-xs font-bold text-white group-hover:text-blue-300 truncate">dave@senseforge.in</p>
-                </div>
-              </a>
-
-              <a
-                href="tel:+919174699025"
-                className="flex items-center gap-3 p-4 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                  <Phone size={18} />
-                </div>
-                <div className="text-left min-w-0">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Call Us</p>
-                  <p className="text-xs font-bold text-white group-hover:text-emerald-300 truncate">+91 91746 99025</p>
-                </div>
-              </a>
-
-              <a
-                href="https://senseforge.in"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-4 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
-                  <Globe size={18} />
-                </div>
-                <div className="text-left min-w-0">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Official Website</p>
-                  <p className="text-xs font-bold text-white group-hover:text-purple-300 truncate">senseforge.in</p>
-                </div>
-              </a>
-            </div>
-          </div>
-
-          <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-[100px] translate-x-1/3 -translate-y-1/3 pointer-events-none" />
-        </section>
-
-        {/* Footer info */}
-        <div className="mt-12 text-center text-gray-400 text-xs font-medium">
-          <p>
-            © 2026{" "}
-            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-gray-700 transition-colors">
+          <p className="mx-auto mt-7 max-w-2xl text-[17px] leading-relaxed text-[#5f5e5a] sm:text-[19px]">{SITE_SUMMARY}</p>
+          <p className="mt-5 text-[14px] text-[#77756e]">
+            Built in India by{" "}
+            <a href="https://senseforge.in" target="_blank" rel="noopener noreferrer" className="text-[#141413] underline decoration-black/30 underline-offset-4 hover:decoration-black">
               SenseforgeAI
-            </a>{" "}
-            • AarikaAI All Rights Reserved.
+            </a>
+            .
           </p>
         </div>
+      </section>
 
-      </main>
-    </div>
+      {/* What Aarika does */}
+      <section aria-labelledby="what-title" className="border-t border-black/[0.06]">
+        <div className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
+          <div className="max-w-3xl">
+            <SectionLabel>What Aarika does</SectionLabel>
+            <h2 id="what-title" className={`${serif} mt-3 text-[40px] leading-[1.05] tracking-[-0.015em] sm:text-[56px]`}>
+              Plan, practise, apply. In one place.
+            </h2>
+          </div>
+          <div className="mt-14 grid gap-4 md:grid-cols-3">
+            {CORE.map((c) => (
+              <article key={c.name} className="rounded-[20px] bg-[#f6f5f0] p-7 sm:p-8">
+                <p className="flex items-center gap-2.5 text-[17px] font-medium">
+                  <span className={`h-2 w-2 rounded-full ${c.dot}`} aria-hidden />
+                  {c.name}
+                </p>
+                <p className="mt-3 text-[15px] leading-relaxed text-[#5f5e5a]">{c.desc}</p>
+              </article>
+            ))}
+          </div>
+          <ul className="mt-12 grid border-t border-black/[0.08] sm:grid-cols-2 lg:grid-cols-4">
+            {MORE.map((m, i) => (
+              <li key={m.name} className="border-b border-black/[0.08] py-6 sm:pr-8">
+                <p className="flex items-center gap-2.5 text-[15px] font-medium">
+                  <span className={`h-2 w-2 rounded-full ${DOTS[i % DOTS.length]}`} aria-hidden />
+                  {m.name}
+                </p>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-[#5f5e5a]">{m.desc}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Who it's for + exams */}
+      <section aria-labelledby="who-title" className="bg-[#f6f5f0]">
+        <div className="mx-auto grid max-w-[1200px] gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <SectionLabel>Who it&apos;s for</SectionLabel>
+            <h2 id="who-title" className={`${serif} mt-3 text-[36px] leading-[1.08] tracking-[-0.015em] sm:text-[44px]`}>
+              Every stage, from school to switching careers.
+            </h2>
+            <p className="mt-5 max-w-lg text-[16px] leading-relaxed text-[#5f5e5a]">
+              A short onboarding tells Aarika where you are, so you only see the tools that matter to you.
+            </p>
+            <ul className="mt-8 flex flex-wrap gap-2">
+              {PERSONAS.map((p) => (
+                <li key={p} className="rounded-full bg-white px-4 py-2 text-[14px] ring-1 ring-inset ring-black/[0.08]">
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <SectionLabel>Exam Simulator</SectionLabel>
+            <h2 className={`${serif} mt-3 text-[36px] leading-[1.08] tracking-[-0.015em] sm:text-[44px]`}>
+              Mock papers on official patterns.
+            </h2>
+            <p className="mt-5 max-w-lg text-[16px] leading-relaxed text-[#5f5e5a]">
+              Timed, with negative marking, instant scores and an explanation for every question.
+            </p>
+            <ul className="mt-8 grid border-t border-black/[0.1] sm:grid-cols-2">
+              {EXAMS.map((e) => (
+                <li key={e} className="border-b border-black/[0.1] py-3.5 text-[15px] sm:pr-6">
+                  {e}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Approach */}
+      <section aria-labelledby="approach-title" className="mx-auto max-w-[1200px] px-5 py-20 sm:px-8 sm:py-28">
+        <SectionLabel>Our approach</SectionLabel>
+        <h2 id="approach-title" className={`${serif} mt-3 max-w-3xl text-[40px] leading-[1.05] tracking-[-0.015em] sm:text-[56px]`}>
+          Built to be trusted with your career.
+        </h2>
+        <div className="mt-14 grid gap-10 md:grid-cols-3 md:gap-12">
+          {APPROACH.map((p, i) => (
+            <div key={p.title} className="border-t-2 border-[#141413] pt-6">
+              <p className={`${serif} text-[40px] leading-none text-[#3b6cf6]`}>0{i + 1}</p>
+              <h3 className="mt-3 text-[18px] font-medium">{p.title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-[#5f5e5a]">{p.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section id="contact" aria-labelledby="contact-title" className="scroll-mt-16 border-t border-black/[0.06]">
+        <div className="mx-auto grid max-w-[1200px] gap-10 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-5">
+            <SectionLabel>Contact</SectionLabel>
+            <h2 id="contact-title" className={`${serif} mt-3 text-[40px] leading-[1.05] tracking-[-0.015em] sm:text-[56px]`}>
+              Talk to the team.
+            </h2>
+            <p className="mt-5 max-w-md text-[16px] leading-relaxed text-[#5f5e5a]">
+              Questions, partnerships or feedback: reach SenseforgeAI, the company behind Aarika.AI.
+            </p>
+          </div>
+          <ul className="border-t border-black/[0.1] lg:col-span-7">
+            {CONTACT.map((c) => (
+              <li key={c.label} className="border-b border-black/[0.1]">
+                <a
+                  href={c.href}
+                  {...(c.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  className="group flex items-center gap-5 py-6"
+                >
+                  <c.icon size={20} className="shrink-0 text-[#3b6cf6]" aria-hidden />
+                  <span className="w-36 shrink-0 text-[14px] text-[#77756e]">{c.label}</span>
+                  <span className="min-w-0 truncate text-[17px] font-medium transition-colors group-hover:text-[#2f5fe8]">{c.value}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    </PublicPage>
   );
-};
-
-export default About;
+}
