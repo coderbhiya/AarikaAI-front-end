@@ -3,7 +3,9 @@
 // Monthly AI mock-interview allowance (text + live share it): a small counter for the start
 // screens and the upgrade prompt shown when a start call returns 402 QUOTA_EXCEEDED.
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { trackEvent } from "@/lib/productEvents";
 import { Crown, Gauge, ArrowRight } from "lucide-react";
 import type { InterviewQuota, QuotaExceeded } from "@/services/mockInterviewService";
 
@@ -44,7 +46,7 @@ export function QuotaCounter({ quota, className = "" }: { quota: InterviewQuota;
       </span>
       <span className="text-gray-400">· {PLAN_LABEL[quota.plan]}</span>
       {canUpgrade && (
-        <Link href="/subscription" className="font-semibold text-primary underline underline-offset-2">Upgrade</Link>
+        <Link href="/subscription" onClick={() => trackEvent("upgrade_click", { meta: { from: "quota_counter", plan: quota.plan } })} className="font-semibold text-primary underline underline-offset-2">Upgrade</Link>
       )}
     </p>
   );
@@ -52,6 +54,10 @@ export function QuotaCounter({ quota, className = "" }: { quota: InterviewQuota;
 
 export function QuotaExceededNotice({ info, className = "" }: { info: QuotaExceeded; className?: string }) {
   const showUpgrade = info.upgradeRequired && !!info.upgradePath;
+  const plan = info.quota?.plan;
+  useEffect(() => {
+    trackEvent("upgrade_prompt_view", { meta: { from: "quota_notice", ...(plan ? { plan } : {}) } });
+  }, [plan]);
   return (
     <div data-testid="quota-exceeded" role="alert" className={`rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 ${className}`}>
       <div className="flex gap-3">
@@ -64,6 +70,7 @@ export function QuotaExceededNotice({ info, className = "" }: { info: QuotaExcee
           {showUpgrade && (
             <Link
               href={info.upgradePath!}
+              onClick={() => trackEvent("upgrade_click", { meta: { from: "quota_notice", ...(plan ? { plan } : {}) } })}
               data-testid="quota-upgrade"
               className="mt-3 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white text-sm font-bold hover:bg-blue-600"
             >

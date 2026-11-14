@@ -5,6 +5,7 @@
 // → report (content scores, speech feedback, coding result, transcript).
 // Audio goes browser ⇄ AIML realtime directly; the camera never leaves the device.
 
+import InterviewNextSteps from "@/components/mockInterview/InterviewNextSteps";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Mic, MicOff, Video, VideoOff, Captions, CaptionsOff, PhoneOff, Code2, Play, Loader2, Headphones,
@@ -720,6 +721,8 @@ function LiveReport({ session }: { session: LiveInterviewSession }) {
             </Card>
           </div>
         ) : null}
+
+        <InterviewNextSteps targetRole={session.targetRole} />
 
         {sm?.available && (
           <Card title="How you spoke" icon={<Gauge className="w-4 h-4 text-blue-600" />} testId="speech-card">

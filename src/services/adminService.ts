@@ -58,6 +58,29 @@ export const getDashboardStats = async () => {
   return response.data.stats;
 };
 
+// Product metrics: repeat interviews, upgrade funnel, feature usage (backend services/productMetrics.js)
+export interface ProductMetrics {
+  window: { days: number; since: string; segment: "all" | "fresher" };
+  signups: number;
+  activeUsers: number;
+  repeatInterviews: { triedFirstInterview: number; finishedOne: number; cameBackForSecond: number; repeatRate: number | null };
+  upgradeFunnel: {
+    freeUsersWhoInterviewed: number;
+    hitMonthlyLimit: number;
+    viewedPlans: number;
+    paid: number;
+    viewedPlansRate: number | null;
+    paidRate: number | null;
+  };
+  featureUsage: { feature: string; users: number; views: number; shareOfActive: number | null }[];
+  unusedFeatures: string[];
+}
+
+export const getProductMetrics = async (days: 7 | 30 | 90 = 30, segment: "all" | "fresher" = "fresher"): Promise<ProductMetrics> => {
+  const response = await adminAxios.get("/analytics/product", { params: { days, segment } });
+  return response.data.data;
+};
+
 // Token usage analytics (overall + per-user LLM token consumption)
 export const getTokenUsage = async (period: "7d" | "30d" | "90d" | "all" = "30d") => {
   const response = await adminAxios.get("/token-usage", { params: { period } });

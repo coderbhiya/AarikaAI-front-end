@@ -165,6 +165,15 @@ export default function ResumeBuilder() {
   const [atsOpen, setAtsOpen] = useState(false);
   const [jd, setJd] = useState("");
   const [jdTitle, setJdTitle] = useState("");
+  // Arriving from a mock-interview report (/resume-builder?role=Data%20Analyst): open the ATS check
+  // with the target role filled in, which is what the report's "Next steps" link promises.
+  useEffect(() => {
+    const role = new URLSearchParams(window.location.search).get("role");
+    if (role) {
+      setJdTitle(role.slice(0, 120));
+      setAtsOpen(true);
+    }
+  }, []);
   const [ats, setAts] = useState<AtsResult | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const previewTimer = useRef<ReturnType<typeof setTimeout>>();

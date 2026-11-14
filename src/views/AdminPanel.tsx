@@ -55,6 +55,8 @@ import {
 import ArchitectureGuide from "./ArchitectureGuide";
 import MarketingCenter from "@/app/admin/marketing/page";
 import TokenUsageTab from "./TokenUsageTab";
+import ProductMetricsTab from "./ProductMetricsTab";
+import { Activity } from "lucide-react";
 import UserTokenAnalytics from "./UserTokenAnalytics";
 
 export default function AdminPanel() {
@@ -72,7 +74,7 @@ export default function AdminPanel() {
   const [department, setDepartment] = useState("");
 
   // Dashboard & Navigation State
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings" | "marketing" | "tokens" | "userTokens">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "prompts" | "jobs" | "architecture" | "settings" | "marketing" | "tokens" | "userTokens" | "product">("dashboard");
   const [stats, setStats] = useState<any>(null);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
 
@@ -669,6 +671,18 @@ export default function AdminPanel() {
               <Users size={16} />
               <span>User Token Analytics</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab("product")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === "product"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+              }`}
+            >
+              <Activity size={16} />
+              <span>Product Metrics</span>
+            </button>
           </nav>
         </div>
 
@@ -717,6 +731,8 @@ export default function AdminPanel() {
                 ? "Token Usage"
                 : activeTab === "userTokens"
                 ? "User Token Analytics"
+                : activeTab === "product"
+                ? "Product Metrics"
                 : "Job Listings"}
             </span>
           </div>
@@ -1752,6 +1768,12 @@ export default function AdminPanel() {
           {activeTab === "tokens" && (
             <div className="animate-in fade-in duration-300">
               <TokenUsageTab />
+            </div>
+          )}
+          {/* TAB 10: PRODUCT METRICS */}
+          {activeTab === "product" && (
+            <div className="animate-in fade-in duration-300">
+              <ProductMetricsTab />
             </div>
           )}
           {/* TAB 9: USER TOKEN ANALYTICS */}

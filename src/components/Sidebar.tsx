@@ -268,6 +268,10 @@ const Sidebar = () => {
   // isSchoolStudent today, so this reads the field-set directly off the
   // profile already in context instead of a second persona-derivation.
   const hideJobSearch = ["school", "govt_aspirant"].includes(getProfileFieldSet(user));
+  // Freshers (college students + job seekers) are the focus segment: their sidebar leads with the
+  // core loop — practise an interview, fix the resume, find and apply to jobs. Other personas keep
+  // the original order.
+  const isFresher = ["college", "job_seeker"].includes(getProfileFieldSet(user));
 
   React.useEffect(() => {
     let active = true;
@@ -438,6 +442,34 @@ const Sidebar = () => {
     </button>
   );
 
+
+  const navItems: { key: string; show: boolean; el: React.ReactNode }[] = [
+    { key: "tools", show: true, el: <NavLink to="/tools" icon={<Wrench size={16} />} label="AI Tools" active={pathname === "/tools" || !!activeToolParam} /> },
+    // Exam Simulator: server-computed per persona — school students only if they opted into exam prep at
+    // onboarding; college students, govt aspirants, and anyone with exams selected get it; plain job
+    // seekers/professionals/career switchers don't.
+    { key: "exam-simulator", show: navConfig.showExamSimulator, el: <NavLink to="/exam-simulator" icon={<GraduationCap size={16} />} label="Exam Simulator" active={pathname === "/exam-simulator"} /> },
+    // Persona tools — flags come from GET /profile/navigation.
+    { key: "career-discovery", show: navConfig.showCareerDiscovery, el: <NavLink to="/career-discovery" icon={<Compass size={16} />} label="Career Discovery" active={pathname === "/career-discovery"} /> },
+    { key: "exam-calendar", show: navConfig.showExamCalendar, el: <NavLink to="/exam-calendar" icon={<CalendarDays size={16} />} label="Exams & Scholarships" active={pathname === "/exam-calendar"} /> },
+    { key: "internships", show: navConfig.showInternships, el: <NavLink to="/internships" icon={<Rocket size={16} />} label="Internships" active={pathname === "/internships"} /> },
+    { key: "mock-interview", show: navConfig.showMockInterview, el: <NavLink to="/mock-interview" icon={<Mic size={16} />} label="Mock Interview" active={pathname === "/mock-interview"} /> },
+    // No "Placement Prep" item: it was only the "Placement Prep" tab of AI Tools (/tools?category=campus).
+    { key: "learning", show: !!features.learningModuleEnabled, el: <NavLink to="/dashboard/learning" icon={<BookOpen size={16} />} label="My Learning" active={pathname === "/dashboard/learning"} /> },
+    // Resume Builder: everyone who applies for jobs/internships — not school students.
+    { key: "resume-builder", show: !navConfig.isSchoolStudent, el: <NavLink to="/resume-builder" icon={<FileText size={16} />} label="Resume Builder" active={pathname === "/resume-builder"} /> },
+    { key: "community", show: !!features.communityModuleEnabled && !navConfig.isSchoolStudent, el: <NavLink to="/community" icon={<Users size={16} />} label="Community" active={pathname === "/community"} /> },
+    { key: "jobs", show: !!features.jobRecommendationsEnabled && !hideJobSearch, el: <NavLink to="/jobs" icon={<Briefcase size={16} />} label="Mission Hunt" active={pathname === "/jobs"} /> },
+    { key: "agent", show: !!features.jobRecommendationsEnabled && !hideJobSearch, el: <NavLink to="/agent" icon={<Sparkles size={16} />} label="Job Agent" active={pathname === "/agent"} /> },
+  ];
+  const FRESHER_FIRST = ["mock-interview", "resume-builder", "jobs", "agent", "internships"];
+  const orderedNav = (isFresher
+    ? [
+        ...FRESHER_FIRST.map((k) => navItems.find((i) => i.key === k)!).filter(Boolean),
+        ...navItems.filter((i) => !FRESHER_FIRST.includes(i.key)),
+      ]
+    : navItems
+  ).filter((i) => i.show);
   return (
     <div className={sidebarClasses}>
       {isMobile && showSidebar && (
@@ -541,104 +573,9 @@ const Sidebar = () => {
               active={isOnChatPage && !activeThreadId && !activeToolParam}
             /> */}
 
-            <NavLink
-              to="/tools"
-              icon={<Wrench size={16} />}
-              label="AI Tools"
-              active={pathname === "/tools" || !!activeToolParam}
-            />
-
-            {/* Exam Simulator: server-computed per persona — school students
-                only if they opted into exam prep at onboarding; college
-                students, govt aspirants, and anyone with exams selected get
-                it; plain job seekers/professionals/career switchers don't. */}
-            {navConfig.showExamSimulator && (
-              <NavLink
-                to="/exam-simulator"
-                icon={<GraduationCap size={16} />}
-                label="Exam Simulator"
-                active={pathname === "/exam-simulator"}
-              />
-            )}
-
-            {/* Persona tools — flags come from GET /profile/navigation. */}
-            {navConfig.showCareerDiscovery && (
-              <NavLink
-                to="/career-discovery"
-                icon={<Compass size={16} />}
-                label="Career Discovery"
-                active={pathname === "/career-discovery"}
-              />
-            )}
-            {navConfig.showExamCalendar && (
-              <NavLink
-                to="/exam-calendar"
-                icon={<CalendarDays size={16} />}
-                label="Exams & Scholarships"
-                active={pathname === "/exam-calendar"}
-              />
-            )}
-            {navConfig.showInternships && (
-              <NavLink
-                to="/internships"
-                icon={<Rocket size={16} />}
-                label="Internships"
-                active={pathname === "/internships"}
-              />
-            )}
-            {navConfig.showMockInterview && (
-              <NavLink
-                to="/mock-interview"
-                icon={<Mic size={16} />}
-                label="Mock Interview"
-                active={pathname === "/mock-interview"}
-              />
-            )}
-
-            {/* No "Placement Prep" item: it was only the "Placement Prep" tab of
-                AI Tools (/tools?category=campus), a second entry for the same page. */}
-
-            {features.learningModuleEnabled && (
-              <NavLink
-                to="/dashboard/learning"
-                icon={<BookOpen size={16} />}
-                label="My Learning"
-                active={pathname === "/dashboard/learning"}
-              />
-            )}
-            {/* Resume Builder: everyone who applies for jobs/internships — not school students. */}
-            {!navConfig.isSchoolStudent && (
-              <NavLink
-                to="/resume-builder"
-                icon={<FileText size={16} />}
-                label="Resume Builder"
-                active={pathname === "/resume-builder"}
-              />
-            )}
-            {features.communityModuleEnabled && !navConfig.isSchoolStudent && (
-              <NavLink
-                to="/community"
-                icon={<Users size={16} />}
-                label="Community"
-                active={pathname === "/community"}
-              />
-            )}
-            {features.jobRecommendationsEnabled && !hideJobSearch && (
-              <>
-                <NavLink
-                  to="/jobs"
-                  icon={<Briefcase size={16} />}
-                  label="Mission Hunt"
-                  active={pathname === "/jobs"}
-                />
-                <NavLink
-                  to="/agent"
-                  icon={<Sparkles size={16} />}
-                  label="Job Agent"
-                  active={pathname === "/agent"}
-                />
-              </>
-            )}
+            {orderedNav.map((item) => (
+              <React.Fragment key={item.key}>{item.el}</React.Fragment>
+            ))}
             {(user?.role === "admin" || user?.role === "super_admin") && (
               <NavLink
                 to="/admin/marketing"

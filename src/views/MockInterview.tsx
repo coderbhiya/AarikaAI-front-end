@@ -1,5 +1,6 @@
 "use client";
 
+import InterviewNextSteps from "@/components/mockInterview/InterviewNextSteps";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -531,6 +532,8 @@ export default function MockInterview() {
                 </ul>
               </div>
             </div>
+
+            <InterviewNextSteps targetRole={session.targetRole} />
 
             <section className="space-y-2">
               <h3 className="text-sm font-bold text-gray-900">Question by question</h3>
