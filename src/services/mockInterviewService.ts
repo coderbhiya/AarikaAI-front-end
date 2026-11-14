@@ -55,8 +55,43 @@ export interface InterviewSession {
 
 export type InterviewSessionSummary = Omit<InterviewSession, "questions" | "answers" | "report"> & { summary: string | null };
 
+// ── Plan quota (AI mock interviews per IST calendar month; text + live share it) ──
+
+export interface InterviewQuota {
+  feature: "mock_interview";
+  plan: "free" | "basic" | "professional" | "admin";
+  limit: number | null; // null when unlimited
+  used: number;
+  remaining: number | null; // null when unlimited
+  unlimited: boolean;
+  periodStart: string;
+  resetsAt: string; // 00:00 IST on the 1st of next month
+}
+
+/** Body of the HTTP 402 a start endpoint returns once the month's allowance is used up. */
+export interface QuotaExceeded {
+  success: false;
+  code: "QUOTA_EXCEEDED";
+  upgradeRequired: boolean;
+  upgradePath: string | null;
+  message: string;
+  quota: InterviewQuota;
+}
+
+export const getInterviewQuota = async () =>
+  (await axiosInstance.get<{ success: boolean; quota: InterviewQuota }>("/mock-interview/quota")).data;
+
+/** Returns the 402 body when a start call failed because the monthly quota is used up, else null. */
+export const getQuotaExceeded = (err: any): QuotaExceeded | null => {
+  const res = err?.response;
+  return res?.status === 402 && res?.data?.code === "QUOTA_EXCEEDED" ? (res.data as QuotaExceeded) : null;
+};
+
 export const startInterview = async (body: { targetRole?: string; interviewType: InterviewType; difficulty: Difficulty }) =>
-  (await axiosInstance.post<{ success: boolean; questionSource: "llm" | "fallback"; session: InterviewSession }>("/mock-interview/start", body)).data;
+  (await axiosInstance.post<{ success: boolean; questionSource: "llm" | "fallback"; session: InterviewSession; quota?: InterviewQuota }>(
+    "/mock-interview/start",
+    body
+  )).data;
 
 export const submitInterviewAnswer = async (id: number, questionId: string, answer: string) =>
   (await axiosInstance.post<{ success: boolean; evaluation: InterviewAnswer; answeredCount: number; totalQuestions: number }>(
@@ -124,6 +159,7 @@ export interface LiveStartResponse {
   session: LiveInterviewSession;
   realtime: { wsUrl: string; model: string; clientSecret: string; expiresAt: number; maxSessionSeconds: number };
   codingProblems: CodingProblem[];
+  quota?: InterviewQuota; // already counts this session
 }
 
 export const startLiveInterview = async (body: { targetRole?: string; interviewType: LiveInterviewType; difficulty: Difficulty; durationMin: 15 | 25 }) =>

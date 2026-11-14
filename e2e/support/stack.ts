@@ -43,6 +43,13 @@ export async function createUser(persona: Persona, { onboard = true } = {}) {
   return { email, password: PASSWORD, token: vt.data.token as string };
 }
 
+/** Starts a text mock interview through the API (uses up one of the month's interviews). */
+export async function startTextInterviewViaApi(token: string) {
+  const r = await post(`${API}/mock-interview/start`, { interviewType: "hr", difficulty: "easy" }, token);
+  if (r.status !== 201) throw new Error(`mock-interview start failed: ${r.status} ${JSON.stringify(r.data)}`);
+  return r.data;
+}
+
 /** Logs in through the real login page (Firebase emulator email/password). */
 export async function login(page: Page, email: string, password = PASSWORD) {
   await page.goto("/login");

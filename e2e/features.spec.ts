@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createUser, login, closeShareModalIfShown, expectNoHorizontalScroll } from "./support/stack";
+import { createUser, login, closeShareModalIfShown, expectNoHorizontalScroll, startTextInterviewViaApi } from "./support/stack";
 
 test("Career Discovery: a school student completes the quiz and gets a stream + careers @mobile", async ({ page }) => {
   const u = await createUser("school10");
@@ -67,4 +67,31 @@ test("Text mock interview: start → answer → feedback @llm", async ({ page })
   await page.goto("/mock-interview");
   await page.getByRole("button", { name: /start interview/i }).click();
   await expect(page.getByRole("textbox").first()).toBeVisible({ timeout: 60_000 });
+});
+
+// Plans meter AI mock interviews per IST calendar month (free 1, Basic 5, Professional 20; text + live share it).
+// Starting one costs an LLM call for the questions, hence @llm.
+test("Mock interview quota: free user sees the counter, then an upgrade prompt once it is used up @llm @mobile", async ({ page }) => {
+  const u = await createUser("jobSeeker");
+  await login(page, u.email);
+  await closeShareModalIfShown(page);
+
+  await page.goto("/mock-interview");
+  await expect(page.getByTestId("interview-quota")).toContainText("1 of 1 interview left this month");
+
+  await startTextInterviewViaApi(u.token);
+  await page.reload();
+  await expect(page.getByTestId("interview-quota")).toContainText("0 of 1 interview left this month");
+  await page.getByRole("button", { name: /start interview/i }).click();
+  await expect(page.getByTestId("quota-exceeded")).toContainText("free AI mock interview");
+  await expect(page.getByTestId("quota-upgrade")).toHaveAttribute("href", "/subscription");
+  await expectNoHorizontalScroll(page);
+
+  // The live interview shares the same allowance.
+  await page.goto("/mock-interview/live");
+  await expect(page.getByTestId("interview-quota")).toContainText("0 of 1");
+  await expect(page.getByTestId("join-now")).toBeEnabled({ timeout: 15_000 });
+  await page.getByTestId("join-now").click();
+  await expect(page.getByTestId("quota-exceeded")).toBeVisible();
+  await expect(page.getByTestId("quota-upgrade")).toHaveAttribute("href", "/subscription");
 });
