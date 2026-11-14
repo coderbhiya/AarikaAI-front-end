@@ -47,8 +47,13 @@ export interface AssessmentBlueprint {
 
 export class AssessmentQuestionRepository {
   private questions: Map<number, Question> = new Map();
+  private sessionId: string;
+  // Set once the exam is submitted: the saved draft is gone and must not be
+  // re-created by a late write, but the questions stay in memory for the report.
+  private discarded = false;
 
-  constructor(private sessionId: string) {
+  constructor(sessionId: string) {
+    this.sessionId = sessionId;
     this.loadFromCache();
   }
 
@@ -90,7 +95,18 @@ export class AssessmentQuestionRepository {
     localStorage.removeItem(`assessment_questions_${this.sessionId}`);
   }
 
+  /** Deletes the saved draft but keeps the questions in memory (the results screen still reads them). */
+  discardSavedDraft(): void {
+    this.discarded = true;
+    try {
+      localStorage.removeItem(`assessment_questions_${this.sessionId}`);
+    } catch {
+      // no storage (e.g. private mode) — nothing to delete
+    }
+  }
+
   private persistToCache() {
+    if (this.discarded) return;
     try {
       const serialized = JSON.stringify(Array.from(this.questions.entries()));
       localStorage.setItem(`assessment_questions_${this.sessionId}`, serialized);

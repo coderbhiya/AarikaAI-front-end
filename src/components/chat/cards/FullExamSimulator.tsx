@@ -12,6 +12,7 @@ import Markdown from "@/components/common/Markdown";
 import { AssessmentBlueprint, Question } from '../../../services/assessment/AssessmentQuestionRepository';
 import { AssessmentRuntimeAdapter } from '../../../services/assessment/AssessmentRuntimeAdapter';
 import { QuestionStatus as GenStatus } from '../../../services/assessment/AssessmentGenerationQueue';
+import { CodeRunSnapshot, CodingGrade, gradeCodingAnswers, snapshotFromRunResult } from '../../../services/assessment/codingGrade';
 import axiosInstance from '@/lib/axios';
 
 export interface FullExamSimulatorProps {
@@ -224,7 +225,11 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   const [codeResult, setCodeResult] = useState<any>(null);
 
   const isCodingQuestion = useMemo(() => {
-    if (currentQuestion?.type === 'coding') return true;
+    // Questions carry an explicit type (company papers map every section;
+    // generated questions default to 'mcq'). Only untyped questions from old
+    // cached sessions fall back to guessing from the exam name, which used
+    // to put e.g. the MCQ section of "Amazon SDE OA" into the code editor.
+    if (currentQuestion?.type) return currentQuestion.type === 'coding';
     const examLower = (blueprint.exam || "").toLowerCase();
     const qText = (currentQuestion?.question || "").toLowerCase();
     return (
@@ -284,6 +289,7 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   // the user has moved to another question by the time they arrive.
   const activeQuestionIdxRef = useRef(activeQuestionIdx);
   activeQuestionIdxRef.current = activeQuestionIdx;
+  const lastRunsRef = useRef<Record<number, CodeRunSnapshot>>({});
 
   const handleRunCode = async () => {
     const runIdx = activeQuestionIdx;
@@ -295,17 +301,23 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       setCodeResult({ noTestCases: true });
       return;
     }
+    const runCode = codeText;
+    const runLanguage = codeLanguage;
     try {
       setCodeRunning(true);
       setCodeResult(null);
       const response = await axiosInstance.post('/company-assessment/run-code', {
-        code: codeText,
-        language: codeLanguage,
+        code: runCode,
+        language: runLanguage,
         testCases,
         ...(hiddenTestToken ? { hiddenTestToken } : {}),
       });
+      const data = response.data?.data || response.data;
+      // Remembered per question: at submit, an unchanged answer is scored
+      // from this run instead of being run again.
+      lastRunsRef.current[runIdx] = snapshotFromRunResult(runCode, runLanguage, data);
       if (activeQuestionIdxRef.current !== runIdx) return;
-      setCodeResult(response.data?.data || response.data);
+      setCodeResult(data);
     } catch (err: any) {
       if (activeQuestionIdxRef.current !== runIdx) return;
       setCodeResult({
@@ -426,42 +438,10 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   // the "natural" last-question path (the timer-expiry case in particular
   // used to just freeze the clock with no submission at all).
   const handleSubmitExam = () => {
+    // Ends the exam. Coding answers are run and written answers graded right
+    // after (see the grading effect below); the attempt is saved to the
+    // backend only once those scores are in.
     setIsSubmitted(true);
-    // Fire-and-forget: submit analytics to backend
-    if (adapter) {
-      const allQuestions = adapter.getAllLoadedQuestions?.() ?? [];
-      const currentAnswers = answersRef.current;
-      const currentStatuses = statusesRef.current;
-      const getSectionSubject = (index: number) => {
-        let acc = 0;
-        for (const [subj, count] of Object.entries(blueprint.distribution || {})) {
-          acc += count;
-          if (index < acc) return subj;
-        }
-        const keys = Object.keys(blueprint.distribution || {});
-        return keys[keys.length - 1] || 'General';
-      };
-
-      const answersPayload = allQuestions.map((q: Question, idx: number) => ({
-        questionId: q._id ?? null,
-        subject: getSectionSubject(idx),
-        selectedAnswer: currentAnswers[idx] ?? null,
-        correctAnswer: q.correctAnswer,
-        isCorrect: checkIfAnswerIsCorrect(currentAnswers[idx], q),
-        skipped: !currentAnswers[idx],
-        timeTaken: null,
-        markedForReview: currentStatuses[idx] === 'review',
-      }));
-      const score = allQuestions.filter((q: Question, idx: number) => checkIfAnswerIsCorrect(currentAnswers[idx], q)).length;
-      axiosInstance.post('/assessment/submit-exam', {
-          examName: blueprint.exam,
-          sessionId: adapterRef.current?.sessionId,
-          answers: answersPayload,
-          score,
-          totalQuestions: blueprint.questions,
-          timeTaken: (blueprint.durationMinutes * 60 - timeLeft) * 1000,
-        }).catch((err: unknown) => console.error('[FullExamSimulator] submit-exam analytics failed:', err));
-    }
   };
 
   const goToNextQuestion = () => {
@@ -501,29 +481,42 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
   // marks are in.
   type DescriptiveGrade = { marksAwarded: number | null; maxMarks: number; feedback: string; gradingFailed?: boolean };
   const [descriptiveGrades, setDescriptiveGrades] = useState<Record<number, DescriptiveGrade>>({});
-  const [isGradingDescriptive, setIsGradingDescriptive] = useState(false);
-  const [hasGradedDescriptive, setHasGradedDescriptive] = useState(false);
+  // Coding answers are scored by running the submitted code against the
+  // question's own test cases (examples + hidden), reusing the last Run
+  // result when the code hasn't changed since — see codingGrade.ts.
+  const [codingGrades, setCodingGrades] = useState<Record<number, CodingGrade>>({});
+  const [hasStartedGrading, setHasStartedGrading] = useState(false);
+  const [gradingComplete, setGradingComplete] = useState(false);
+
+  // Questions by their real index (getAllLoadedQuestions() skips questions
+  // that never loaded, which would shift every later index off its answer).
+  const loadedQuestionEntries = (): { idx: number; q: Question }[] => {
+    if (!adapter) return [];
+    const out: { idx: number; q: Question }[] = [];
+    for (let idx = 0; idx < blueprint.questions; idx++) {
+      const q = adapter.getQuestionSync(idx);
+      if (q) out.push({ idx, q });
+    }
+    return out;
+  };
 
   useEffect(() => {
-    if (!isSubmitted || hasGradedDescriptive || !adapter) return;
-    setHasGradedDescriptive(true);
+    if (!isSubmitted || hasStartedGrading || !adapter) return;
+    setHasStartedGrading(true);
 
-    const allQs = adapter.getAllLoadedQuestions();
-    const descriptiveEntries = allQs
-      .map((q, idx) => ({ q, idx }))
-      .filter(({ q }) => q?.type === 'short_answer' || q?.type === 'long_answer');
+    const entries = loadedQuestionEntries();
+    const descriptiveEntries = entries.filter(({ q }) => q.type === 'short_answer' || q.type === 'long_answer');
+    const codingEntries = entries.filter(({ q }) => q.type === 'coding');
+    const submittedAnswers = answersRef.current;
 
-    if (descriptiveEntries.length === 0) return;
-
-    setIsGradingDescriptive(true);
-    Promise.all(
+    const descriptiveDone = Promise.all(
       descriptiveEntries.map(({ q, idx }) =>
         axiosInstance.post('/assessment/evaluate-descriptive', {
           question: q.question,
           modelAnswer: q.correctAnswer,
           rubric: q.explanation,
           maxMarks: q.maxMarks || 5,
-          userAnswer: answers[idx] || '',
+          userAnswer: submittedAnswers[idx] || '',
         })
           .then(res => ({ idx, result: res.data?.data as DescriptiveGrade }))
           .catch(err => {
@@ -538,9 +531,60 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       const gradesMap: Record<number, DescriptiveGrade> = {};
       results.forEach(({ idx, result }) => { gradesMap[idx] = result; });
       setDescriptiveGrades(gradesMap);
-      setIsGradingDescriptive(false);
     });
-  }, [isSubmitted, hasGradedDescriptive, adapter, answers]);
+
+    const codingDone = gradeCodingAnswers({
+      questions: codingEntries,
+      answers: submittedAnswers,
+      lastRuns: lastRunsRef.current,
+      language: codeLanguage,
+      maxMarks: markingScheme.correct,
+      runCode: async (body) => {
+        const res = await axiosInstance.post('/company-assessment/run-code', body);
+        return res.data?.data || res.data;
+      },
+    }).then(setCodingGrades);
+
+    Promise.allSettled([descriptiveDone, codingDone]).then(() => setGradingComplete(true));
+  }, [isSubmitted, hasStartedGrading, adapter]);
+
+  /** One question's result, on a common marks scale, for every score/report below. */
+  const scoreQuestion = (idx: number, q: Question | null | undefined) => {
+    const userAns = answers[idx];
+    const isAnswered = !!userAns;
+    if (q?.type === 'coding') {
+      const grade = codingGrades[idx];
+      return {
+        kind: 'coding' as const,
+        isAnswered,
+        isCorrect: !!grade?.allPassed,
+        marksAwarded: grade?.marksAwarded ?? 0,
+        maxMarks: grade?.maxMarks ?? markingScheme.correct,
+        codingGrade: grade,
+      };
+    }
+    if (q?.type === 'short_answer' || q?.type === 'long_answer') {
+      const grade = descriptiveGrades[idx];
+      const maxMarks = grade?.maxMarks ?? q?.maxMarks ?? 5;
+      return {
+        kind: 'descriptive' as const,
+        isAnswered,
+        isCorrect: (grade?.marksAwarded ?? 0) >= maxMarks * 0.6,
+        marksAwarded: grade?.marksAwarded ?? 0,
+        maxMarks,
+        codingGrade: undefined,
+      };
+    }
+    const isCorrect = checkIfAnswerIsCorrect(userAns, q);
+    return {
+      kind: 'mcq' as const,
+      isAnswered,
+      isCorrect,
+      marksAwarded: isCorrect ? markingScheme.correct : isAnswered ? -markingScheme.incorrect : 0,
+      maxMarks: markingScheme.correct,
+      codingGrade: undefined,
+    };
+  };
 
   // Resolve which section/subject a question index falls under, for
   // per-question analytics — same boundaries used for the results screen's
@@ -550,61 +594,100 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
     return sec?.subject || "General";
   };
 
-  // Auto-submit score to backend when test is submitted
+  // Save the attempt once grading is done, so coding and written answers
+  // count with their real scores (they used to be string-matched like MCQs
+  // and never counted).
   useEffect(() => {
-    if (isSubmitted && !hasSavedAttempt && adapter) {
+    if (isSubmitted && gradingComplete && !hasSavedAttempt && adapter) {
       setHasSavedAttempt(true);
-      const allQs = adapter.getAllLoadedQuestions();
+      const entries = loadedQuestionEntries();
+      const currentStatuses = statusesRef.current;
       let correct = 0;
+      let scoreObtained = 0;
+      let totalMarks = 0;
+      const codingResults: Record<string, unknown>[] = [];
       // Real per-question breakdown (subject + correctness) — this is what
       // lets the backend compute genuine subject-wise weak/strong topics and
       // write them to CareerMemory/MemoryOS, instead of one flat aggregate
       // that couldn't distinguish which section was actually weak.
-      const answerBreakdown = allQs.map((q, idx) => {
+      const answerBreakdown = entries.map(({ idx, q }) => {
         const userAns = answers[idx];
-        const isCorrect = checkIfAnswerIsCorrect(userAns, q);
-        if (isCorrect) correct++;
+        const result = scoreQuestion(idx, q);
+        if (result.isCorrect) correct++;
+        scoreObtained += result.marksAwarded;
+        totalMarks += result.maxMarks;
+        if (result.kind === 'coding') {
+          const g = result.codingGrade;
+          codingResults.push({
+            questionId: q._id ?? null,
+            questionIndex: idx,
+            status: g?.status || 'not_attempted',
+            language: g?.language || codeLanguage,
+            passedCount: g?.passedCount ?? 0,
+            totalTestCases: g?.totalTestCases ?? 0,
+            allPassed: !!g?.allPassed,
+            marksAwarded: result.marksAwarded,
+            maxMarks: result.maxMarks,
+            code: userAns ? userAns.slice(0, 20000) : null,
+          });
+        }
         return {
           questionId: q?._id ?? null,
           subject: getSubjectForIndex(idx),
-          selectedAnswer: userAns || null,
-          correctAnswer: q?.correctAnswer || null,
-          isCorrect,
+          selectedAnswer: result.kind === 'coding' ? (userAns ? '[code]' : null) : userAns || null,
+          correctAnswer: result.kind === 'coding' ? null : q?.correctAnswer || null,
+          isCorrect: result.isCorrect,
           skipped: !userAns,
           timeTaken: null,
+          markedForReview: currentStatuses[idx] === 'review',
         };
       });
-      const scorePct = Math.round((correct / (allQs.length || blueprint.questions || 1)) * 100);
+      scoreObtained = Math.max(0, Math.round(scoreObtained * 100) / 100);
+      const scorePct = totalMarks > 0 ? Math.min(100, Math.round((scoreObtained / totalMarks) * 100)) : 0;
+      const timeSpentSeconds = (blueprint.durationMinutes * 60) - timeLeft;
 
       // Save attempt in backend
       axiosInstance.post('/company-assessment/submit', {
         companyName: blueprint.exam?.split(' ')[0] || "Standard",
         testName: blueprint.exam,
         sessionId: blueprint.exam ? `${blueprint.exam}_${Date.now()}` : undefined,
+        scoreObtained,
+        totalMarks,
         sectionScores: { correctCount: correct, totalCount: blueprint.questions, percentage: scorePct },
-        timeSpentSeconds: (blueprint.durationMinutes * 60) - timeLeft,
+        codingResults,
+        timeSpentSeconds,
         answers: answerBreakdown
       }).catch(err => console.warn("[FullExamSimulator] Auto-save attempt warning:", err));
+
+      // Per-question analytics (question bank stats), with the same correctness.
+      axiosInstance.post('/assessment/submit-exam', {
+        examName: blueprint.exam,
+        sessionId: adapter.sessionId,
+        answers: answerBreakdown,
+        score: correct,
+        totalQuestions: blueprint.questions,
+        timeTaken: timeSpentSeconds * 1000,
+      }).catch((err: unknown) => console.error('[FullExamSimulator] submit-exam analytics failed:', err));
 
       // The attempt is now recorded server-side — clear the local autosaved
       // draft so reopening this exam later starts a fresh attempt instead of
       // resuming a completed one.
       adapter.clearSession();
     }
-  }, [isSubmitted, hasSavedAttempt, adapter, answers, blueprint, timeLeft, sections]);
+  }, [isSubmitted, gradingComplete, hasSavedAttempt, adapter, answers, blueprint, timeLeft, sections]);
 
   if (isSubmitted) {
     // Short/long-answer questions are graded asynchronously after
     // submission — don't compute or show a score until that finishes,
     // otherwise the report would render with those questions blank/zeroed.
-    if (isGradingDescriptive) {
+    if (!gradingComplete) {
       const gradingOverlay = (
         <div className="fixed inset-0 z-[200] bg-background/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
             <Loader2 className="w-7 h-7 text-primary animate-spin" />
           </div>
-          <h2 className="text-lg font-bold text-gray-900 mb-1.5">Evaluating your written answers...</h2>
-          <p className="text-sm text-gray-500 max-w-xs">Grading short/long-answer responses against the marking scheme. This takes a few seconds.</p>
+          <h2 className="text-lg font-bold text-gray-900 mb-1.5">Scoring your answers...</h2>
+          <p className="text-sm text-gray-500 max-w-xs">Running your code against its test cases and grading written answers. This takes a few seconds.</p>
         </div>
       );
       return mounted ? createPortal(gradingOverlay, document.body) : null;
@@ -628,6 +711,30 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       const q = adapter ? adapter.getQuestionSync(idx) : null;
       const userAns = answers[idx] || "Not Answered";
       const isDescriptiveQ = q?.type === 'short_answer' || q?.type === 'long_answer';
+
+      if (q?.type === 'coding') {
+        const result = scoreQuestion(idx, q);
+        totalMaxMarks += result.maxMarks;
+        totalMarksAwarded += result.marksAwarded;
+        if (result.isCorrect) correctCount++;
+        else if (result.isAnswered) wrongCount++;
+        return {
+          idx,
+          question: q.question || `Question ${idx + 1}`,
+          options: [],
+          userAnswer: userAns,
+          correctAnswer: "",
+          explanation: q.explanation || "",
+          isCorrect: result.isCorrect,
+          isAnswered: result.isAnswered,
+          isDescriptive: false,
+          isCoding: true,
+          marksAwarded: result.marksAwarded,
+          maxMarks: result.maxMarks,
+          feedback: result.codingGrade?.feedback || (result.isAnswered ? "" : "Not attempted."),
+          gradingFailed: false,
+        };
+      }
 
       if (isDescriptiveQ) {
         const grade = descriptiveGrades[idx];
@@ -692,7 +799,16 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
         const userAns = answers[qIdx] || "Not Answered";
         const isDescriptiveQ = q?.type === 'short_answer' || q?.type === 'long_answer';
 
-        if (isDescriptiveQ) {
+        if (q?.type === 'coding') {
+          // Partial credit: the share of test cases passed.
+          const result = scoreQuestion(qIdx, q);
+          secMaxMarks += 1;
+          if (result.isAnswered) {
+            secAttempted++;
+            secMarksAwarded += result.maxMarks > 0 ? result.marksAwarded / result.maxMarks : 0;
+            if (result.isCorrect) secCorrect++;
+          }
+        } else if (isDescriptiveQ) {
           const grade = descriptiveGrades[qIdx];
           const qMax = grade?.maxMarks ?? q?.maxMarks ?? 5;
           secMaxMarks += qMax;
@@ -968,8 +1084,12 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                 {questionEvaluations.map((item) => (
                   <div key={item.idx} className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs space-y-2">
                     <div className="flex items-center justify-between border-b border-gray-200 pb-2">
-                      <span className="font-bold text-gray-900">Q{item.idx + 1}. {item.question}</span>
-                      {item.isDescriptive ? (
+                      <span className="font-bold text-gray-900">{item.isCoding ? `Q${item.idx + 1}. Coding problem` : `Q${item.idx + 1}. ${item.question}`}</span>
+                      {item.isCoding ? (
+                        <span className={`px-2 py-0.5 rounded font-bold text-[10px] shrink-0 ml-2 ${item.isCorrect ? 'bg-emerald-100 text-emerald-700' : (item.marksAwarded ?? 0) > 0 ? 'bg-amber-100 text-amber-700' : item.isAnswered ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'}`}>
+                          {item.isAnswered ? `${item.marksAwarded ?? 0}/${item.maxMarks} MARKS` : 'SKIPPED'}
+                        </span>
+                      ) : item.isDescriptive ? (
                         item.gradingFailed ? (
                           <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700 font-bold text-[10px] shrink-0 ml-2">
                             NEEDS MANUAL REVIEW
@@ -994,14 +1114,32 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
                       )}
                     </div>
 
-                    <div className="p-2 rounded bg-white border border-gray-200">
-                      <span className="font-semibold text-gray-500">Your Answer: </span>
-                      <span className={item.isCorrect ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
-                        {item.userAnswer}
-                      </span>
-                    </div>
+                    {item.isCoding ? (
+                      <div className="p-2 rounded bg-white border border-gray-200 space-y-1">
+                        <span className="font-semibold text-gray-500">Your Code:</span>
+                        {item.isAnswered ? (
+                          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] bg-slate-950 text-emerald-300 rounded p-2">{item.userAnswer}</pre>
+                        ) : (
+                          <span className="font-bold text-gray-600"> Not Answered</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-2 rounded bg-white border border-gray-200">
+                        <span className="font-semibold text-gray-500">Your Answer: </span>
+                        <span className={item.isCorrect ? "font-bold text-emerald-600" : "font-bold text-red-600"}>
+                          {item.userAnswer}
+                        </span>
+                      </div>
+                    )}
 
-                    {item.isDescriptive ? (
+                    {item.isCoding ? (
+                      item.feedback ? (
+                        <div className={`p-2.5 rounded border text-[11px] ${item.isCorrect ? 'bg-emerald-50 border-emerald-100 text-emerald-900' : 'bg-amber-50 border-amber-100 text-amber-900'}`}>
+                          <span className="font-bold">Test results: </span>
+                          {item.feedback}
+                        </div>
+                      ) : null
+                    ) : item.isDescriptive ? (
                       <>
                         {item.feedback && (
                           <div className="p-2.5 rounded bg-amber-50 border border-amber-100 text-amber-900 text-[11px]">

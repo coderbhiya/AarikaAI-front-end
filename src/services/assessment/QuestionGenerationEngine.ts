@@ -1,5 +1,6 @@
 import axiosInstance from "@/lib/axios";
-import { AssessmentBlueprint, Question } from "./AssessmentQuestionRepository";
+import type { AssessmentBlueprint, Question } from "./AssessmentQuestionRepository";
+import { mapCompanyPaper } from "./companyPaper";
 
 const generateQuestion = async (
   blueprint: AssessmentBlueprint,
@@ -8,61 +9,9 @@ const generateQuestion = async (
   difficulty: string,
   excludeTexts?: string[]
 ): Promise<Question> => {
-  const isCompany = (blueprint.exam || "").toLowerCase().includes("google") ||
-    (blueprint.exam || "").toLowerCase().includes("tcs") ||
-    (blueprint.exam || "").toLowerCase().includes("infosys") ||
-    (blueprint.exam || "").toLowerCase().includes("amazon") ||
-    (blueprint.exam || "").toLowerCase().includes("meta") ||
-    (blueprint.exam || "").toLowerCase().includes("goldman") ||
-    (blueprint.exam || "").toLowerCase().includes("accenture");
-
-  if (isCompany) {
-    try {
-      const compRes = await axiosInstance.post("/company-assessment/start", {
-        testName: blueprint.exam || "Google SDE OA",
-      });
-
-      if (compRes.data && compRes.data.success && compRes.data.data?.sections) {
-        const paper = compRes.data.data;
-        const allQuestions: any[] = [];
-        paper.sections.forEach((sec: any) => {
-          if (sec.questions) allQuestions.push(...sec.questions.map((q: any) => ({ ...q, _sectionType: sec.type })));
-        });
-
-        if (allQuestions[index]) {
-          const q = allQuestions[index];
-          const isCoding = q._sectionType === "coding";
-          const base: Question = {
-            _id: q.id || index + 1,
-            question: q.problemStatement || q.question || "Write an algorithm solution.",
-            options: q.options || ["Solution Code"],
-            correctAnswer: q.correctAnswer || "Solution Code",
-            explanation: q.constraints ? `Constraints: ${q.constraints}` : "Execute code against test cases.",
-          };
-          if (!isCoding) return base;
-          return {
-            ...base,
-            type: "coding",
-            // The question's own test cases — "Run Code" checks against these.
-            testCases: Array.isArray(q.sampleTestCases)
-              ? q.sampleTestCases
-                  .filter((tc: any) => tc && typeof tc.input === "string" && typeof tc.output === "string")
-                  .map((tc: any) => ({ input: tc.input, output: tc.output, ...(tc.explanation ? { explanation: tc.explanation } : {}) }))
-              : [],
-            hiddenTestToken: q.hiddenTestToken || null,
-            hiddenTestCount: q.hiddenTestCount || 0,
-            testCasesVerified: !!q.testCasesVerified,
-            constraints: q.constraints || null,
-            solutionContract: q.solutionContract,
-            starterCode: q.starterCode,
-          };
-        }
-      }
-    } catch (compErr) {
-      console.warn("[QuestionGenerationEngine] Company assessment endpoint fallback:", compErr);
-    }
-  }
-
+  // Company papers are fetched once per exam session by
+  // AssessmentGenerationQueue (fetchCompanyPaper below); this path only
+  // generates the questions a paper doesn't cover.
   const response = await axiosInstance.post(
     `/assessment/generate-question`,
     {
@@ -90,6 +39,18 @@ const generateQuestion = async (
 };
 
 export class QuestionGenerationEngine {
+  /** Assembles a whole company paper (one POST /company-assessment/start) as simulator questions. */
+  static async fetchCompanyPaper(blueprint: AssessmentBlueprint): Promise<Question[]> {
+    const res = await axiosInstance.post("/company-assessment/start", {
+      testName: blueprint.exam || "Google SDE OA",
+    });
+    if (!res.data?.success || !Array.isArray(res.data.data?.sections)) {
+      throw new Error(res.data?.error || "Company paper could not be assembled");
+    }
+    const questions = mapCompanyPaper(res.data.data);
+    if (questions.length === 0) throw new Error("Company paper has no questions");
+    return questions;
+  }
   
   static async generateWithRetry(
     blueprint: AssessmentBlueprint,
