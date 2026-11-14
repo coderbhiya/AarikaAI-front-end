@@ -229,7 +229,7 @@ export default function Landing() {
                   {"image" in c ? (
                     // Full-colour wordmark (Google), used as-is.
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={`/landing/logos/${c.logo}.svg`} alt="" width={c.image.w} height={c.image.h} className="block" />
+                    <img src={`/landing/logos/${c.logo}.svg`} alt="" width={c.image?.w} height={c.image?.h} className="block" />
                   ) : "wordmark" in c ? (
                     <span className="block" style={{ width: c.wordmark, height: c.wordmark, ...logoMask(c.logo, c.color) }} />
                   ) : (
