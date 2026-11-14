@@ -6,6 +6,7 @@ import PersonaTabs from "@/components/landing/PersonaTabs";
 import { displaySerif } from "@/components/landing/fonts";
 import { FAQS, PLANS } from "@/components/landing/content";
 import { Shot, type Tone } from "@/components/landing/Shot";
+import RotatingWord from "@/components/landing/RotatingWord";
 
 // Design: editorial and quiet. Near-monochrome ink on white/ivory, a serif for
 // headlines, real product screenshots, thin rules instead of boxes and icons.
@@ -15,6 +16,9 @@ import { Shot, type Tone } from "@/components/landing/Shot";
 const serif = displaySerif.className;
 
 
+
+// Hero headline: "From your first exam to your ___". The first one is the SEO/screen-reader text.
+const HERO_ENDINGS = ["next job.", "first offer.", "dream role.", "career switch."];
 
 const PERSONAS = ["School students", "College students", "Job seekers", "Working professionals", "Career switchers", "Govt exam aspirants"];
 
@@ -148,7 +152,13 @@ export default function Landing() {
             <SectionLabel>Aarika.AI · the AI career co-pilot for India</SectionLabel>
             <h1 id="hero-title" className={`${serif} mt-5 text-[44px] leading-[1.02] tracking-[-0.02em] sm:text-[72px] lg:text-[88px]`}>
               From your first exam
-              <br className="hidden sm:block" /> to your <em className="bg-gradient-to-r from-[#2f5fe8] to-[#7c4dff] bg-clip-text pr-2 italic text-transparent">next job.</em>
+              <br className="hidden sm:block" /> to your{" "}
+              <em className="italic">
+                <RotatingWord
+                  words={HERO_ENDINGS}
+                  className="bg-gradient-to-r from-[#2f5fe8] to-[#7c4dff] bg-clip-text pr-2 text-transparent"
+                />
+              </em>
             </h1>
             <p className="mx-auto mt-7 max-w-2xl text-[17px] leading-relaxed text-[#5f5e5a] sm:text-[19px]">
               Plan your career, practise interviews with an AI interviewer, build your resume and find jobs that actually fit,
