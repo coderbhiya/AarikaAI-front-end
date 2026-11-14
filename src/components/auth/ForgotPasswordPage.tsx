@@ -80,7 +80,7 @@ export const ForgotPasswordPage: React.FC = () => {
           title: "Success",
           description: "Password reset successfully! You can now log in.",
         });
-        navigate.push("/");
+        navigate.push("/login");
       }
     } catch (error: any) {
       console.error("Reset password error:", error);
@@ -142,7 +142,7 @@ export const ForgotPasswordPage: React.FC = () => {
       <div className="w-full lg:w-1/2 h-full overflow-y-auto scrollbar-none">
         <div className="min-h-full w-full flex flex-col items-center justify-between p-8 relative">
           <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
-          <Link href="/" className="inline-flex items-center gap-2.5 text-slate-400 hover:text-slate-900 transition-all duration-500 mb-6 group">
+          <Link href="/login" className="inline-flex items-center gap-2.5 text-slate-400 hover:text-slate-900 transition-all duration-500 mb-6 group">
             <div className="p-2 bg-white border border-slate-100 rounded-lg group-hover:-translate-x-1 transition-transform shadow-sm">
               <ArrowLeft size={13} />
             </div>

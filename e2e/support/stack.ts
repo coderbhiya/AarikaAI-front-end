@@ -45,7 +45,7 @@ export async function createUser(persona: Persona, { onboard = true } = {}) {
 
 /** Logs in through the real login page (Firebase emulator email/password). */
 export async function login(page: Page, email: string, password = PASSWORD) {
-  await page.goto("/");
+  await page.goto("/login");
   await page.getByPlaceholder("name@example.com").fill(email);
   await page.getByPlaceholder("••••••••").fill(password);
   await page.getByRole("button", { name: /^sign in$/i }).click();

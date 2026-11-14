@@ -46,7 +46,7 @@ export const OTPVerification: React.FC = () => {
       const localUser = typeof window !== "undefined" ? localStorage.getItem("user") : null;
       if (!localUser) {
         // No user is signed in, redirect to login
-        navigate.push("/");
+        navigate.push("/login");
         toast({
           title: "Authentication Required",
           description: "Please sign in first",
@@ -132,7 +132,7 @@ export const OTPVerification: React.FC = () => {
         navigate.push("/phone-verification");
       } else if (error.code === "auth/invalid-credential") {
         errorMessage = "Authentication session expired. Please sign in again.";
-        navigate.push("/");
+        navigate.push("/login");
       }
 
       toast({

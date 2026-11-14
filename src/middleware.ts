@@ -18,6 +18,7 @@ export function middleware(request: NextRequest) {
   
   const isPublicPage = 
     request.nextUrl.pathname === '/' || 
+    request.nextUrl.pathname === '/login' || 
     request.nextUrl.pathname === '/register' || 
     request.nextUrl.pathname === '/forgot-password' ||
     request.nextUrl.pathname === '/about' ||
@@ -35,16 +36,19 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.endsWith('.txt') ||
     request.nextUrl.pathname.startsWith('/api') ||
     request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/opengraph-image') ||
     request.nextUrl.pathname === '/favicon.ico';
 
+  // "/" is the public landing page; signed-in users skip it and go straight to the app.
   const isAuthOnlyPage = 
     request.nextUrl.pathname === '/' || 
+    request.nextUrl.pathname === '/login' || 
     request.nextUrl.pathname === '/register' || 
     request.nextUrl.pathname === '/forgot-password';
 
   // If there's no auth token and the user is trying to access a protected route
   if (!authToken && !isPublicPage) {
-    return redirectTo(request, '/');
+    return redirectTo(request, '/login');
   }
 
   // If there IS an auth token and they are on login/register pages, redirect to chat

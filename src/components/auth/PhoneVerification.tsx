@@ -103,7 +103,7 @@ export const PhoneVerification = () => {
     setPhoneNumber(formattedPhone);
 
     if (!user) {
-      navigate.push("/");
+      navigate.push("/login");
       toast({
         title: "Authentication Required",
         description: "Please sign in first",

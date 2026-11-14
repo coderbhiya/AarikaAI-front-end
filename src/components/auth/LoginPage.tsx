@@ -19,12 +19,8 @@ import {
 } from "lucide-react";
 import BrainLogo from "@/components/BrainLogo";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  signInWithPopup,
-  GoogleAuthProvider,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
-import { useLinkedIn } from 'react-linkedin-login-oauth2';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -43,12 +39,7 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const [isLoading, setIsLoading] = useState({
-    google: false,
-    apple: false,
-    email: false,
-    linkedin: false,
-  });
+  const [isLoading, setIsLoading] = useState({ email: false });
 
   // If already authenticated, redirect to chat.
   // Ensure the middleware's auth cookie is in sync with our localStorage token
@@ -132,89 +123,6 @@ export const LoginPage: React.FC = () => {
       setIsLoading(prev => ({ ...prev, email: false }));
     }
   };
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading({ ...isLoading, google: true });
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const token = await result.user.getIdToken();
-
-      const response = await axiosInstance.post("/auth/google", {
-        idToken: token,
-        userData: result.user,
-      });
-
-      if (response.data.success) {
-        login(response.data.user, response.data.token);
-
-        navigate.replace("/chat");
-
-        toast({
-          title: "Success",
-          description: `Identified as ${result.user.email}`,
-        });
-      }
-    } catch (error: any) {
-      // Clear half-logged-in state in Firebase if backend validation fails
-      try {
-        await auth.signOut();
-      } catch (e) { }
-
-      toast({
-        title: "Login Failed",
-        description: error.message || "Backend validation failed or server is unreachable.",
-        variant: "destructive",
-      });
-      console.warn("Google sign in error (Backend might be unreachable):", error.message);
-    } finally {
-      setIsLoading(prev => ({ ...prev, google: false }));
-    }
-  };
-
-  const handleLinkedInSuccess = React.useCallback(async (code: string) => {
-    setIsLoading(prev => ({ ...prev, linkedin: true }));
-    try {
-      const response = await axiosInstance.post("/auth/linkedin", {
-        code,
-        redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/linkedin` : "http://localhost:3001/linkedin"
-      });
-      if (response.data.success) {
-        login(response.data.user, response.data.token);
-        navigate.replace("/chat");
-        toast({ title: "Welcome back", description: "Login successful!" });
-      }
-    } catch (error: any) {
-      console.warn("LinkedIn login error (Backend might be unreachable):", error.message);
-      toast({ title: "Login Failed", description: "LinkedIn authentication failed", variant: "destructive" });
-    } finally {
-      setIsLoading(prev => ({ ...prev, linkedin: false }));
-    }
-  }, [login, navigate, toast]);
-
-  const handleLinkedInError = React.useCallback((error: any) => {
-    setIsLoading(prev => ({ ...prev, linkedin: false }));
-    const errorMessage = error?.errorMessage || error?.message || "LinkedIn popup closed or failed. Please try again.";
-    toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
-  }, [toast]);
-
-  const { linkedInLogin } = useLinkedIn({
-    clientId: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID || "",
-    redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/linkedin` : "http://localhost:3001/linkedin",
-    scope: 'openid profile email',
-    onSuccess: handleLinkedInSuccess,
-    onError: handleLinkedInError,
-  });
-
-  const handleLinkedInSignIn = () => {
-    if (!process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID) {
-      toast({ title: "Configuration Error", description: "LinkedIn Client ID is missing in environment", variant: "destructive" });
-      return;
-    }
-    // Don't set loading true here immediately to prevent re-render before popup opens
-    linkedInLogin();
-  };
-
 
   return (
     <div className="flex h-[100dvh] w-full bg-white overflow-hidden selection:bg-primary/20">
@@ -331,25 +239,7 @@ export const LoginPage: React.FC = () => {
               <span className="relative px-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest bg-white">Professional Auth</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={isLoading.google}
-                className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11 disabled:opacity-50"
-              >
-                <img src="https://www.google.com/favicon.ico" className="w-3.5 h-3.5" alt="G" />
-                Google
-              </button>
-              <button
-                type="button"
-                onClick={handleLinkedInSignIn}
-                disabled={isLoading.linkedin}
-                className="flex items-center justify-center gap-2.5 py-2.5 px-4 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98] h-11 disabled:opacity-50"
-              >
-                <img src="https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg" className="w-4 h-4" alt="IN" />
-                LinkedIn
-              </button>
-            </div>
+            <SocialAuthButtons />
 
             <div className="text-center mt-10">
               <p className="text-[13px] text-gray-500 font-medium">

@@ -71,7 +71,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
   }
 
   if (!isAuthenticated && requireAuth) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // Option A: Trigger 15-second Micro-Onboarding if user hasn't completed onboarding yet

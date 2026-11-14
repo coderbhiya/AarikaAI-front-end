@@ -24,6 +24,7 @@ import Link from "next/link";
 import axiosInstance from "@/lib/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/auth";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 
 export const RegisterPage: React.FC = () => {
     const isMobile = useIsMobile();
@@ -158,7 +159,7 @@ export const RegisterPage: React.FC = () => {
             <div className="w-full lg:w-1/2 h-full overflow-y-auto scrollbar-none">
                 <div className="min-h-full w-full flex flex-col items-center justify-between p-8 relative">
                     <div className="w-full max-w-[380px] pt-4 pb-12 animate-in fade-in slide-in-from-right-4 duration-700">
-                    <Link href="/" className="inline-flex items-center gap-2.5 text-slate-400 hover:text-slate-900 transition-all duration-500 mb-4 group">
+                    <Link href="/login" className="inline-flex items-center gap-2.5 text-slate-400 hover:text-slate-900 transition-all duration-500 mb-4 group">
                         <div className="p-2 bg-white border border-slate-100 rounded-lg group-hover:-translate-x-1 transition-transform shadow-sm">
                             <ArrowLeft size={13} />
                         </div>
@@ -175,7 +176,7 @@ export const RegisterPage: React.FC = () => {
 
                     <div className="mb-4">
                         <h2 className="text-3xl font-bold text-[#202124] mb-1 tracking-tight">Create account.</h2>
-                        <p className="text-gray-500 text-[14px] font-medium">Join thousands of professionals on Aarika.AI.</p>
+                        <p className="text-gray-500 text-[14px] font-medium">Free to join. Your career plan starts here.</p>
                     </div>
 
                     <form onSubmit={handleRegister} className="space-y-3.5">
@@ -272,16 +273,25 @@ export const RegisterPage: React.FC = () => {
                         </button>
                     </form>
 
-                    <div className="text-center mt-10">
+                    <div className="relative my-7 text-center">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-100"></div>
+                        </div>
+                        <span className="relative px-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest bg-white">Or sign up with</span>
+                    </div>
+
+                    <SocialAuthButtons isSignup />
+
+                    <div className="text-center mt-8">
                         <p className="text-[13px] text-gray-500 font-medium">
                             Already have an account?{" "}
-                            <Link href="/" className="text-primary font-bold hover:underline ml-1 transition-all">Sign In</Link>
+                            <Link href="/login" className="text-primary font-bold hover:underline ml-1 transition-all">Sign In</Link>
                         </p>
                     </div>
                     </div>
 
                     <div className="pb-6 text-center opacity-40">
-                        <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-400">Secure AES-256 Encryption • Aarika.AI Cloud</p>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-400">Sign-in secured by Firebase Authentication</p>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,29 @@
+# Aarika.AI
+
+> Aarika.AI is an AI career co-pilot for India, built by SenseforgeAI. It helps school and college students, job seekers, working professionals, career switchers and government exam aspirants plan their career, practise mock interviews, build an ATS-ready resume, find matching jobs and internships, and prepare for competitive exams, in one web app at https://aarikaai.in.
+
+Signing up is free (email, Google or LinkedIn). Paid plans: Basic ₹299/month and Professional ₹699/month (₹249 and ₹549/month billed yearly), GST extra. An Elite plan is coming soon.
+
+## Features
+
+- AI career chat: answers career questions using the user's profile; replies in English, Hindi or Hinglish.
+- Mock Interview: HR, technical and behavioral rounds in text, or a live voice interview with an AI interviewer. Every answer is scored with feedback. The camera preview stays on the user's device.
+- Job Agent and Smart Apply: finds jobs matching the user's target role and skills; Smart Apply prepares a tailored resume, ATS score, cover letter and form answers for applying on the employer's site.
+- Mission Hunt: a job feed matched to the user's profile.
+- Internships: internships and fresher jobs ranked by fit, with an application tracker.
+- Resume Builder: PDF resumes, tailoring to a job description, ATS keyword check.
+- AI Tools: campus placement prep (TCS, Infosys, Wipro, Accenture), skill gap and SWOT analysis, career roadmaps, study guides, company and HR contact finder.
+- Exam Simulator: timed mock exams with negative marking and explanations for JEE, NEET, UPSC (GS and CSAT), SSC CGL, IBPS PO, CAT, CA Foundation and CBSE Class 10 and 12; English, Hindi or Hinglish.
+- Exams & Scholarships: calendar of exams and scholarships with eligibility checks.
+- Career Discovery: a quiz for school students that suggests a best-fit stream and careers.
+
+## Pages
+
+- [Home](https://aarikaai.in/): overview, features by user type, pricing and FAQ
+- [About](https://aarikaai.in/about)
+- [Open jobs](https://aarikaai.in/open-jobs)
+- [Community](https://aarikaai.in/community)
+- [Updates & FAQ](https://aarikaai.in/updates-faq)
+- [Sign up](https://aarikaai.in/register)
+- [Privacy policy](https://aarikaai.in/privacy)
+- [Terms](https://aarikaai.in/terms)

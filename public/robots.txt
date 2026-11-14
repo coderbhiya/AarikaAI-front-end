@@ -4,6 +4,11 @@
 User-agent: *
 Allow: /
 Allow: /about
+Allow: /login
+Allow: /register
+Allow: /community
+Allow: /landing/
+Allow: /llms.txt
 Allow: /jobs
 Allow: /open-jobs
 Allow: /reviews
@@ -39,6 +44,23 @@ Allow: /
 
 User-agent: facebookexternalhit
 Allow: /
+
+# Answer engines / AI assistants: may read public pages, not private app routes
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /chat/
+Disallow: /profile/
+Disallow: /subscription/
+Disallow: /api/
 
 # Sitemap
 Sitemap: https://aarikaai.in/sitemap.xml
