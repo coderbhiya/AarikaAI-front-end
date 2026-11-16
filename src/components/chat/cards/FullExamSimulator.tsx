@@ -113,7 +113,13 @@ const FullExamSimulator: React.FC<FullExamSimulatorProps> = ({ blueprint, onClos
       // could never find a match and the "autosaved every 10 seconds" footer
       // claim below was false; nothing was ever actually recoverable.
       const cleanExamSlug = (blueprint.exam || 'practice_exam').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-      const sessionId = `exam_draft_${cleanExamSlug}_${blueprint.questions}`;
+      // Everything that changes which questions you get is part of the key.
+      // With only exam + count, starting a different subject/source/year with
+      // the same count resumed the old draft: the same questions again.
+      const bp = blueprint as any;
+      const configSlug = [bp.sourceType, bp.targetTopic, bp.year, bp.mode, bp.language, Object.keys(bp.distribution || {}).join("+")]
+        .filter(Boolean).join('_').replace(/[^a-zA-Z0-9_+]/g, '_').toLowerCase();
+      const sessionId = `exam_draft_${cleanExamSlug}_${blueprint.questions}${configSlug ? `_${configSlug}` : ''}`;
       const newAdapter = new AssessmentRuntimeAdapter(blueprint, sessionId, (idx, status) => {
         // When status updates, re-render if it's the current question
         forceRender(prev => prev + 1);

@@ -35,6 +35,9 @@ interface CourseCardProps {
   isFree: boolean;
   author?: string;
   thumbnail?: string;
+  duration?: string;
+  videoCount?: number;
+  kind?: "playlist" | "video";
 }
 
 interface MessageItemProps {
@@ -478,14 +481,19 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
 
     const resumeBuilderData = extractJsonData("RESUME_BUILDER_CARD") || extractJsonData("GENERATED_RESUME_CARD") || extractJsonData("ARTIFACT_resume_builder");
     if (resumeBuilderData) {
+      // A saved [ARTIFACT_resume_builder] message wraps the resume as
+      // {title, data: {...}}. Passing the wrapper rendered "Your Name" with
+      // every section empty once the chat was reopened.
+      const raw: any = resumeBuilderData.data;
+      const resume = raw?.data && typeof raw.data === "object" && !raw.name ? raw.data : raw;
       return (
         <div className="flex flex-col gap-2 w-full max-w-4xl">
           {resumeBuilderData.cleanText && <Markdown text={resumeBuilderData.cleanText} />}
           <GeneratedResumeCard
-            data={resumeBuilderData.data}
+            data={resume}
             onOpenWorkspace={
               onOpenArtifact
-                ? () => onOpenArtifact({ type: "resume_builder", title: resumeBuilderData.data?.name ? `${resumeBuilderData.data.name} - Resume` : "Resume", data: resumeBuilderData.data })
+                ? () => onOpenArtifact({ type: "resume_builder", title: resume?.name ? `${resume.name} - Resume` : "Resume", data: resume })
                 : undefined
             }
           />
@@ -770,12 +778,18 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onSendMessage, onEdi
           {/* Citations Section */}
           {!isUser && message.citations && message.citations.length > 0 && (
             <div className="flex flex-col gap-2 mt-3 px-1 w-full max-w-2xl">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 select-none">
+              {/* Testers asked what "Sources & Citations" meant: say it plainly. */}
+              <p
+                className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 select-none"
+                title="Web pages Aarika read to write this answer. Tap one to see what it says."
+              >
                 <Globe size={11} className="text-gray-400" />
-                Sources & Citations
+                Sources from the web
               </p>
               <div className="flex flex-wrap gap-2">
                 {message.citations.map((cite: any, index: number) => {
+                  // The search tool's own summary is not a page anyone can check.
+                  if (/^https?:\/\/(www\.)?tavily\.com\/?$/i.test(cite?.url || "")) return null;
                   let hostname = "";
                   try {
                     hostname = new URL(cite.url).hostname;

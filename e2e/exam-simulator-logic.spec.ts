@@ -91,6 +91,28 @@ test.describe("generation queue", () => {
     expect(calls).toBe(2);
     expect(repo.getQuestion(0)?.type).toBe("mcq");
   });
+
+  test("questions generated in parallel never repeat within a test", async () => {
+    const practice: AssessmentBlueprint = { ...blueprint, exam: "Placement Aptitude", questions: 5 };
+    const repo = new AssessmentQuestionRepository(`logic-test-dupes-${Date.now()}`);
+    const queue = new AssessmentGenerationQueue(repo, practice);
+    // The backend hands the same question to parallel requests (and ignores
+    // excludeTexts) until a duplicate is rejected and asked for again.
+    let n = 0;
+    const seen: string[][] = [];
+    (queue as any).generate = async (_i: number, _t: string, _d: string, exclude: string[]) => {
+      seen.push(exclude);
+      await new Promise((r) => setTimeout(r, 10));
+      const q = exclude.length < 2 ? "What is 2 + 2?" : `Question ${++n}?`;
+      return { question: q, options: ["1", "2", "3", "4"], correctAnswer: "4", explanation: "" } as Question;
+    };
+    queue.prefetchQuestions(0);
+    await waitFor(() => [0, 1, 2, 3, 4].every((i) => queue.getStatus(i) === "READY"));
+    const texts = [0, 1, 2, 3, 4].map((i) => repo.getQuestion(i)?.question);
+    expect(new Set(texts).size).toBe(5);
+    // A retry excludes the duplicate it got back (punctuation/case ignored when comparing).
+    expect(seen.some((ex) => ex.filter((t) => t === "What is 2 + 2?").length >= 2)).toBe(true);
+  });
 });
 
 test.describe("coding scores", () => {

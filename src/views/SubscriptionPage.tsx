@@ -302,6 +302,7 @@ const SubscriptionPage = () => {
       name: "Basic",
       description: "Essential interview prep for career starters.",
       price: isYearly ? "249" : "299",
+      monthlyPrice: 299,
       icon: <Zap className="text-gray-400" size={24} />,
       features: [
         "5 AI Mock Interviews per month",
@@ -319,6 +320,7 @@ const SubscriptionPage = () => {
       name: "Professional",
       description: "Comprehensive preparation for serious candidates.",
       price: isYearly ? "549" : "699",
+      monthlyPrice: 699,
       icon: <Sparkles className="text-primary" size={24} />,
       features: [
         "20 AI Mock Interviews per month",
@@ -338,6 +340,7 @@ const SubscriptionPage = () => {
       name: "Elite",
       description: "The ultimate strategy for top-tier roles.",
       price: isYearly ? "1199" : "1499",
+      monthlyPrice: 1499,
       icon: <Crown className="text-amber-500" size={24} />,
       features: [
         "Unlimited AI Mock Interviews",
@@ -637,17 +640,14 @@ const SubscriptionPage = () => {
                 {/* Breakup pricing */}
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-xs text-gray-500 font-medium">
-                    <span>Plan Price</span>
+                    <span>Plan Price{isYearly ? ` (₹${checkoutPlan.price} × 12 months)` : ""}</span>
                     <span>₹{isYearly ? parseInt(checkoutPlan.price) * 12 : checkoutPlan.price}.00</span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500 font-medium">
                     <span>GST (18%)</span>
                     <span>₹{(isYearly ? parseInt(checkoutPlan.price) * 12 * 0.18 : parseInt(checkoutPlan.price) * 0.18).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-gray-500 font-medium">
-                    <span>Discount</span>
-                    <span className="text-emerald-500">₹0.00</span>
-                  </div>
+
                 </div>
 
                 {/* Final Total */}
@@ -657,6 +657,11 @@ const SubscriptionPage = () => {
                     ₹{(isYearly ? parseInt(checkoutPlan.price) * 12 * 1.18 : parseInt(checkoutPlan.price) * 1.18).toFixed(2)}
                   </span>
                 </div>
+                {isYearly && checkoutPlan.monthlyPrice && (
+                  <p className="-mt-6 mb-8 text-xs font-medium text-emerald-600">
+                    That&apos;s ₹{Math.round((checkoutPlan.monthlyPrice - parseInt(checkoutPlan.price)) * 12 * 1.18).toLocaleString("en-IN")} less than paying monthly for 12 months.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -691,7 +696,7 @@ const SubscriptionPage = () => {
           <div className="pt-12 pb-8 px-4 text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 text-[10px] font-bold uppercase tracking-wider mb-6">
               <Flame size={12} />
-              <span>Exclusive Launch Offer: 20% Off Yearly</span>
+              <span>Launch offer: save up to 21% with yearly billing</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-[#202124] tracking-tight mb-6">
               Invest in Your <span className="gemini-gradient-text text-primary">Career Success</span>
@@ -712,7 +717,7 @@ const SubscriptionPage = () => {
               <div className="flex items-center gap-2">
                 <span className={`text-sm font-semibold ${isYearly ? "text-primary" : "text-gray-400"}`}>Yearly</span>
                 <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  SAVE 20%
+                  SAVE UP TO 21%
                 </span>
               </div>
             </div>
@@ -754,9 +759,30 @@ const SubscriptionPage = () => {
                     {plan.description}
                   </p>
 
-                  <div className="mb-8 flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-[#202124]">₹{plan.price}</span>
-                    <span className="text-gray-400 text-sm font-medium">/{isYearly ? "yr" : "mo"}</span>
+                  {/* Price is always per month, so monthly and yearly compare like for like.
+                      Yearly used to read "₹249/yr" while checkout charged ₹249 x 12 + GST,
+                      which made yearly look dearer than monthly at checkout. */}
+                  <div className="mb-8">
+                    <div className="flex items-baseline gap-1.5">
+                      {isYearly && (
+                        <span className="text-lg font-semibold text-gray-400 line-through">₹{plan.monthlyPrice.toLocaleString("en-IN")}</span>
+                      )}
+                      <span className="text-4xl font-bold text-[#202124]">₹{parseInt(plan.price).toLocaleString("en-IN")}</span>
+                      <span className="text-gray-400 text-sm font-medium">/month</span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-gray-500 font-medium">
+                      {isYearly ? (
+                        <>
+                          Billed ₹{(parseInt(plan.price) * 12).toLocaleString("en-IN")} once a year{" "}
+                          <span className="text-emerald-600 font-semibold">
+                            (save ₹{((plan.monthlyPrice - parseInt(plan.price)) * 12).toLocaleString("en-IN")})
+                          </span>
+                        </>
+                      ) : (
+                        "Billed monthly"
+                      )}
+                      {" · + 18% GST"}
+                    </p>
                   </div>
 
                   <div className="space-y-4 mb-10 flex-1">

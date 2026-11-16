@@ -10,14 +10,23 @@ interface CourseCardProps {
   isFree: boolean;
   author?: string;
   thumbnail?: string;
+  /** Video length from the YouTube API, e.g. "1:02:03". */
+  duration?: string;
+  /** Number of videos, for playlists. */
+  videoCount?: number;
+  kind?: "playlist" | "video";
 }
 
-export default function CourseCard({ title, platform, url, language, isFree, author, thumbnail }: CourseCardProps) {
+export default function CourseCard({ title, platform, url, language, isFree, author, thumbnail, duration, videoCount, kind }: CourseCardProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [courseId, setCourseId] = useState<number | null>(null);
 
   const isYouTube = (platform || "").toLowerCase().includes("youtube");
+  const isPlaylist = kind ? kind === "playlist" : /[?&]list=/.test(url || "");
+  const href = url ? (url.startsWith("http") ? url : `https://${url}`) : undefined;
+  // Real length/size only. This badge used to be a hard-coded "8:45:32" on every card.
+  const lengthBadge = duration || (videoCount ? `${videoCount} video${videoCount === 1 ? "" : "s"}` : null);
 
   const handleSave = async () => {
     if (isSaved) return;
@@ -53,25 +62,34 @@ export default function CourseCard({ title, platform, url, language, isFree, aut
   return (
     <div className="flex flex-col md:flex-row p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-gray-200 transition-all group w-full mb-4">
       {/* Thumbnail Section */}
-      <div className="relative shrink-0 w-full md:w-[280px] lg:w-[320px] xl:w-[380px] aspect-video rounded-xl overflow-hidden mb-4 md:mb-0">
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Play ${title}`}
+        className="relative block shrink-0 w-full md:w-[280px] lg:w-[320px] xl:w-[380px] aspect-video rounded-xl overflow-hidden mb-4 md:mb-0 group/thumb"
+      >
         {thumbnail ? (
           <img src={thumbnail} alt={title} className="w-full h-full object-cover" />
         ) : (
-          <div className={`w-full h-full flex items-center justify-center ${isYouTube ? 'bg-indigo-950' : 'bg-primary/5'}`}>
-            {isYouTube ? (
-                <div className="relative w-full h-full bg-[#1e1b4b] flex items-center justify-center">
-                   <div className="absolute top-4 left-4 text-white font-bold text-lg leading-tight">
-                      Python<br/>Tutorials<br/><span className="text-yellow-400 bg-yellow-400/20 px-1 mt-1 inline-block">IN HINDI</span>
-                   </div>
-                   <PlayCircle size={48} className="text-white/20 absolute right-4 top-4" />
-                </div>
-            ) : <BookOpen size={48} className="text-primary/40" />}
+          <div className={`w-full h-full flex items-center justify-center ${isYouTube ? 'bg-[#1e1b4b]' : 'bg-primary/5'}`}>
+            {isYouTube ? null : <BookOpen size={48} className="text-primary/40" />}
           </div>
         )}
-        <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[11px] font-bold px-1.5 py-0.5 rounded">
-           8:45:32
-        </div>
-      </div>
+        {/* Play button: always shown on phones (no hover there), on hover on desktop. */}
+        {isYouTube && (
+          <span className="absolute inset-0 flex items-center justify-center md:opacity-0 md:group-hover/thumb:opacity-100 transition-opacity">
+            <span className="w-14 h-10 rounded-xl bg-[#FF0000]/90 flex items-center justify-center shadow-lg">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+          </span>
+        )}
+        {lengthBadge && (
+          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[11px] font-bold px-1.5 py-0.5 rounded">
+            {lengthBadge}
+          </div>
+        )}
+      </a>
 
       {/* Content Section */}
       <div className="flex flex-col md:flex-row flex-1 md:ml-5 gap-4">
@@ -87,7 +105,7 @@ export default function CourseCard({ title, platform, url, language, isFree, aut
                   <BookOpen size={16} className="text-blue-500" />
                 )}
                 <span className="text-[11px] font-bold tracking-[0.05em] uppercase text-blue-600">
-                  {isYouTube ? "YOUTUBE PLAYLIST" : platform}
+                  {isYouTube ? (isPlaylist ? "YOUTUBE PLAYLIST" : "YOUTUBE VIDEO") : platform}
                 </span>
               </div>
               
@@ -109,16 +127,13 @@ export default function CourseCard({ title, platform, url, language, isFree, aut
                 <Check className="w-[14px] h-[14px] text-white bg-blue-500 rounded-full p-[3px]" />
               </div>
 
-              {/* Description Placeholder */}
-              <p className="text-[13px] text-[#5f6368] line-clamp-2 mb-4 leading-relaxed">
-                Best {title.split(" ")[0] || "programming"} tutorial for absolute beginners in {language}. Learn {title.split(" ")[0] || "programming"} from basics to advanced concepts with practical examples.
-              </p>
+
             </div>
           </div>
 
           {/* Bottom Row: Tags */}
           <div className="flex flex-wrap gap-2 mt-auto">
-            {["Beginner", title.split(" ")[0] || "Course", language, "Full Course"].map((tag, i) => (
+            {[isPlaylist ? "Playlist" : "Video", lengthBadge, language].filter(Boolean).map((tag, i) => (
               <span key={i} className="px-2.5 py-1 bg-[#F1F3F4] text-[#5f6368] text-[11px] font-medium rounded-full shrink-0">
                 {tag}
               </span>

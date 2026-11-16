@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { User } from "@/types";
 import { auth } from "@/lib/auth";
 import axiosInstance from "@/lib/axios";
+import { useQueryClient } from "@tanstack/react-query";
 import { setAuthCookie, clearAuthCookie, syncAuthCookieFromStorage } from "@/lib/authCookie";
 
 interface AuthContextType {
@@ -28,6 +29,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -170,6 +172,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem("user");
       localStorage.removeItem("authToken");
       clearAuthCookie();
+      // The query cache outlives a logout (no page reload), so logging back in,
+      // even as someone else, showed the previous session's chats and data.
+      queryClient.clear();
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;

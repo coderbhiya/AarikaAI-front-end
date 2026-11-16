@@ -408,7 +408,7 @@ const PersonalInfo = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={inputClasses}
-                placeholder="+1 (555) 000-0000"
+                placeholder="+91 98765 43210"
               />
             </div>
             <div className="space-y-1.5">
@@ -422,7 +422,7 @@ const PersonalInfo = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 className={inputClasses}
-                placeholder="San Francisco, CA"
+                placeholder="e.g. Pune, Maharashtra"
               />
             </div>
           </div>

@@ -93,6 +93,26 @@
     display: none;
   }
 
+  /* A slim scrollbar that stays visible, so long lists show there is more below. */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225);
+    border-radius: 9999px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
   .glass-card {
     @apply backdrop-blur-xl bg-white/70 border border-white/40;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);

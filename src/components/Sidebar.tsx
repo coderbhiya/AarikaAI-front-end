@@ -356,17 +356,22 @@ const Sidebar = () => {
       return;
     }
     setIsSearching(true);
+    // A search can still be in flight when the box is edited or cleared. Its
+    // late answer used to overwrite the full list, so clearing the box left
+    // only the matches on screen (with no × to reset) until a page refresh.
+    let stale = false;
     searchTimeout.current = setTimeout(async () => {
       try {
         const results = await searchConversations(searchQuery.trim());
-        setSearchResults(results);
+        if (!stale) setSearchResults(results);
       } catch {
-        setSearchResults([]);
+        if (!stale) setSearchResults([]);
       } finally {
-        setIsSearching(false);
+        if (!stale) setIsSearching(false);
       }
     }, 400);
     return () => {
+      stale = true;
       if (searchTimeout.current) clearTimeout(searchTimeout.current);
     };
   }, [searchQuery]);
@@ -587,7 +592,7 @@ const Sidebar = () => {
         </div>
 
         {/* ── Unified Scrollable Body ── */}
-        <div className="flex-1 overflow-y-auto scrollbar-none min-h-0 flex flex-col px-2">
+        <div className="flex-1 overflow-y-auto scrollbar-thin min-h-0 flex flex-col px-2">
 
           {/* ── Primary Feature Navigation ── */}
           <div className="space-y-0.5 pt-1">
@@ -644,7 +649,7 @@ const Sidebar = () => {
               </div>
 
               {/* Conversation list */}
-              <div className="flex-1 overflow-y-auto scrollbar-none space-y-0.5 pb-2">
+              <div className="flex-1 overflow-y-auto scrollbar-thin space-y-0.5 pb-2">
                 {isSearching ? (
                   <div className="flex items-center justify-center py-4 gap-2">
                     <div className="w-3 h-3 border-2 border-gray-400 border-t-gray-700 rounded-full animate-spin" />

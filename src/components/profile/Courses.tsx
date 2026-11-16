@@ -107,7 +107,7 @@ export default function Courses() {
                     </button>
                   ) : (
                     <button 
-                      onClick={() => router.push(`/?msg=I have completed the course "${course.title}". Please prepare a 5 question proficiency test for me.`)}
+                      onClick={() => router.push(`/chat?msg=${encodeURIComponent(`I have completed the course "${course.title}". Please prepare a 5 question proficiency test for me.`)}`)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-primary text-white hover:bg-primary/90 rounded-lg text-[12px] font-bold shadow-sm"
                     >
                       <Trophy size={14} /> Take Proficiency Test

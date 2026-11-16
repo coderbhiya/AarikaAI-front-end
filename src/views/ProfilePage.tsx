@@ -33,6 +33,12 @@ const ProfilePage = () => {
   // exception carved out for them (PersonalInfo.tsx handles the rest of the
   // persona-specific field differences within its own card).
   const isSchoolStudent = getProfileFieldSet(user) === "school";
+  const fieldSet = getProfileFieldSet(user);
+  const goToSection = (id: string) => {
+    setActiveTab('profile');
+    // After the Profile Details tab renders.
+    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
 
   useEffect(() => {
     // Sync profile on mount to ensure we have the latest pendingResumeSnapshot
@@ -56,11 +62,6 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all overflow-hidden shadow-sm" onClick={() => navigate.push("/profile")}>
-            <User size={16} />
-          </button>
-        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto pb-20 scrollbar-none">
@@ -97,11 +98,8 @@ const ProfilePage = () => {
 
               {/* Intro Card */}
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <div className="h-48 bg-gradient-to-r from-blue-700 via-blue-600 to-blue-400 relative">
-                  <button className="absolute top-4 right-4 p-1.5 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors border border-white/20">
-                    <Camera size={16} />
-                  </button>
-                </div>
+                {/* Decorative banner. Its camera button did nothing (there is no cover upload). */}
+                <div className="h-48 bg-gradient-to-r from-blue-700 via-blue-600 to-blue-400 relative" />
                 <div className="px-6 pb-6 pt-0 relative">
                   <div className="relative inline-block -mt-[92px] mb-3">
                     <div className="w-[160px] h-[160px] rounded-full bg-white p-1 border-[4px] border-white shadow-sm overflow-hidden">
@@ -125,29 +123,49 @@ const ProfilePage = () => {
                         </h1>
                         <CheckCircle2 size={18} className="text-blue-600" />
                       </div>
-                      <p className="text-[#1d2226] text-[16px] leading-tight mb-2 font-medium">
-                        {(user?.UserProfile?.headline) || "Strategizing the next move | AI Career Specialist"}
-                      </p>
+                      {/* Real data only: the placeholder headline, "San Francisco" location
+                          and "500+ career connections" were made up. */}
+                      {user?.UserProfile?.headline && (
+                        <p className="text-[#1d2226] text-[16px] leading-tight mb-2 font-medium">
+                          {user.UserProfile.headline}
+                        </p>
+                      )}
                       <div className="flex flex-wrap items-center gap-x-2 text-[14px] text-gray-500">
-                        <span>{(user?.UserProfile?.location) || "San Francisco, California, United States"}</span>
-                        <span className="text-gray-300">•</span>
-                        <button className="text-blue-600 font-semibold hover:underline">Contact info</button>
-                      </div>
-                      <div className="mt-1 text-blue-600 font-semibold text-[14px] hover:underline cursor-pointer">
-                        500+ career connections
+                        {user?.UserProfile?.location && (
+                          <>
+                            <span>{user.UserProfile.location}</span>
+                            <span className="text-gray-300">•</span>
+                          </>
+                        )}
+                        <button onClick={() => goToSection("profile-personal-info")} className="text-blue-600 font-semibold hover:underline">
+                          Contact info
+                        </button>
                       </div>
                     </div>
 
+                    {/* These were "Open to", "Add profile section" and a share icon with no
+                        click handlers. Kept to actions that work. */}
                     <div className="flex flex-wrap gap-2 pt-1">
-                      <button className="h-9 px-4 rounded-full bg-blue-600 text-white font-bold text-[14px] hover:bg-blue-700 transition-colors shadow-sm">
-                        Open to
+                      <button
+                        onClick={() => goToSection("profile-personal-info")}
+                        className="h-9 px-4 rounded-full bg-blue-600 text-white font-bold text-[14px] hover:bg-blue-700 transition-colors shadow-sm"
+                      >
+                        Edit details
                       </button>
-                      <button className="h-9 px-4 rounded-full border border-blue-600 text-blue-600 font-bold text-[14px] hover:bg-blue-50 transition-colors">
+                      <button
+                        onClick={() => goToSection(isSchoolStudent ? "profile-education" : "profile-experience")}
+                        className="h-9 px-4 rounded-full border border-blue-600 text-blue-600 font-bold text-[14px] hover:bg-blue-50 transition-colors"
+                      >
                         Add profile section
                       </button>
-                      <button className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-400 text-gray-500 hover:bg-gray-50 transition-colors">
-                        <ExternalLink size={18} />
-                      </button>
+                      {!isSchoolStudent && fieldSet !== "govt_aspirant" && (
+                        <button
+                          onClick={() => navigate.push("/resume-builder")}
+                          className="h-9 px-4 rounded-full border border-gray-300 text-gray-700 font-bold text-[14px] hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+                        >
+                          <FileText size={16} /> Build resume
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -186,19 +204,19 @@ const ProfilePage = () => {
               {activeTab === 'profile' ? (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   {/* Personal Info Card */}
-                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  <div id="profile-personal-info" className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm scroll-mt-4">
                     <PersonalInfo />
                   </div>
 
                   {/* Experience Card — not applicable to school students */}
                   {!isSchoolStudent && (
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div id="profile-experience" className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm scroll-mt-4">
                       <Experience />
                     </div>
                   )}
 
                   {/* Education Card */}
-                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                  <div id="profile-education" className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm scroll-mt-4">
                     <Education />
                   </div>
 

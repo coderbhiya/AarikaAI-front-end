@@ -281,11 +281,15 @@ const Jobs = () => {
     { label: "Part-time", value: "Part-time" },
   ];
 
+  // Several quick filters can be on at once (sent comma-separated): job types
+  // are OR'd, Remote narrows to remote jobs.
+  const selectedTypes = filters.employmentType ? filters.employmentType.split(",").filter(Boolean) : [];
   const toggleQuickFilter = (value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      employmentType: prev.employmentType === value ? "" : value,
-    }));
+    setFilters((prev) => {
+      const cur = prev.employmentType ? prev.employmentType.split(",").filter(Boolean) : [];
+      const next = cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value];
+      return { ...prev, employmentType: next.join(",") };
+    });
   };
 
   return (
@@ -414,11 +418,6 @@ const Jobs = () => {
                   <Search size={18} />
                 </button>
 
-                <div className="hidden lg:flex flex-col items-end">
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-widest leading-none">Premium Core</span>
-                  <span className="text-[13px] font-bold text-[#202124] leading-tight">Aarika Pro</span>
-                </div>
-
                 <button
                   className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all shadow-sm shrink-0"
                   onClick={() => navigate.push("/profile")}>
@@ -432,7 +431,7 @@ const Jobs = () => {
         {/* Row 2: Quick filter pills (LinkedIn-style) */}
         <div className="flex items-center gap-2 px-3 md:px-5 pb-2.5 overflow-x-auto scrollbar-none">
           {quickFilters.map((f) => {
-            const active = filters.employmentType === f.value;
+            const active = selectedTypes.includes(f.value);
             return (
               <button
                 key={f.value}
@@ -489,14 +488,14 @@ const Jobs = () => {
           {/* Active filter chips */}
           {(filters.search || filters.location || filters.employmentType) && (
             <div className="flex items-center gap-1.5 px-4 py-2 bg-[#f8f9fa] border-b border-gray-100 overflow-x-auto scrollbar-none">
-              {filters.employmentType && (
-                <span className="flex items-center gap-1 px-2.5 py-1 bg-[#dce6f1] text-[#0a66c2] text-[11px] font-bold rounded-full border border-blue-200 whitespace-nowrap">
-                  {filters.employmentType}
-                  <button onClick={() => setFilters((p) => ({ ...p, employmentType: "" }))} className="hover:text-blue-800">
+              {selectedTypes.map((t) => (
+                <span key={t} className="flex items-center gap-1 px-2.5 py-1 bg-[#dce6f1] text-[#0a66c2] text-[11px] font-bold rounded-full border border-blue-200 whitespace-nowrap">
+                  {t}
+                  <button onClick={() => toggleQuickFilter(t)} className="hover:text-blue-800" aria-label={`Remove ${t} filter`}>
                     <X size={10} />
                   </button>
                 </span>
-              )}
+              ))}
               {filters.location && (
                 <span className="flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-[11px] font-bold rounded-full border border-gray-200 whitespace-nowrap">
                   <MapPin size={9} /> {filters.location}
@@ -738,7 +737,7 @@ const Jobs = () => {
                               </button>
                             )}
                             <button
-                              onClick={() => navigate.push(`/job/${selectedJob.id}/opportunity`)}
+                              onClick={() => navigate.push(`/job/${selectedJob.id}/opportunity?source=${selectedJob.isCompanyJob ? "company" : "public"}`)}
                               className="px-5 py-2 bg-purple-600 text-white font-bold text-[14px] rounded-full hover:bg-purple-700 shadow-md transition-all flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
                             >
                               <Trophy size={14} /> Analyze

@@ -4,6 +4,9 @@ import {
   Sparkles, TrendingUp, BookOpen, ExternalLink, RefreshCw, BarChart2, ShieldCheck, Download
 } from "lucide-react";
 import axiosInstance from "@/lib/axios";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { getProfileFieldSet } from "@/lib/profileFieldSet";
 
 export interface TestReportItem {
   id: string;
@@ -102,6 +105,15 @@ const downloadPDFReport = (report: TestReportItem) => {
 };
 
 const AssessmentReportsTab: React.FC = () => {
+  const router = useRouter();
+  const { user } = useAuth();
+  // Where a test can actually be taken: the Exam Simulator for the personas
+  // that have it in their sidebar, otherwise a practice test in chat.
+  const fieldSet = getProfileFieldSet(user);
+  const startTest = () =>
+    ["college", "govt_aspirant"].includes(fieldSet)
+      ? router.push("/exam-simulator")
+      : router.push(`/chat?msg=${encodeURIComponent("Give me a 10 question practice test for my target role.")}`);
   const [reports, setReports] = useState<TestReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<TestReportItem | null>(null);
@@ -199,8 +211,14 @@ const AssessmentReportsTab: React.FC = () => {
             </div>
             <h4 className="text-sm font-bold text-gray-700">No Assessment Reports Yet</h4>
             <p className="text-xs text-gray-500 max-w-sm mx-auto">
-              Start a practice test (e.g. Google SDE OA, TCS NQT, or Chemistry Mock Test) in the AI Chat area to generate diagnostic reports here.
+              Finish a practice test (e.g. TCS NQT or a subject mock test) and its report shows up here.
             </p>
+            <button
+              onClick={startTest}
+              className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors"
+            >
+              Start a practice test <ChevronRight size={14} />
+            </button>
           </div>
         ) : (
           <div className="space-y-4">

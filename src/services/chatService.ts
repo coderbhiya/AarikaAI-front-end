@@ -15,15 +15,23 @@ const streamChatRequest = async (
 ): Promise<{ reply: string; citations: any[]; artifact?: any; FileAttachments?: any[] }> => {
   const token = localStorage.getItem("authToken");
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-    signal,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (e: any) {
+    // Stop pressed before the server answered: treat it like a stop mid-stream
+    // (question stays, no reply) rather than as a failed send.
+    if (e?.name === "AbortError") return { reply: "", citations: [] };
+    throw e;
+  }
 
   if (!response.ok) {
     if (response.status === 499) {

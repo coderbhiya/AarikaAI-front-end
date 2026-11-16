@@ -115,7 +115,9 @@ function ToolsContent() {
   const handleLaunchTool = (toolId: string, promptText?: string) => {
     let url = `/chat?tool=${toolId}`;
     if (promptText) {
-      url += `&prompt=${encodeURIComponent(promptText)}`;
+      // `msg` is what the chat auto-sends. It used to pass `prompt`, which the
+      // chat never read, so all three sample prompts just opened an empty chat.
+      url += `&msg=${encodeURIComponent(promptText)}`;
     }
     router.push(url);
   };

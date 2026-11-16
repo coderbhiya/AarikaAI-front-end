@@ -4,6 +4,10 @@ import { isCompanyExam } from "./companyPaper";
 
 export type QuestionStatus = "PENDING" | "GENERATING" | "READY" | "FAILED";
 
+// Compares question texts loosely (case, spacing, punctuation) for duplicate checks.
+export const normalizeQuestionText = (text: string) =>
+  String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
 export class AssessmentGenerationQueue {
   private statusMap: Map<number, QuestionStatus> = new Map();
   private PREFETCH_COUNT = 5;
@@ -132,20 +136,31 @@ export class AssessmentGenerationQueue {
       const topic = this.resolveTopic(index);
       const difficulty = this.resolveDifficulty(index);
 
-      const question = await QuestionGenerationEngine.generateWithRetry(
-        this.blueprint,
-        index,
-        topic,
-        difficulty,
-        this.repository.getAllQuestionTexts()
-      );
+      // Questions are generated a few at a time in parallel, each excluding only
+      // what was saved when it started, so two of them could come back the same
+      // ("questions repeating in mock test"). Check against what is saved *now*
+      // and ask again with the duplicate excluded.
+      const rejected: string[] = [];
+      let question: Question | null = null;
+      for (let attempt = 0; attempt < this.MAX_DUPLICATE_RETRIES; attempt++) {
+        question = await this.generate(index, topic, difficulty, [...this.repository.getAllQuestionTexts(), ...rejected]);
+        const taken = new Set(this.repository.getAllQuestionTexts().map(normalizeQuestionText));
+        if (!taken.has(normalizeQuestionText(question.question))) break;
+        rejected.push(question.question);
+      }
 
-      this.repository.saveQuestion(index, question);
+      this.repository.saveQuestion(index, question!);
       this.setStatus(index, "READY");
     } catch (error) {
       console.error(`[AssessmentGenerationQueue] Failed to generate Q${index + 1}`, error);
       this.setStatus(index, "FAILED");
     }
+  }
+
+  private MAX_DUPLICATE_RETRIES = 3;
+
+  private generate(index: number, topic: string, difficulty: string, excludeTexts: string[]): Promise<Question> {
+    return QuestionGenerationEngine.generateWithRetry(this.blueprint, index, topic, difficulty, excludeTexts);
   }
 
   private async processQueue() {

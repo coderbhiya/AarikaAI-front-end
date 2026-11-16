@@ -175,7 +175,6 @@ export default function ResumeBuilder() {
     }
   }, []);
   const [ats, setAts] = useState<AtsResult | null>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const previewTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -190,14 +189,20 @@ export default function ResumeBuilder() {
     if (!doc) return;
     clearTimeout(previewTimer.current);
     previewTimer.current = setTimeout(() => {
-      previewResume(doc.data, doc.template, doc.accentColor).then((r) => setHtml(r.html)).catch(() => {});
+      previewResume(doc.data, doc.template, doc.accentColor)
+        .then((r) => setHtml(r.html))
+        .catch(() => toast.error("Couldn't refresh the preview. Your changes are still saved.", { id: "resume-preview-error" }));
     }, 350);
   }, [doc?.data, doc?.template, doc?.accentColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // One pending save per resume: a single shared timer meant editing resume B
+  // within a second of editing resume A silently dropped A's last change.
+  const saveTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const persist = useCallback((next: ResumeDoc) => {
     setSaveState("dirty");
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
+    clearTimeout(saveTimers.current[next.id]);
+    saveTimers.current[next.id] = setTimeout(async () => {
+      delete saveTimers.current[next.id];
       setSaveState("saving");
       try {
         await updateResume(next.id, { title: next.title, template: next.template, accentColor: next.accentColor, data: next.data });
@@ -209,13 +214,20 @@ export default function ResumeBuilder() {
     }, 1000);
   }, []);
 
-  const patch = (p: Partial<ResumeDoc>) => {
-    if (!doc) return;
-    const next = { ...doc, ...p };
+  // AI actions and re-import finish after an await; reading `doc` from their
+  // closure overwrote anything edited meanwhile (title, template, other
+  // fields). Always build on the latest document instead.
+  const docRef = useRef<ResumeDoc | null>(doc);
+  docRef.current = doc;
+  const patch = (p: Partial<ResumeDoc> | ((cur: ResumeDoc) => Partial<ResumeDoc>)) => {
+    const cur = docRef.current;
+    if (!cur) return;
+    const next = { ...cur, ...(typeof p === "function" ? p(cur) : p) };
+    docRef.current = next;
     setDoc(next);
     persist(next);
   };
-  const setData = (fn: (d: ResumeData) => ResumeData) => doc && patch({ data: fn(doc.data) });
+  const setData = (fn: (d: ResumeData) => ResumeData) => patch((cur) => ({ data: fn(cur.data) }));
   const setBasics = (k: keyof ResumeData["basics"], v: string) => setData((d) => ({ ...d, basics: { ...d.basics, [k]: v } }));
 
   const switchTo = (id: number) => {
@@ -240,7 +252,12 @@ export default function ResumeBuilder() {
   const remove = async () => {
     if (!doc || resumes.length <= 1) return;
     if (!window.confirm(`Delete "${doc.title}"? This can't be undone.`)) return;
-    await deleteResume(doc.id);
+    try {
+      await deleteResume(doc.id);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Could not delete this resume");
+      return;
+    }
     const rest = resumes.filter((r) => r.id !== doc.id);
     const fresh = await listResumes().catch(() => null);
     setResumes(fresh?.resumes || rest);
@@ -249,7 +266,12 @@ export default function ResumeBuilder() {
 
   const makePrimary = async () => {
     if (!doc) return;
-    await updateResume(doc.id, { isPrimary: true });
+    try {
+      await updateResume(doc.id, { isPrimary: true });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Could not update this resume");
+      return;
+    }
     setResumes((rs) => rs.map((r) => ({ ...r, isPrimary: r.id === doc.id })));
     setDoc({ ...doc, isPrimary: true });
     toast.success("Used for your job applications from now on");
@@ -262,6 +284,8 @@ export default function ResumeBuilder() {
       const r = await importFromProfile();
       patch({ data: r.data });
       toast.success("Refreshed from your profile");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Could not read your profile");
     } finally {
       setBusy(null);
     }

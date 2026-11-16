@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import axiosInstance from "@/lib/axios";
 import { ArrowLeft, CheckCircle2, XCircle, TrendingUp, Briefcase, Zap, ShieldAlert, Award, BookOpen, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function OpportunityReport({ jobId }: { jobId: string }) {
   const navigate = useRouter();
+  const source = useSearchParams().get("source") === "company" ? "company" : "public";
   const [report, setReport] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -15,7 +16,7 @@ export default function OpportunityReport({ jobId }: { jobId: string }) {
     const fetchReport = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get(`/jobs/${jobId}/opportunity-analysis`);
+        const response = await axiosInstance.get(`/jobs/${jobId}/opportunity-analysis`, { params: { source } });
         setReport(response.data.report);
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load opportunity report.");
@@ -24,7 +25,7 @@ export default function OpportunityReport({ jobId }: { jobId: string }) {
       }
     };
     fetchReport();
-  }, [jobId]);
+  }, [jobId, source]);
 
   if (loading) {
     return (
@@ -161,7 +162,20 @@ export default function OpportunityReport({ jobId }: { jobId: string }) {
                 <h4 className="text-sm font-bold text-primary uppercase tracking-wider mb-1 flex items-center gap-2"><Award size={16}/> Missing Skills</h4>
                 <p className="text-sm text-gray-300">{report.recommendations?.topMissingSkills?.join(", ")}</p>
              </div>
-             <button className="px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-blue-600 shadow-lg shadow-primary/20 transition-all">
+             {/* Had no onClick. Hands the plan to the chat, which builds the step-by-step mission. */}
+             <button
+               onClick={() => {
+                 const r = report.recommendations || {};
+                 const list = (xs?: string[]) => (xs && xs.length ? xs.join(", ") : "none listed");
+                 const role = report.jobTitle ? `${report.jobTitle}${report.company ? ` at ${report.company}` : ""}` : "this job";
+                 const msg =
+                   `Create a step-by-step mission plan for me to become ready for ${role}. ` +
+                   `Skills I'm missing: ${list(r.topMissingSkills)}. Suggested courses: ${list(r.topCourses)}. ` +
+                   `Suggested projects: ${list(r.topProjects)}. Break it into weekly tasks.`;
+                 navigate.push(`/chat?msg=${encodeURIComponent(msg)}`);
+               }}
+               className="px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-blue-600 shadow-lg shadow-primary/20 transition-all"
+             >
                Create Mission
              </button>
            </div>

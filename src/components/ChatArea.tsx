@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import ChatInput from "./ChatInput";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb, X, Flame, Star, Maximize2, Minimize2, Download } from "lucide-react";
+import { Menu, User, Sparkles, Zap, Shield, Globe, Plus, ArrowRight, Compass, FileText, Code, Lightbulb, X, Flame, Star, Maximize2, Minimize2, Download, ArrowUp, ArrowDown } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -599,12 +599,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
         const msg = searchParams.get("msg");
         if (msg && !isChatsLoading && !hasHandledMsg.current) {
             hasHandledMsg.current = true;
-            handleSendMessage(msg);
+            // Drop ?msg= first: done after sending, this replaceState overwrote
+            // the ?threadId= URL the send navigates to, so the new chat had no
+            // thread in its URL.
             const newParams = new URLSearchParams(searchParams.toString());
             newParams.delete("msg");
             const queryString = newParams.toString();
             const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
             window.history.replaceState(null, "", newUrl);
+            // Run it with the tool from the URL (AI Tools sample prompts), not
+            // whatever the tool state happens to be on this first render.
+            handleSendMessage(msg, undefined, undefined, undefined, undefined, searchParams.get("tool") || undefined);
         }
     }, [searchParams, isChatsLoading]);
 
@@ -635,16 +640,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
     const abortControllerRef = useRef<AbortController | null>(null);
     // Bug #5 fix: track context injection with a stable ref instead of messages.length
     const hasInjectedContext = useRef(false);
+    // Up/down jump buttons for long chats (the chat hides its scrollbar).
+    const [jumpButtons, setJumpButtons] = useState({ top: false, bottom: false });
     const handleScroll = () => {
         if (!scrollRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
         isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > 50;
+        const next = { top: scrollTop > 400, bottom: scrollHeight - scrollTop - clientHeight > 300 };
+        setJumpButtons((prev) => (prev.top === next.top && prev.bottom === next.bottom ? prev : next));
+    };
+    const jumpTo = (where: "top" | "bottom") => {
+        if (!scrollRef.current) return;
+        scrollRef.current.scrollTo({ top: where === "top" ? 0 : scrollRef.current.scrollHeight, behavior: "smooth" });
     };
 
     const chatMutation = useMutation({
         mutationFn: async ({ text, files, webSearch, engine, isPersonalized, threadId, isVisualIntel, selectedTool: toolToUse }: { text: string; files: FileAttachment[]; webSearch?: boolean; engine?: string; isPersonalized?: boolean; threadId?: string; isVisualIntel?: boolean; selectedTool?: string }) => {
             setStreamingReply("");
-            setSearchProgress(isVisualIntel ? "Generating Visual Intel graphic with DALL-E 3..." : "Searching career trends...");
+            setSearchProgress(isVisualIntel ? "Generating Visual Intel graphic with DALL-E 3..." : "Thinking...");
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
 
@@ -722,7 +735,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                     });
                 }
 
-                finalArray.push(aiMessage);
+                // Stopped before any text arrived: no empty assistant bubble.
+                if (aiMessage.message.trim() || aiMessage.artifact || aiMessage.FileAttachments?.length) {
+                    finalArray.push(aiMessage);
+                }
                 return finalArray;
             });
 
@@ -930,11 +946,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
                 {/* Header */}
                 <header className="sticky top-0 z-40 shrink-0 w-full flex items-center justify-between px-3 md:px-6 py-2.5 md:py-3 bg-background/95 backdrop-blur-xl border-b border-border/60">
                     <div className="flex items-center gap-2 md:gap-3 shrink-0">
+                        {/* Phones only: on desktop the sidebar has its own expand/collapse button,
+                            so a second menu icon next to the title was redundant. */}
                         <button
                             onClick={toggleSidebar}
-                            className="p-1.5 md:p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors active:scale-95 shrink-0"
+                            aria-label="Open menu"
+                            className="md:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors active:scale-95 shrink-0"
                         >
-                            <Menu size={18} className="md:w-5 md:h-5" />
+                            <Menu size={18} />
                         </button>
                         <div className="flex items-center gap-2 shrink-0">
                             <span className="text-[16px] sm:text-[17px] font-semibold text-[#444746] tracking-tight">AarikaAI</span>
@@ -1152,7 +1171,31 @@ const ChatArea: React.FC<ChatAreaProps> = ({ embeddedContext }) => {
 
                 {/* Footer / Input Area */}
                 <footer className="absolute bottom-0 left-0 right-0 z-30 px-2 sm:px-4 pb-1.5 sm:pb-6 pt-1 sm:pt-2 bg-gradient-to-t from-white via-white to-transparent shrink-0">
-                    <div className="max-w-4xl mx-auto flex flex-col gap-2">
+                    <div className="max-w-4xl mx-auto flex flex-col gap-2 relative">
+                        {(jumpButtons.top || jumpButtons.bottom) && (
+                            <div className="absolute -top-24 right-1 sm:right-0 flex flex-col gap-1.5" data-testid="chat-jump-buttons">
+                                {jumpButtons.top && (
+                                    <button
+                                        onClick={() => jumpTo("top")}
+                                        title="Go to the start of the chat"
+                                        aria-label="Go to the start of the chat"
+                                        className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-primary hover:border-primary/30 transition-colors"
+                                    >
+                                        <ArrowUp size={16} />
+                                    </button>
+                                )}
+                                {jumpButtons.bottom && (
+                                    <button
+                                        onClick={() => jumpTo("bottom")}
+                                        title="Go to the latest message"
+                                        aria-label="Go to the latest message"
+                                        className="w-9 h-9 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-600 hover:text-primary hover:border-primary/30 transition-colors"
+                                    >
+                                        <ArrowDown size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
                         <ChatInput 
                             onSendMessage={handleSendMessage} 
                             onStopGenerate={() => abortControllerRef.current?.abort()} 

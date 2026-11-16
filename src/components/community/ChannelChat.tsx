@@ -14,6 +14,12 @@ export default function ChannelChat({ channel }: { channel: any }) {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Put the cursor in the message box when a channel opens (desktop only:
+  // on phones it would pop the keyboard over the conversation).
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches) inputRef.current?.focus();
+  }, [channel?.id]);
 
   useEffect(() => {
     let newSocket: Socket;
@@ -108,16 +114,28 @@ export default function ChannelChat({ channel }: { channel: any }) {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="flex items-center gap-2 p-4 border-b border-gray-100 shadow-sm z-10">
-        <Hash className="text-gray-400" size={20} />
-        <div>
+      <div className="flex items-center gap-2 p-3 md:p-4 border-b border-gray-100 shadow-sm z-10">
+        <Hash className="text-gray-400 shrink-0" size={20} />
+        <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-gray-800">{channel.name}</h3>
-          <p className="text-xs text-gray-500">{channel.description}</p>
+          <p className="text-xs text-gray-500 truncate">{channel.description}</p>
         </div>
+        <button
+          onClick={() => inputRef.current?.focus()}
+          className="shrink-0 hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-semibold hover:bg-primary/90"
+        >
+          <Send size={13} /> Write a message
+        </button>
       </div>
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {messages.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center text-center text-gray-500 gap-1">
+            <p className="text-sm font-medium text-gray-700">No messages in #{channel.name} yet</p>
+            <p className="text-xs">Say hi in the chat box below. Tag @aarika to get an AI answer.</p>
+          </div>
+        )}
         {messages.map((msg, idx) => {
           if (msg.isSystem) {
             return (
@@ -175,14 +193,20 @@ export default function ChannelChat({ channel }: { channel: any }) {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-white border-t border-gray-100">
+      {/* Highlighted: testers took minutes to notice the chat box at the bottom. */}
+      <div className="p-3 md:p-4 bg-primary/5 border-t-2 border-primary/20">
+        <label htmlFor="community-message" className="block text-xs font-semibold text-primary mb-1.5 px-1">
+          Chat with everyone in #{channel.name}
+        </label>
         <form onSubmit={handleSend} className="relative flex items-center">
           <input
+            id="community-message"
+            ref={inputRef}
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={`Message #${channel.name} (tag @aarika for AI help)`}
-            className="w-full pl-4 pr-12 py-3 bg-[#F0F4F9] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full pl-4 pr-12 py-3 bg-white border-2 border-primary/30 shadow-sm rounded-full text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
           <button
             type="submit"
