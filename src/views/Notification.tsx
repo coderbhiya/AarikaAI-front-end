@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import EmailSettingsCard from "@/components/notifications/EmailSettingsCard";
 
 const typeLabel = (type: string) => {
     const map: Record<string, string> = {
@@ -157,16 +158,14 @@ const Notification = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                                <p className="text-[11px] text-gray-400 font-medium leading-relaxed">
-                                    Manage your professional updates and neural alerts. Stay connected with the mission.
-                                </p>
-                            </div>
                         </div>
                     )}
 
                     {/* Main Feed */}
                     <div className="flex-1 space-y-4 pb-20">
+                        <div className="px-4 pt-4 md:p-0">
+                            <EmailSettingsCard />
+                        </div>
                         {loading && notifications.length === 0 ? (
                             <div className="flex flex-col items-center justify-center p-20 gap-4">
                                 <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
