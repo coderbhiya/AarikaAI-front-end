@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 import { PAGE_COLUMN, PageHeader } from "@/components/layout/PageHeader";
 import SmartApplyPanel from "@/components/jobs/SmartApplyPanel";
+import PracticeInterviewLink from "@/components/mockInterview/PracticeInterviewLink";
 import {
   AgentConfig, Application, JobMatch, JobSources, applyInternal, dismissApplication, getAgentConfig,
   getApplicationsLog, getJobMatches, getJobSources, triggerAutoApply, updateAgentConfig,
@@ -293,7 +294,12 @@ export default function AgentDashboard() {
                         <p className={`text-lg font-bold ${m.matchScore >= 75 ? "text-emerald-600" : m.matchScore >= 60 ? "text-amber-600" : "text-gray-600"}`}>{m.matchScore}%</p>
                         <p className="text-[10px] text-gray-400 font-semibold uppercase">match</p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <PracticeInterviewLink
+                          {...(m.isCompanyJob ? { companyJobId: m.id } : { jobId: m.id })}
+                          title={m.title}
+                          company={m.company}
+                        />
                         {m.applicationStatus !== "unapplied" && <span className={`text-[11px] font-semibold px-2 py-1 rounded-full ${st.cls}`}>{st.label}</span>}
                         {m.applicationStatus !== "applied" && (
                           <button
@@ -342,8 +348,9 @@ export default function AgentDashboard() {
                         <p className="text-[11px] text-amber-700 mt-1 inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {a.needsYou.length} question{a.needsYou.length > 1 ? "s" : ""} only you can answer</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${st.cls}`}>{st.label}</span>
+                      <PracticeInterviewLink jobId={a.jobId} companyJobId={a.companyJobId} title={a.jobTitle} company={a.companyName} className="px-3 py-1.5" />
                       {external && ["ready_to_apply", "failed", "applied"].includes(a.status) && (
                         <button
                           onClick={() => setPanel({ applicationId: a.id, jobId: a.jobId ?? undefined, title: a.jobTitle, company: a.companyName })}

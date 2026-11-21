@@ -19,6 +19,9 @@ import {
   CodingProblem, LiveInterviewSession, LiveInterviewType, Difficulty, TranscriptTurn, InterviewQuota, QuotaExceeded,
 } from "@/services/mockInterviewService";
 import { QuotaCounter, QuotaExceededNotice } from "@/components/mockInterview/InterviewQuota";
+import {
+  JobTarget, JobTargetPicker, jobTargetBody, jobTargetQuery, pastedTooShort, readJobTargetFromUrl,
+} from "@/components/mockInterview/JobTargetPicker";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Stage = "prejoin" | "joining" | "call" | "finishing" | "report" | "error";
@@ -41,6 +44,7 @@ export default function LiveInterview() {
   // ── setup ──
   const [stage, setStage] = useState<Stage>("prejoin");
   const [targetRole, setTargetRole] = useState("");
+  const [jobTarget, setJobTarget] = useState<JobTarget | null>(null);
   const [interviewType, setInterviewType] = useState<LiveInterviewType>("hr");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [durationMin, setDurationMin] = useState<15 | 25>(15);
@@ -50,6 +54,12 @@ export default function LiveInterview() {
   const [quotaBlock, setQuotaBlock] = useState<QuotaExceeded | null>(null);
 
   useEffect(() => {
+    // Opened from a job card or the text-interview page with a job: practise for that job.
+    const fromUrl = readJobTargetFromUrl();
+    if (fromUrl) {
+      setJobTarget(fromUrl);
+      if (fromUrl.kind !== "pasted" && fromUrl.title) setTargetRole(fromUrl.title);
+    }
     getInterviewQuota()
       .then((r) => setQuota(r.quota))
       .catch(() => {}); // informational only; the start call enforces the limit
@@ -243,12 +253,16 @@ export default function LiveInterview() {
 
   const join = async () => {
     if (!stream) return;
+    if (pastedTooShort(jobTarget)) {
+      setError("Paste the full job description, or clear it to practise for the role in general.");
+      return;
+    }
     setError(null);
     setFallbackToText(false);
     setQuotaBlock(null);
     setStage("joining");
     try {
-      const r = await startLiveInterview({ targetRole: targetRole.trim() || undefined, interviewType, difficulty, durationMin });
+      const r = await startLiveInterview({ targetRole: targetRole.trim() || undefined, interviewType, difficulty, durationMin, ...jobTargetBody(jobTarget, targetRole) });
       if (r.quota) setQuota(r.quota);
       sessionIdRef.current = r.session.id;
       setProblems(r.codingProblems || []);
@@ -420,6 +434,7 @@ export default function LiveInterview() {
                     placeholder="Leave empty to use your profile's target role"
                     className="mt-1.5 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-blue-600" />
                 </div>
+                <JobTargetPicker value={jobTarget} onChange={setJobTarget} accent="blue" />
                 <div>
                   <p className="text-sm font-semibold text-gray-800">Round</p>
                   <div className="mt-1.5 grid grid-cols-2 gap-2">
@@ -448,7 +463,7 @@ export default function LiveInterview() {
                   <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert">
                     {error}
                     {fallbackToText && (
-                      <a href="/mock-interview" className="block mt-1 font-semibold underline">Take the text interview instead</a>
+                      <a href={`/mock-interview${jobTargetQuery(jobTarget)}`} className="block mt-1 font-semibold underline">Take the text interview instead</a>
                     )}
                   </div>
                 )}
@@ -696,7 +711,7 @@ function LiveReport({ session }: { session: LiveInterviewSession }) {
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         <a href="/mock-interview" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="w-4 h-4" /> Mock interviews</a>
         <div className="rounded-2xl bg-gradient-to-r from-[#1E293B] to-[#1E1B4B] text-white p-5 sm:p-6">
-          <p className="text-xs uppercase tracking-widest text-blue-200">Live {session.interviewType === "technical" ? "technical" : "HR"} interview · {session.targetRole}</p>
+          <p className="text-xs uppercase tracking-widest text-blue-200">Live {session.interviewType === "technical" ? "technical" : "HR"} interview · {session.targetRole}{session.jobContext?.company ? ` at ${session.jobContext.company}` : ""}</p>
           <div className="mt-2 flex items-end gap-3 flex-wrap">
             <span className="text-5xl font-bold tabular-nums">{session.overallScore ?? "–"}</span>
             <span className="text-gray-300 mb-1.5">/ 100 overall</span>

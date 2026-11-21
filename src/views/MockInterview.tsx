@@ -14,6 +14,9 @@ import {
   finishInterview, getInterview, getInterviewQuota, getQuotaExceeded, listInterviews, startInterview, submitInterviewAnswer,
 } from "@/services/mockInterviewService";
 import { QuotaCounter, QuotaExceededNotice } from "@/components/mockInterview/InterviewQuota";
+import {
+  JobTarget, JobTargetPicker, jobTargetBody, jobTargetQuery, pastedTooShort, readJobTargetFromUrl,
+} from "@/components/mockInterview/JobTargetPicker";
 
 type Phase = "setup" | "interview" | "report";
 
@@ -102,6 +105,7 @@ export default function MockInterview() {
 
   // Setup
   const [targetRole, setTargetRole] = useState("");
+  const [jobTarget, setJobTarget] = useState<JobTarget | null>(null);
   const [interviewType, setInterviewType] = useState<InterviewType>("hr");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [starting, setStarting] = useState(false);
@@ -138,6 +142,12 @@ export default function MockInterview() {
   };
 
   useEffect(() => {
+    // Opened from a job card ("Practice interview"): practise for that job, with its title as the role.
+    const fromUrl = readJobTargetFromUrl();
+    if (fromUrl) {
+      setJobTarget(fromUrl);
+      if (fromUrl.kind !== "pasted" && fromUrl.title) setTargetRole(fromUrl.title);
+    }
     loadHistory();
     getInterviewQuota()
       .then((r) => setQuota(r.quota))
@@ -173,10 +183,14 @@ export default function MockInterview() {
 
   const start = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (pastedTooShort(jobTarget)) {
+      toast.error("Paste the full job description, or clear it to practise for the role in general.");
+      return;
+    }
     setStarting(true);
     setQuotaBlock(null);
     try {
-      const r = await startInterview({ targetRole: targetRole.trim() || undefined, interviewType, difficulty });
+      const r = await startInterview({ targetRole: targetRole.trim() || undefined, interviewType, difficulty, ...jobTargetBody(jobTarget, targetRole) });
       if (r.quota) setQuota(r.quota);
       openSession(r.session);
       if (r.questionSource === "fallback") toast.info("Using our standard question set for this round.");
@@ -254,6 +268,10 @@ export default function MockInterview() {
       setTargetRole(session.targetRole);
       setInterviewType(session.interviewType);
       setDifficulty(session.difficulty);
+      // Practise again for the same platform job (a pasted JD isn't sent back to the browser).
+      const jc = session.jobContext;
+      if (jc?.jobId) setJobTarget({ kind: "job", jobId: jc.jobId, title: jc.title, company: jc.company });
+      else if (jc?.companyJobId) setJobTarget({ kind: "company_job", companyJobId: jc.companyJobId, title: jc.title, company: jc.company });
     }
     setSession(null);
     setCurrent(null);
@@ -291,7 +309,7 @@ export default function MockInterview() {
                 {/* Same hero treatment as the Job Agent page: the two ways to practise side by side. */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <a
-                    href="/mock-interview/live"
+                    href={`/mock-interview/live${jobTargetQuery(jobTarget)}`}
                     data-testid="live-interview-entry"
                     className="flex flex-col rounded-2xl p-5 sm:p-7 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl hover:opacity-95 transition-opacity"
                   >
@@ -326,6 +344,8 @@ export default function MockInterview() {
                       className="mt-1.5 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-primary"
                     />
                   </div>
+
+                  <JobTargetPicker value={jobTarget} onChange={setJobTarget} />
 
                   <div>
                     <p className="text-sm font-semibold text-gray-800">Interview type</p>
@@ -398,7 +418,7 @@ export default function MockInterview() {
                       className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 disabled:opacity-60"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{h.targetRole}</p>
+                        <p className="text-sm font-semibold text-gray-900 truncate">{h.targetRole}{h.jobContext?.company ? ` · ${h.jobContext.company}` : ""}</p>
                         <p className="text-xs text-gray-500">{TYPE_LABEL[h.interviewType]} · <span className="capitalize">{h.difficulty}</span> · {fmtDate(h.createdAt)}</p>
                       </div>
                       {openingId === h.id ? (
@@ -422,7 +442,7 @@ export default function MockInterview() {
               <div>
                 <div className="flex items-center justify-between text-xs font-semibold text-gray-500">
                   <span>Question {index + 1} of {total}</span>
-                  <span className="truncate ml-2">{session.targetRole} · {TYPE_LABEL[session.interviewType]}</span>
+                  <span className="truncate ml-2">{session.targetRole}{session.jobContext?.company ? ` at ${session.jobContext.company}` : ""} · {TYPE_LABEL[session.interviewType]}</span>
                 </div>
                 <div className="mt-1.5 h-1.5 rounded-full bg-gray-200 overflow-hidden">
                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${((index + (current ? 1 : 0)) / total) * 100}%` }} />
@@ -505,7 +525,7 @@ export default function MockInterview() {
               </div>
               <div className="flex-1 min-w-0 space-y-2">
                 <p className="text-xs font-semibold text-gray-500">
-                  {session.targetRole} · {TYPE_LABEL[session.interviewType]} · <span className="capitalize">{session.difficulty}</span> · {fmtDate(session.createdAt)}
+                  {session.targetRole}{session.jobContext?.company ? ` at ${session.jobContext.company}` : ""} · {TYPE_LABEL[session.interviewType]} · <span className="capitalize">{session.difficulty}</span> · {fmtDate(session.createdAt)}
                 </p>
                 <p className="text-sm text-gray-800 break-words">{session.report?.summary}</p>
                 {session.report?.averages && (

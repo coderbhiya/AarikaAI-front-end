@@ -37,9 +37,29 @@ export interface InterviewReport {
   totalQuestions?: number;
 }
 
+/** The job an interview is practising for (server view: no full description). */
+export interface InterviewJobContext {
+  source: "job" | "company_job" | "pasted";
+  jobId: number | null;
+  companyJobId: number | null;
+  title: string;
+  company: string;
+  hasDescription: boolean;
+}
+
+/** What a start request can send to practise for one job: a platform job by id, or a pasted description. */
+export interface JobTargetBody {
+  jobId?: number;
+  companyJobId?: number;
+  jobDescription?: string;
+  company?: string;
+  jobTitle?: string;
+}
+
 export interface InterviewSession {
   id: number;
   targetRole: string;
+  jobContext?: InterviewJobContext | null;
   interviewType: InterviewType;
   difficulty: Difficulty;
   status: "in_progress" | "completed";
@@ -87,7 +107,7 @@ export const getQuotaExceeded = (err: any): QuotaExceeded | null => {
   return res?.status === 402 && res?.data?.code === "QUOTA_EXCEEDED" ? (res.data as QuotaExceeded) : null;
 };
 
-export const startInterview = async (body: { targetRole?: string; interviewType: InterviewType; difficulty: Difficulty }) =>
+export const startInterview = async (body: { targetRole?: string; interviewType: InterviewType; difficulty: Difficulty } & JobTargetBody) =>
   (await axiosInstance.post<{ success: boolean; questionSource: "llm" | "fallback"; session: InterviewSession; quota?: InterviewQuota }>(
     "/mock-interview/start",
     body
@@ -162,7 +182,7 @@ export interface LiveStartResponse {
   quota?: InterviewQuota; // already counts this session
 }
 
-export const startLiveInterview = async (body: { targetRole?: string; interviewType: LiveInterviewType; difficulty: Difficulty; durationMin: 15 | 25 }) =>
+export const startLiveInterview = async (body: { targetRole?: string; interviewType: LiveInterviewType; difficulty: Difficulty; durationMin: 15 | 25 } & JobTargetBody) =>
   (await axiosInstance.post<LiveStartResponse>("/mock-interview/live/start", body)).data;
 
 export const finishLiveInterview = async (

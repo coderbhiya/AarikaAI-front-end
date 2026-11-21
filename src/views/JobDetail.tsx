@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import SmartApplyPanel from "@/components/jobs/SmartApplyPanel";
+import PracticeInterviewLink from "@/components/mockInterview/PracticeInterviewLink";
 
 const JobDetail = () => {
   const { toggleSidebar } = useAuth();
@@ -217,6 +218,14 @@ const JobDetail = () => {
                   {job.isCompanyJob ? "Apply in one click" : "Smart Apply"}
                 </button>
               )}
+              <div className="-mt-8 mb-12 flex justify-center">
+                <PracticeInterviewLink
+                  {...(job.isCompanyJob ? { companyJobId: Number(job.id) } : { jobId: Number(job.id) })}
+                  title={job.title}
+                  company={job.company}
+                  label="Practice an interview for this job"
+                />
+              </div>
 
               <div className="space-y-12">
                 <section>

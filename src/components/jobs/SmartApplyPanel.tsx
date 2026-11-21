@@ -14,6 +14,7 @@ import {
   CheckCircle2, Copy, Download, ExternalLink, FileText, Loader2, RefreshCw, Sparkles, AlertTriangle,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import PracticeInterviewLink from "@/components/mockInterview/PracticeInterviewLink";
 import {
   Application, downloadApplicationResume, getApplication, markApplicationApplied,
   prepareApplication, saveApplicationAnswers,
@@ -166,6 +167,14 @@ export default function SmartApplyPanel({ open, onOpenChange, jobId, application
           </div>
           <SheetTitle className="text-lg leading-snug pr-6">{app?.jobTitle || jobTitle || "Preparing application"}</SheetTitle>
           <SheetDescription className="text-[13px]">{app?.companyName || company}</SheetDescription>
+          <PracticeInterviewLink
+            jobId={app?.jobId ?? jobId ?? null}
+            companyJobId={app?.companyJobId ?? null}
+            title={app?.jobTitle || jobTitle}
+            company={app?.companyName || company}
+            className="self-start mt-1"
+            label="Practice an interview for this job"
+          />
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
