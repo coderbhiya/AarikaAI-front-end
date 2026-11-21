@@ -3,7 +3,8 @@ import { ArrowRight, ArrowUpRight, Check, Plus } from "lucide-react";
 import LandingAuthRedirect from "@/components/landing/LandingAuthRedirect";
 import PersonaTabs from "@/components/landing/PersonaTabs";
 import { ClosingCta, SectionLabel, serif, SiteFooter, SiteHeader } from "@/components/landing/Site";
-import { FAQS, MORE, PERSONAS, PLANS, PRINCIPLES } from "@/components/landing/content";
+import { FAQS, MORE, PERSONAS, PRINCIPLES } from "@/components/landing/content";
+import { PricingCards } from "@/components/landing/Pricing";
 import { Shot, type Tone } from "@/components/landing/Shot";
 import RotatingWord from "@/components/landing/RotatingWord";
 
@@ -313,52 +314,7 @@ export default function Landing() {
               </h2>
               <p className="mt-5 text-[17px] text-[#5f5e5a]">Prices in rupees, per month. GST extra. Pay by UPI, card or netbanking via Razorpay.</p>
             </div>
-            <div className="mt-14 grid gap-4 md:grid-cols-3">
-              {PLANS.map((plan) => {
-                const popular = "popular" in plan && plan.popular;
-                const comingSoon = "comingSoon" in plan && plan.comingSoon;
-                return (
-                  <article
-                    key={plan.name}
-                    className={`flex flex-col rounded-[20px] p-7 sm:p-8 ${popular ? "bg-gradient-to-br from-[#14213f] via-[#1b2f6b] to-[#3a2f8f] text-white shadow-[0_30px_60px_-25px_rgba(30,50,140,0.6)]" : "bg-[#f6f5f0] text-[#141413]"}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[17px] font-medium">{plan.name}</h3>
-                      {popular && <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[12px]">Most popular</span>}
-                      {comingSoon && <span className="rounded-full bg-black/[0.06] px-2.5 py-0.5 text-[12px] text-[#5f5e5a]">Coming soon</span>}
-                    </div>
-                    <p className={`mt-2 text-[14px] ${popular ? "text-white/70" : "text-[#5f5e5a]"}`}>{plan.desc}</p>
-                    <p className="mt-8 flex items-baseline gap-1.5">
-                      <span className={`${serif} text-[56px] leading-none`}>₹{plan.price}</span>
-                      <span className={`text-[14px] ${popular ? "text-white/60" : "text-[#77756e]"}`}>/ month</span>
-                    </p>
-                    <p className={`mt-2 text-[13px] ${popular ? "text-white/60" : "text-[#77756e]"}`}>₹{plan.yearly}/month billed yearly</p>
-                    <ul className={`mt-8 flex-1 space-y-3 border-t pt-6 text-[14px] ${popular ? "border-white/15 text-white/85" : "border-black/[0.08] text-[#3d3c39]"}`}>
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex gap-3">
-                          <span className={`mt-[9px] h-px w-3 shrink-0 ${popular ? "bg-white/50" : "bg-black/40"}`} aria-hidden />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    {comingSoon ? (
-                      <span className="mt-8 inline-flex items-center justify-center rounded-full px-5 py-3 text-[14px] text-[#77756e] ring-1 ring-inset ring-black/10">
-                        Coming soon
-                      </span>
-                    ) : (
-                      <Link
-                        href="/register"
-                        className={`mt-8 inline-flex items-center justify-center rounded-full px-5 py-3 text-[14px] font-medium transition-colors ${
-                          popular ? "bg-white text-[#141413] hover:bg-white/90" : "bg-[#141413] text-white hover:bg-black/80"
-                        }`}
-                      >
-                        Get started
-                      </Link>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
+            <PricingCards className="mt-14" />
           </div>
         </section>
 

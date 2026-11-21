@@ -1,6 +1,6 @@
-import { Globe, Mail, Phone } from "lucide-react";
 import { PublicPage, SectionLabel, serif } from "@/components/landing/Site";
 import { EXAMS, MORE, PERSONAS, SITE_SUMMARY } from "@/components/landing/content";
+import { CONTACT } from "@/components/landing/contact";
 
 // About page. Same rule as the landing page: only describe what exists in the app today,
 // no invented stats, rankings or security claims.
@@ -17,12 +17,6 @@ const APPROACH = [
   { title: "Only real features", body: "Everything on this page is in the app today. No made-up numbers, rankings or testimonials." },
   { title: "Private by design", body: "In live interviews your camera stays on your device; only your voice reaches the AI interviewer." },
   { title: "Made for India", body: "Built by SenseforgeAI for Indian exams, campuses and job markets. Pay in rupees via Razorpay." },
-];
-
-const CONTACT = [
-  { icon: Mail, label: "Email", value: "dave@senseforge.in", href: "mailto:dave@senseforge.in" },
-  { icon: Phone, label: "Phone", value: "+91 91746 99025", href: "tel:+919174699025" },
-  { icon: Globe, label: "Company website", value: "senseforge.in", href: "https://senseforge.in", external: true },
 ];
 
 export default function About() {

@@ -4,7 +4,7 @@ import BrainLogo from "@/components/BrainLogo";
 import { displaySerif } from "@/components/landing/fonts";
 
 // Shared chrome for the public (logged-out) site: the landing page at / and the pages it links to
-// (/about, /privacy, /terms, /open-jobs). Same navbar, footer, colours and type everywhere.
+// (/about, /pricing, /contact, /privacy, /terms, /refund-policy, /shipping-policy, /open-jobs). Same navbar, footer, colours and type everywhere.
 
 export const serif = displaySerif.className;
 
@@ -22,7 +22,7 @@ const FOOTER_COLUMNS = [
     links: [
       { href: "#product", label: "Features" },
       { href: "#for-you", label: "For you" },
-      { href: "#pricing", label: "Pricing" },
+      { href: "/pricing", label: "Pricing" },
       { href: "#faq", label: "FAQ" },
     ],
   },
@@ -30,7 +30,7 @@ const FOOTER_COLUMNS = [
     title: "Company",
     links: [
       { href: "/about", label: "About" },
-      { href: "/about#contact", label: "Contact" },
+      { href: "/contact", label: "Contact" },
       { href: "/open-jobs", label: "Open jobs" },
     ],
   },
@@ -39,6 +39,8 @@ const FOOTER_COLUMNS = [
     links: [
       { href: "/privacy", label: "Privacy policy" },
       { href: "/terms", label: "Terms of service" },
+      { href: "/refund-policy", label: "Refund & cancellation" },
+      { href: "/shipping-policy", label: "Shipping & delivery" },
     ],
   },
 ];

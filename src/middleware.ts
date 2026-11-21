@@ -24,6 +24,10 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname === '/about' ||
     request.nextUrl.pathname === '/privacy' ||
     request.nextUrl.pathname === '/terms' ||
+    request.nextUrl.pathname === '/pricing' ||
+    request.nextUrl.pathname === '/contact' ||
+    request.nextUrl.pathname === '/refund-policy' ||
+    request.nextUrl.pathname === '/shipping-policy' ||
     request.nextUrl.pathname === '/updates-faq' ||
     request.nextUrl.pathname === '/reviews' ||
     request.nextUrl.pathname === '/jobs' ||
