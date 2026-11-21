@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import {
+  BadgeCheck,
   MessageSquare,
   SquarePen,
   Briefcase,
@@ -485,6 +486,8 @@ const Sidebar = () => {
     { key: "exam-calendar", show: navConfig.showExamCalendar, el: <NavLink to="/exam-calendar" icon={<CalendarDays size={16} />} label="Exams & Scholarships" active={pathname === "/exam-calendar"} /> },
     { key: "internships", show: navConfig.showInternships, el: <NavLink to="/internships" icon={<Rocket size={16} />} label="Internships" active={pathname === "/internships"} /> },
     { key: "mock-interview", show: navConfig.showMockInterview, el: <NavLink to="/mock-interview" icon={<Mic size={16} />} label="Mock Interview" active={pathname === "/mock-interview"} /> },
+    // Verification interview → Verified badge. Same audience as mock interviews.
+    { key: "verification", show: navConfig.showMockInterview, el: <NavLink to="/verification" icon={<BadgeCheck size={16} />} label="Get Verified" active={pathname === "/verification"} /> },
     // No "Placement Prep" item: it was only the "Placement Prep" tab of AI Tools (/tools?category=campus).
     { key: "learning", show: !!features.learningModuleEnabled, el: <NavLink to="/dashboard/learning" icon={<BookOpen size={16} />} label="My Learning" active={pathname === "/dashboard/learning"} /> },
     // Resume Builder and job tools: people applying for private-sector jobs — not school students or govt aspirants.

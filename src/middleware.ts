@@ -28,6 +28,7 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname === '/contact' ||
     request.nextUrl.pathname === '/refund-policy' ||
     request.nextUrl.pathname === '/shipping-policy' ||
+    request.nextUrl.pathname.startsWith('/verified/') ||
     request.nextUrl.pathname === '/updates-faq' ||
     request.nextUrl.pathname === '/reviews' ||
     request.nextUrl.pathname === '/jobs' ||

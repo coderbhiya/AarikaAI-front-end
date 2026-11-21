@@ -332,6 +332,15 @@ export default function MockInterview() {
                   </div>
                 </div>
 
+                <a href="/verification" className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 hover:bg-emerald-100/60" data-testid="get-verified-entry">
+                  <span className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0"><Trophy className="w-4 h-4" /></span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-bold text-gray-900">Ready? Get a Verified badge</span>
+                    <span className="block text-xs text-gray-600">Book a live AI interview. Score 80+ and recruiters see you&apos;re verified for the role.</span>
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-emerald-700 shrink-0" />
+                </a>
+
                 <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 space-y-5">
                   <div>
                     <label htmlFor="mi-role" className="text-sm font-semibold text-gray-800">Target role</label>

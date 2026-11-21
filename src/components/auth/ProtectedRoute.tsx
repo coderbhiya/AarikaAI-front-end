@@ -30,6 +30,7 @@ const ROUTE_PERSONAS: { prefix: string; allow?: ProfileFieldSet[]; deny?: Profil
   { prefix: "/exam-calendar", allow: ["school", "govt_aspirant"] },
   { prefix: "/internships", allow: ["college", "job_seeker", "career_switcher"] },
   { prefix: "/mock-interview", allow: ["college", "job_seeker", "professional", "career_switcher"] },
+  { prefix: "/verification", allow: ["college", "job_seeker", "professional", "career_switcher"] },
 ];
 
 export const isRouteAllowedFor = (pathname: string, fieldSet: ProfileFieldSet) => {

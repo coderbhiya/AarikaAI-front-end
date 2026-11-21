@@ -188,4 +188,14 @@ export const startLiveInterview = async (body: { targetRole?: string; interviewT
 export const finishLiveInterview = async (
   id: number,
   body: { turns: TranscriptTurn[]; durationSeconds: number; code?: { problemId: string; language: string; code: string; testsPassed?: number; testsTotal?: number } }
-) => (await axiosInstance.post<{ success: boolean; session: LiveInterviewSession }>(`/mock-interview/${id}/live/finish`, body, { timeout: 120000 })).data;
+) => (await axiosInstance.post<{ success: boolean; session: LiveInterviewSession; verification?: VerificationResult }>(`/mock-interview/${id}/live/finish`, body, { timeout: 120000 })).data;
+
+/** Set on a finished verification call (see /verification). */
+export interface VerificationResult {
+  id: number;
+  status: "passed" | "failed" | "in_progress";
+  overallScore: number | null;
+  failReason: string | null;
+  publicCode: string | null;
+  expiresAt: string | null;
+}

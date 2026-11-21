@@ -16,8 +16,9 @@ import { CandidateCaptions, captionsSupported } from "@/lib/liveInterview/speech
 import { runJavaScript, RunResult } from "@/lib/liveInterview/codeRunner";
 import {
   startLiveInterview, finishLiveInterview, getInterviewQuota, getQuotaExceeded,
-  CodingProblem, LiveInterviewSession, LiveInterviewType, Difficulty, TranscriptTurn, InterviewQuota, QuotaExceeded,
+  CodingProblem, LiveInterviewSession, LiveInterviewType, Difficulty, TranscriptTurn, InterviewQuota, QuotaExceeded, VerificationResult,
 } from "@/services/mockInterviewService";
+import { VerificationItem, badgeLink, fmtWhen, getVerifications, startVerification } from "@/services/verificationService";
 import { QuotaCounter, QuotaExceededNotice } from "@/components/mockInterview/InterviewQuota";
 import {
   JobTarget, JobTargetPicker, jobTargetBody, jobTargetQuery, pastedTooShort, readJobTargetFromUrl,
@@ -45,6 +46,9 @@ export default function LiveInterview() {
   const [stage, setStage] = useState<Stage>("prejoin");
   const [targetRole, setTargetRole] = useState("");
   const [jobTarget, setJobTarget] = useState<JobTarget | null>(null);
+  // Verification mode (/mock-interview/live?verificationId=…): role, round and length come from the booking.
+  const [verification, setVerification] = useState<VerificationItem | null>(null);
+  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
   const [interviewType, setInterviewType] = useState<LiveInterviewType>("hr");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [durationMin, setDurationMin] = useState<15 | 25>(15);
@@ -55,6 +59,21 @@ export default function LiveInterview() {
 
   useEffect(() => {
     // Opened from a job card or the text-interview page with a job: practise for that job.
+    const verificationId = Number(new URLSearchParams(window.location.search).get("verificationId"));
+    if (Number.isInteger(verificationId) && verificationId > 0) {
+      getVerifications()
+        .then((r) => {
+          const v = r.items.find((i) => i.id === verificationId);
+          if (!v) return setError("We couldn't find this verification interview.");
+          setVerification(v);
+          setTargetRole(v.targetRole);
+          setInterviewType(v.interviewType);
+          setDifficulty("medium");
+          setDurationMin(25);
+        })
+        .catch(() => setError("Couldn't load your verification interview. Please refresh."));
+      return;
+    }
     const fromUrl = readJobTargetFromUrl();
     if (fromUrl) {
       setJobTarget(fromUrl);
@@ -212,6 +231,7 @@ export default function LiveInterview() {
           : {}),
       });
       setReport(r.session);
+      if (r.verification) setVerificationResult(r.verification);
       setStage("report");
     } catch (e: any) {
       setError(e?.response?.data?.message || `Couldn't build your report (${reason}). Please check your connection.`);
@@ -262,7 +282,9 @@ export default function LiveInterview() {
     setQuotaBlock(null);
     setStage("joining");
     try {
-      const r = await startLiveInterview({ targetRole: targetRole.trim() || undefined, interviewType, difficulty, durationMin, ...jobTargetBody(jobTarget, targetRole) });
+      const r = verification
+        ? await startVerification(verification.id)
+        : await startLiveInterview({ targetRole: targetRole.trim() || undefined, interviewType, difficulty, durationMin, ...jobTargetBody(jobTarget, targetRole) });
       if (r.quota) setQuota(r.quota);
       sessionIdRef.current = r.session.id;
       setProblems(r.codingProblems || []);
@@ -320,7 +342,7 @@ export default function LiveInterview() {
         setStage("prejoin");
         return;
       }
-      if (status === 503 || data?.fallback === "text") setFallbackToText(true);
+      if (!verification && (status === 503 || data?.fallback === "text")) setFallbackToText(true);
       setError(data?.message || e?.message || "Couldn't start the interview. Please try again.");
       clientRef.current?.close();
       setStage("prejoin");
@@ -428,6 +450,14 @@ export default function LiveInterview() {
               {quota && <QuotaCounter quota={quota} className="mt-2" />}
 
               <div className="mt-5 space-y-4">
+                {verification ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4" data-testid="verification-prejoin">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Verification interview</p>
+                    <p className="text-base font-bold text-gray-900">{verification.targetRole} · {verification.interviewType === "technical" ? "Technical" : "HR"} round · 25 min</p>
+                    <p className="text-xs text-gray-600 mt-1">Booked for {fmtWhen(verification.scheduledAt)}. Score 80 or more to earn your Verified badge. You get one attempt, so make sure your mic and headphones work before you join.</p>
+                  </div>
+                ) : (
+                  <>
                 <div>
                   <label htmlFor="li-role" className="text-sm font-semibold text-gray-800">Role you&apos;re interviewing for</label>
                   <input id="li-role" value={targetRole} onChange={(e) => setTargetRole(e.target.value)} maxLength={120}
@@ -451,6 +481,8 @@ export default function LiveInterview() {
                   <Segmented<Difficulty> label="Difficulty" value={difficulty} options={["easy", "medium", "hard"] as Difficulty[]} onChange={setDifficulty} />
                   <Segmented<15 | 25> label="Length" value={durationMin} options={[15, 25] as (15 | 25)[]} format={(v) => `${v} min`} onChange={setDurationMin} />
                 </div>
+                  </>
+                )}
                 <ul className="text-xs text-gray-500 space-y-1.5">
                   <li className="flex gap-2"><Headphones className="w-4 h-4 shrink-0" /> Use headphones for the smoothest conversation.</li>
                   <li className="flex gap-2"><Monitor className="w-4 h-4 shrink-0" /> {captionsAvailable ? "Live captions are on. Chrome or Edge work best." : "Your browser can't caption your speech, so speech feedback will be limited. Chrome or Edge work best."}</li>
@@ -505,7 +537,7 @@ export default function LiveInterview() {
   // ─────────────────────────────────────────────────────────────────────────
   // REPORT
   // ─────────────────────────────────────────────────────────────────────────
-  if (stage === "report" && report) return <LiveReport session={report} />;
+  if (stage === "report" && report) return <LiveReport session={report} verification={verificationResult} />;
 
   // ─────────────────────────────────────────────────────────────────────────
   // IN CALL (Meet layout)
@@ -702,14 +734,42 @@ function ScoreBar({ label, value }: { label: string; value: number | null | unde
   );
 }
 
-function LiveReport({ session }: { session: LiveInterviewSession }) {
+function VerificationBanner({ v }: { v: VerificationResult }) {
+  if (v.status === "passed") {
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5" data-testid="verification-result">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Verification interview</p>
+        <p className="text-lg font-bold text-gray-900 mt-1">You&apos;re verified! Score {v.overallScore}/100</p>
+        <p className="text-sm text-gray-700 mt-1">Your Verified badge is valid for 12 months. Share your link with recruiters{v.publicCode ? ":" : "."}</p>
+        {v.publicCode && <p className="text-sm font-medium text-emerald-800 mt-1 break-all">{badgeLink(v.publicCode)}</p>}
+        <a href="/verification" className="mt-3 inline-flex px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold">See your badge</a>
+      </div>
+    );
+  }
+  const reason = v.failReason === "too_short"
+    ? "The call ended too early to verify."
+    : v.failReason === "too_few_answers"
+      ? "There weren't enough spoken answers in the call to verify."
+      : "80 or more is needed for the badge.";
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5" data-testid="verification-result">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-amber-700">Verification interview</p>
+      <p className="text-lg font-bold text-gray-900 mt-1">Not verified this time · {v.overallScore ?? 0}/100</p>
+      <p className="text-sm text-gray-700 mt-1">{reason} You can book your next attempt in 7 days. Use the feedback below and practise with mock interviews.</p>
+      <a href="/verification" className="mt-3 inline-flex px-4 py-2 rounded-full border border-amber-300 text-amber-900 text-xs font-bold">Back to Get Verified</a>
+    </div>
+  );
+}
+
+function LiveReport({ session, verification = null }: { session: LiveInterviewSession; verification?: VerificationResult | null }) {
   const r = session.report;
   const sm = session.speechMetrics;
   const qById = new Map(session.questions.map((q) => [q.id, q]));
   return (
     <div className="h-[100dvh] bg-[#F8F9FA] overflow-y-auto overflow-x-hidden" data-testid="live-report">
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-        <a href="/mock-interview" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="w-4 h-4" /> Mock interviews</a>
+        <a href={verification ? "/verification" : "/mock-interview"} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="w-4 h-4" /> {verification ? "Get Verified" : "Mock interviews"}</a>
+        {verification && <VerificationBanner v={verification} />}
         <div className="rounded-2xl bg-gradient-to-r from-[#1E293B] to-[#1E1B4B] text-white p-5 sm:p-6">
           <p className="text-xs uppercase tracking-widest text-blue-200">Live {session.interviewType === "technical" ? "technical" : "HR"} interview · {session.targetRole}{session.jobContext?.company ? ` at ${session.jobContext.company}` : ""}</p>
           <div className="mt-2 flex items-end gap-3 flex-wrap">
